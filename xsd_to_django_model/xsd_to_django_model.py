@@ -627,6 +627,6 @@ if __name__ == '__main__':
 
     builder = XSDModelBuilder(args['<xsd_filename>'])
     builder.make_models(args['<xsd_type>'])
-    builder.write(open(args['<models_filename>'], "w"),
-                  open(args['<fields_filename>'], "w"),
-                  codecs.open(args['<mapping_filename>'], "w", 'utf-8'))
+    builder.write(open(args['-m'], "w"),
+                  open(args['-f'], "w"),
+                  codecs.open(args['-j'], "w", 'utf-8'))
