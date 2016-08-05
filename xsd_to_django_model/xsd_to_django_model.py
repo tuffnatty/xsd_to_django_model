@@ -569,7 +569,7 @@ class XSDModelBuilder:
             try:
                 rel = model.get('foreign_key_overrides', {})[name]
                 if rel != '%s.%s' % (typename, name):
-                    ct2_def = xpath(self.tree, "//xs:complexType[@name=$n]", n=rel)
+                    ct2_def = xpath(self.tree, "//xs:complexType[@name=$n]", n=rel)[0]
                 else:
                     rel, ct2_def = self.get_n_to_one_relation(typename, name, el_def)
                 self.make_model(rel, ct2_def)
