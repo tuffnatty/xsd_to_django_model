@@ -595,6 +595,11 @@ class XSDModelBuilder:
             except KeyError:
                 field = self.get_field(basetype or el_type, el_def, '%s.%s' % (typename, name))
 
+            try:
+                field['name'] = model.get('override_field_class', {})[name]
+            except KeyError:
+                pass
+
             options = field.get('options', [])
             doc = get_doc(el_def, name, model_name)
             if doc:
