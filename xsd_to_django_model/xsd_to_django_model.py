@@ -596,7 +596,8 @@ class XSDModelBuilder:
                 field = self.get_field(basetype or el_type, el_def, '%s.%s' % (typename, name))
 
             try:
-                field['name'] = model.get('override_field_class', {})[name]
+                field = {'name': model.get('override_field_class', {})[name],
+                         'options': field.get('options', [])}
             except KeyError:
                 pass
 
