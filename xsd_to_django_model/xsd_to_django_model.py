@@ -468,6 +468,23 @@ class XSDModelBuilder:
             self.make_fields(typename, seq_def, prefix=prefix, attrs=attrs, null=null, is_root=is_root)
         return ''
 
+    def write_attributes(ct_def, typename):
+        attr_defs = xpath(ct_def, "xs:attribute")
+        if attr_defs is not None:
+            model_name = get_model_for_type(typename)
+            this_model = self.models[typename]
+            model = MODEL_OPTIONS.get(model_name, {})
+            for attr_def in attr_defs:
+                attr_name = attr_def.get("name")
+                field = self.get_field(attr_def.get("type"))
+                options = field.get('options', [])
+                doc = get_doc(attr_def, None, model_name)
+                options[:0] = ['"%s"' % doc]
+                if attr_def.get("use") == "required":
+                    options.append('null=True')
+                override_field_options(attr_name, options, model)
+                this_model.add_field(dotted_name="@%s" % attr_name, name=attr_name, django_field=field['name'], options=options)
+
     def get_n_to_many_relation(self, typename, name, el_def):
         if el_def.get("maxOccurs") == 'unbounded':
             el2_def = el_def
@@ -675,18 +692,7 @@ class XSDModelBuilder:
 
             fields = ''
 
-            attr_defs = xpath(ct_def, "xs:attribute")
-            if attr_defs is not None:
-                for attr_def in attr_defs:
-                    attr_name = attr_def.get("name")
-                    field = self.get_field(attr_def.get("type"))
-                    options = field.get('options', [])
-                    doc = get_doc(attr_def, None, model_name)
-                    options[:0] = ['"%s"' % doc]
-                    if attr_def.get("use") == "required":
-                        options.append('null=True')
-                    override_field_options(attr_name, options, model)
-                    this_model.add_field(dotted_name="@%s" % attr_name, name=attr_name, django_field=field['name'], options=options)
+            self.write_attributes(ct_def, typename)
 
             seq_def, choice_def = self.get_seq_or_choice(ct_def)
             if seq_def is None and choice_def is None:
@@ -719,7 +725,9 @@ class XSDModelBuilder:
 
         if parent:
             if model.get('include_parent_fields'):
-                self.write_seq_or_choice(self.get_seq_or_choice(xpath(self.tree, "//xs:complexType[@name=$n]", n=strip_ns(parent))[0]), typename, attrs=attrs)
+                parent_def = xpath(self.tree, "//xs:complexType[@name=$n]", n=strip_ns(parent))[0]
+                self.write_attributes(parent_def, typename)
+                self.write_seq_or_choice(self.get_seq_or_choice(parent_def), typename, attrs=attrs)
                 parent = None
             else:
                 stripped_parent = strip_ns(parent)
