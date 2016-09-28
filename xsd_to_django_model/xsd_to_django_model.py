@@ -468,7 +468,7 @@ class XSDModelBuilder:
             self.make_fields(typename, seq_def, prefix=prefix, attrs=attrs, null=null, is_root=is_root)
         return ''
 
-    def write_attributes(ct_def, typename):
+    def write_attributes(self, ct_def, typename):
         attr_defs = xpath(ct_def, "xs:attribute")
         if attr_defs is not None:
             model_name = get_model_for_type(typename)
