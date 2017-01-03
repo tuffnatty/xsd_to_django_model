@@ -18,7 +18,7 @@ Options:
     -f <fields_filename>   Output fields filename [default: fields.py].
     -j <mapping_filename>  Output JSON mapping filename [default: mapping.json].
     <xsd_filename>         Input XSD schema filename.
-    <xsd_type>             XSD type for which a Django model should be generated.
+    <xsd_type>             XSD type (or an XPath query for XSD type) for which a Django model should be generated.
 
 If you have xsd_to_django_model_settings.py in your PYTHONPATH or in the current directory, it will be imported.
 ```
