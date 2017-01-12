@@ -981,7 +981,7 @@ class XSDModelBuilder:
         models_file.write('from django.core import validators\n')
         models_file.write('from django.db import models\n')
         if self.have_json:
-            models_file.write('from django.contrib.postgres.fields import JSONField\n')
+            models_file.write('from django.contrib.postgres.fields import ArrayField, JSONField\n')
         models_file.write('\n')
         if len(self.fields):
             models_file.write('from .fields import %s\n' % ', '.join(sorted(f['name'] for f in self.fields.values())))
