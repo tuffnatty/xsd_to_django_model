@@ -28,10 +28,9 @@ from copy import deepcopy
 from itertools import chain
 import json
 import logging
-import pdb
+import os.path
 import re
 import sys
-import traceback
 
 from docopt import docopt
 from lxml import etree
@@ -1413,6 +1412,8 @@ if __name__ == '__main__':
     except Exception as e:
         logger.error('EXCEPTION: %s', unicode(e))
         type, value, tb = sys.exc_info()
+        import traceback
+        import pdb
         traceback.print_exc()
         pdb.post_mortem(tb)
         sys.exit(1)
