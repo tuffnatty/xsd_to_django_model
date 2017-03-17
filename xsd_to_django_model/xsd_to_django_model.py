@@ -66,6 +66,7 @@ BASETYPE_FIELD_MAP = {
     'xs:int': 'IntegerField',
     'xs:integer': 'IntegerField',
     'xs:long': 'BigIntegerField',
+    'xs:nonNegativeInteger': 'PositiveIntegerField',
     'xs:positiveInteger': 'PositiveIntegerField',
     'xs:short': 'SmallIntegerField',
     'xs:string': 'CharField',
