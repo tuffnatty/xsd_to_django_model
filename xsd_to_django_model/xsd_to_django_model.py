@@ -100,7 +100,7 @@ def get_model_for_type(name):
 def get_a_type_for_model(name):
     plus_name = '+%s' % name
     for expr, sub in TYPE_MODEL_MAP.iteritems():
-        if '(' not in expr and sub in (name, plus_name):
+        if '(' not in expr and '\\' not in expr and sub in (name, plus_name):
             return expr
     return None
 
