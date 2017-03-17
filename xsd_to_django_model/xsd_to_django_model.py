@@ -891,8 +891,8 @@ class XSDModelBuilder:
                     options.append('default="%s"' % default)
 
         if el_def:
-            max_occurs = el_def.get("maxOccurs", None)
-            if max_occurs:
+            max_occurs = el_def.get("maxOccurs", "1")
+            if max_occurs != "1":
                 raise Exception(
                     "caught maxOccurs=%s in %s.%s (@type=%s). Consider adding"
                     " it to many_to_many_fields, one_to_many_fields or"
