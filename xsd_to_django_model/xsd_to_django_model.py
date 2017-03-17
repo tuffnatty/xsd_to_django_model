@@ -74,9 +74,28 @@ BASETYPE_FIELD_MAP = {
 }
 NS = {'xs': "http://www.w3.org/2001/XMLSchema"}
 
+FIELD_TMPL = {
+    '_coalesce':
+        '    # %(dotted_name)s field coalesces to %(coalesce)s\n',
+    'drop':
+        '    # Dropping %(dotted_name)s field',
+    'parent_field':
+        '    # %(dotted_name)s field translates to this model\'s parent',
+    'one_to_many':
+        '    # %(name)s is declared as a reverse relation from %(options0)s\n'
+        '    # %(name)s = OneToManyField(%(serialized_options)s)',
+    'one_to_one':
+        '    # %(name)s is declared as a reverse relation from %(options0)s\n'
+        '    # %(name)s = OneToOneField(%(serialized_options)s)',
+    'default':
+        '    %(name)s = %(final_django_field)s(%(serialized_options)s)',
+}
+
 HEADER = ('# THIS FILE IS GENERATED AUTOMATICALLY. DO NOT EDIT\n'
           '# -*- coding: utf-8 -*-\n\n'
           'from __future__ import unicode_literals\n\n')
+
+RE_SPACES = re.compile(r'  +')
 
 
 logging.basicConfig(level=logging.INFO)
@@ -142,11 +161,24 @@ def get_doc(el_def, name, model_name):
             return get_opt(model_name)['field_docs'][name]
         except KeyError:
             pass
-    doc = xpath(el_def, "xs:annotation/xs:documentation")
+    doc = chain(xpath(el_def, "xs:annotation/xs:documentation"),
+                xpath(el_def, "xs:complexType/xs:annotation/xs:documentation"))
+    doc = (d.text for d in doc if d.text)
     try:
-        return doc[0].text.strip().replace('"', '\\"').replace('\n\n', '\n').replace('\n', '\\n"\n"')
-    except IndexError:
+        return RE_SPACES.sub(' ', next(doc).strip()).rstrip('.') \
+            .replace(' )', ')')
+    except StopIteration:
         return None
+
+
+def stringify(s):
+    if type(s) is list:
+        s = '|'.join(el.strip() for el in s)
+    return '"%s"' % RE_SPACES.sub(' ', s.strip()) \
+        .replace('\\', '\\\\') \
+        .replace('"', '\\"') \
+        .replace('\n\n', '\n') \
+        .replace('\n', '\\n"\n"')
 
 
 def get_null(el_def):
@@ -217,44 +249,63 @@ class Model:
         self.doc = None
         self.number_field = None
 
-    def build_field_code(self, kwargs, force=False):
+    def build_attrs_options(self, kwargs):
         if kwargs.get('name') == 'attrs':
-            kwargs['options'] = ['"JSON attributes:\\n"\n%s' % '\n'.join(['"%s [%s]\\n"' % x for x in sorted(kwargs['attrs'].items())]), 'null=True']
+            attrs_str = '\n'.join('%s [%s]\n' % x
+                                  for x in sorted(kwargs['attrs'].items()))
+            kwargs['doc'] = ['JSON attributes:\n%s' % attrs_str]
+            kwargs['options'] = [
+                'null=True'
+            ]
 
+    def normalize_field_options(self, kwargs):
+        if 'drop' in kwargs:
+            return []
+        options = kwargs.get('options', [])
+        try:
+            doc = kwargs['doc']
+        except KeyError:
+            doc = kwargs['name']
+        else:
+            if type(doc) is not list:
+                kwargs['doc'] = [doc]
+        doc = stringify(doc)
+        if options and '=' not in options[0]:
+            if options[0][0] == '"':
+                options[0] = doc
+            else:
+                for i, o in enumerate(options):
+                    if o.startswith('verbose_name='):
+                        del options[i]
+                        break
+                options.append('verbose_name=%s' % doc)
+            return [options[0]] + sorted(set(options[1:]))
+        return [doc] + sorted(set(options))
+
+    def build_field_code(self, kwargs, force=False):
+        self.build_attrs_options(kwargs)
         skip_code = False
         if force or 'code' not in kwargs:
-            if kwargs.get('drop', False):
-                template = '    # Dropping %(dotted_name)s field'
-            elif kwargs.get('parent_field', False):
-                template = '    # %(dotted_name)s field translates to this model\'s parent'
-            elif 'one_to_many' in kwargs:
-                template = ('    # %(name)s is declared as a reverse relation from %(options0)s\n'
-                            '    # %(name)s = OneToManyField(%(serialized_options)s)')
-            elif 'one_to_one' in kwargs:
-                template = ('    # %(name)s is declared as a reverse relation from %(options0)s\n'
-                            '    # %(name)s = OneToOneField(%(serialized_options)s)')
-            else:
-                template = '    %(name)s = %(final_django_field)s(%(serialized_options)s)'
+            tmpl_key = next((k for k in ('drop', 'parent_field',
+                                         'one_to_many', 'one_to_one')
+                             if k in kwargs),
+                            'default')
 
             final_django_field = kwargs.get('django_field')
-            try:
-                options = kwargs['options']
-                if len(options):
-                    if '=' not in options[0]:
-                        options = [options[0]] + sorted(set(options[1:]))
-                    else:
-                        options = sorted(set(options))
-            except KeyError:
-                options = []
-            serialized_options = ', '.join(options)
-            if 'null=True' in kwargs.get('options', []):
-                if final_django_field in ('models.BooleanField', 'models.ManyToManyField'):
-                    if final_django_field == 'models.BooleanField':
-                        final_django_field = 'models.NullBooleanField'
-                    serialized_options = ', '.join(o for o in options if o != 'null=True')
+            options = self.normalize_field_options(kwargs)
+            if final_django_field == 'models.CharField' and \
+                    not any(o.startswith('max_length=') for o in options):
+                final_django_field = 'models.TextField'
+            elif ('null=True' in options and
+                  final_django_field in ('models.BooleanField',
+                                         'models.ManyToManyField')):
+                if final_django_field == 'models.BooleanField':
+                    final_django_field = 'models.NullBooleanField'
+                options = [o for o in options if o != 'null=True']
+            kwargs['options'] = options
 
             if kwargs.get('coalesce'):
-                kwargs['code'] = '    # %(dotted_name)s field coalesces to %(coalesce)s\n' % kwargs
+                kwargs['code'] = FIELD_TMPL['_coalesce'] % kwargs
                 skip_code = any(('coalesce' in f and
                                  f['coalesce'] == kwargs['coalesce'] and
                                  'code' in f and
@@ -266,10 +317,20 @@ class Model:
                 kwargs['code'] = ''
 
             if not skip_code:
-                kwargs['code'] += template % dict(kwargs,
-                                                  options0=kwargs['options'][0] if kwargs.get('options') else '',
-                                                  final_django_field=final_django_field,
-                                                  serialized_options=serialized_options)
+                serialized_options = ', '.join(options)
+                tmpl_ctx = dict(kwargs,
+                                options0=options[0] if options else None,
+                                final_django_field=final_django_field,
+                                serialized_options=serialized_options)
+                tmpl_row = next((r for r in FIELD_TMPL[tmpl_key].split('\n')
+                                 if '%(serialized_options)' in r), None)
+                if tmpl_row and len(tmpl_row % tmpl_ctx) > 80:
+                    cmt = '# ' if tmpl_row[4] == '#' else ''
+                    joiner = ',\n    %s    ' % cmt
+                    tmpl_ctx['serialized_options'] = \
+                        '\n    %s    %s\n    %s' \
+                        % (cmt, joiner.join(options), cmt)
+                kwargs['code'] += FIELD_TMPL[tmpl_key] % tmpl_ctx
 
     def build_code(self):
         model_options = get_opt(self.model_name)
@@ -279,7 +340,7 @@ class Model:
                                  GLOBAL_MODEL_OPTIONS.get('meta', []))]
         if self.doc and not any(option for option in meta
                                 if option.startswith('verbose_name = ')):
-            meta.append('verbose_name = "%s"' % self.doc)
+            meta.append('verbose_name = %s' % stringify(self.doc))
         if len(meta):
             meta = '\n\n    class Meta:\n%s' % '\n'.join('        %s' % x
                                                          for x in meta)
@@ -377,11 +438,14 @@ class Model:
                 "add_reverse_field called without one_to_one or one_to_many"
             )
         self.builder.make_model(rel, ct2_def, add_fields=[fk])
-        self.add_field(dotted_name=dotted_name, name=name,
-                       options=[get_model_for_type(rel), 'verbose_name="%s"' % get_doc(el_def, name, self.model_name)],
-                       reverse_id_name=reverse_name + "_id", **kwargs)
+        self.add_field(dotted_name=dotted_name,
+                       name=name,
+                       doc=[get_doc(el_def, name, self.model_name)],
+                       options=[get_model_for_type(rel)],
+                       reverse_id_name=reverse_name + "_id",
+                       **kwargs)
 
-    def get(self, dotted_name=None, name=None):
+    def get(self, dotted_name=None, name=None, **kwargs):
         if dotted_name and name:
             for f in self.fields:
                 if f.get('dotted_name') == dotted_name and \
@@ -409,9 +473,12 @@ class XSDModelBuilder:
         restrict_def = xpath(st_def, "xs:restriction")[0]
         basetype = restrict_def.get("base")
         try:
-            parent = BASETYPE_FIELD_MAP[basetype]
+            doc, parent, options = (get_doc(st_def, None, None),
+                                    BASETYPE_FIELD_MAP[basetype],
+                                    {})
         except KeyError:
-            return self.get_field_data_from_type(basetype)
+            doc, parent, options = self.get_field_data_from_type(basetype)
+        assert type(options) is dict, "options is not a dict"
 
         length = xpath(restrict_def, "xs:length/@value") or xpath(restrict_def, "xs:maxLength/@value")
         pattern = xpath(restrict_def, "xs:pattern/@value")
@@ -428,7 +495,6 @@ class XSDModelBuilder:
                 min_inclusive = parsedate(min_inclusive[0])
             if max_inclusive:
                 max_inclusive = parsedate(max_inclusive[0])
-        options = {}
         validators = []
         if length:
             options['max_length'] = int(length[0]) * GLOBAL_MODEL_OPTIONS.get('charfield_max_length_factor', 1)
@@ -462,7 +528,6 @@ class XSDModelBuilder:
         if len(validators):
             options['validators'] = '[%s]' % ', '.join('validators.%s' % x
                                                        for x in validators)
-        doc = get_doc(st_def, None, None)
         if parent == 'IntegerField' and 'max_length' in options:
             del options['max_length']
         if parent == 'CharField' and int(options.get('max_length', 1000)) > 500:
@@ -530,9 +595,9 @@ class XSDModelBuilder:
 
         if doc:
             if '\n' in doc:
-                code += '    description = ("%s")\n\n' % doc
+                code += '    description = (%s)\n\n' % stringify(doc)
             else:
-                code += '    description = "%s"\n\n' % doc
+                code += '    description = %s\n\n' % stringify(doc)
 
         if len(options):
             code += '    def __init__(self, *args, **kwargs):\n' + \
@@ -579,21 +644,40 @@ class XSDModelBuilder:
         return (seq_def[0] if seq_def else None,
                 choice_def[0] if choice_def else None)
 
-    def write_seq_or_choice(self, seq_or_choice, typename, prefix='', attrs=None, null=False, is_root=False):
+    def write_seq_or_choice(self, seq_or_choice, typename,
+                            prefix='',
+                            doc_prefix='',
+                            attrs=None,
+                            null=False,
+                            is_root=False):
         seq_def, choice_def = seq_or_choice
         if choice_def is not None:
             fields = self.models[typename].fields
             n_start = len(fields)
-            self.make_fields(typename, choice_def, prefix=prefix, attrs=attrs, null=True, is_root=is_root)
+            self.make_fields(typename, choice_def,
+                             prefix=prefix,
+                             doc_prefix=doc_prefix,
+                             attrs=attrs,
+                             null=True,
+                             is_root=is_root)
             if len(fields) > n_start:
                 fields[n_start]['code'] = ('    # xs:choice start\n' +
                                            fields[n_start]['code'])
                 fields[-1]['code'] += '\n    # xs:choice end'
         elif seq_def is not None:
-            self.make_fields(typename, seq_def, prefix=prefix, attrs=attrs, null=null, is_root=is_root)
+            self.make_fields(typename, seq_def,
+                             prefix=prefix,
+                             doc_prefix=doc_prefix,
+                             attrs=attrs,
+                             null=null,
+                             is_root=is_root)
         return ''
 
-    def write_attributes(self, ct_def, typename, prefix='', attrs=None, null=False):
+    def write_attributes(self, ct_def, typename,
+                         prefix='',
+                         doc_prefix='',
+                         attrs=None,
+                         null=False):
         if ct_def is None:
             return
         attr_defs = xpath(ct_def, "xs:attribute")
@@ -601,11 +685,12 @@ class XSDModelBuilder:
             for attr_def in attr_defs:
                 attr_name = attr_def.get("name")
                 dotted_name = '%s@%s' % (prefix, attr_name)
-                name = dotted_name.replace('@', '').replace('.', '_')
+                name = '%s%s' % (prefix.replace('.', '_'), attr_name)
                 use_required = (attr_def.get("use") == "required")
                 self.make_a_field(typename, name, dotted_name,
                                   attr_def=attr_def,
                                   prefix=prefix,
+                                  doc_prefix=doc_prefix,
                                   attrs=attrs,
                                   null=null or not use_required)
 
@@ -638,7 +723,13 @@ class XSDModelBuilder:
         rel = ct2_def.get("name") or ('%s.%s' % (typename, name))
         return rel, ct2_def
 
-    def make_a_field(self, typename, name, dotted_name, el_def=None, attr_def=None, prefix='', attrs=None, null=False):
+    def make_a_field(self, typename, name, dotted_name,
+                     el_def=None,
+                     attr_def=None,
+                     prefix='',
+                     doc_prefix='',
+                     attrs=None,
+                     null=False):
         model_name = get_model_for_type(typename)
         this_model = self.models[typename]
         model = get_opt(model_name, typename)
@@ -659,6 +750,9 @@ class XSDModelBuilder:
                 coalesced_dotted_name = coalesce_target
             name = coalesce_target
 
+        doc = doc_prefix + (get_doc(el_attr_def, name, model_name) or
+                            "UNDOCUMENTED")
+
         if match(name, model, 'many_to_many_fields'):
             try:
                 rel = model.get('many_to_many_field_overrides', {})[name]
@@ -667,7 +761,11 @@ class XSDModelBuilder:
                 rel, ct2_def = self.get_n_to_many_relation(typename, name,
                                                            el_def)
             self.make_model(rel, ct2_def)
-            this_model.add_field(dotted_name=dotted_name, name=name, django_field='models.ManyToManyField', options=[get_model_for_type(rel), 'verbose_name="%s"' % get_doc(el_def, name, model_name)])
+            this_model.add_field(dotted_name=dotted_name,
+                                 name=name,
+                                 django_field='models.ManyToManyField',
+                                 doc=[doc],
+                                 options=[get_model_for_type(rel)])
             return
 
         elif match(name, model, 'one_to_many_fields'):
@@ -689,7 +787,7 @@ class XSDModelBuilder:
 
         elif match(name, model, 'json_fields'):
             if not match(name, model, 'drop_after_processing_fields'):
-                attrs[coalesced_dotted_name] = get_doc(el_attr_def, name, model_name)
+                attrs[coalesced_dotted_name] = doc
             return
 
         if el_def:
@@ -701,6 +799,7 @@ class XSDModelBuilder:
             if (ct2_def is not None and flatten_prefix) or flatten:
                 o = {
                     'prefix': '%s.' % dotted_name,
+                    'doc_prefix': '%s::' % doc,
                     'attrs': attrs,
                 }
                 if ct2_def is not None:
@@ -774,12 +873,6 @@ class XSDModelBuilder:
                      'options': field.get('options', [])}
 
         options = field.get('options', [])
-        doc = get_doc(el_attr_def, name, model_name)
-        if doc:
-            if field['name'] in ('models.ForeignKey', 'models.OneToOneField'):
-                options.append('verbose_name="%s"' % doc)
-            else:
-                options[:0] = ['"%s"' % doc]
 
         new_null = null or match(name, model, 'null_fields')
         if new_null:
@@ -816,6 +909,7 @@ class XSDModelBuilder:
 
         this_model.add_field(dotted_name=dotted_name,
                              name=name,
+                             doc=[doc],
                              django_field=field['name'],
                              options=options,
                              coalesce=coalesce_target)
@@ -823,11 +917,13 @@ class XSDModelBuilder:
             seq_or_choice2_def = self.get_seq_or_choice(ext2_defs[0])
             self.write_seq_or_choice(seq_or_choice2_def, typename,
                                      prefix=new_prefix,
+                                     doc_prefix=doc_prefix,
                                      attrs=attrs,
                                      null=null)
 
     def make_fields(self, typename, seq_def,
                     prefix='',
+                    doc_prefix='',
                     attrs=None,
                     null=False,
                     is_root=False):
@@ -835,16 +931,18 @@ class XSDModelBuilder:
         for choice_def in xpath(seq_def, "xs:choice"):
             self.write_seq_or_choice((None, choice_def), typename,
                                      prefix=prefix,
+                                     doc_prefix=doc_prefix,
                                      attrs=attrs,
                                      null=null)
         for el_def in xpath(seq_def, "xs:element"):
             el_name = el_def.get("name")
             dotted_name = prefix + el_name
-            name = dotted_name.replace('.', '_')
+            name = prefix.replace('.', '_') + el_name
 
             self.make_a_field(typename, name, dotted_name,
                               el_def=el_def,
                               prefix=prefix,
+                              doc_prefix=doc_prefix,
                               attrs=attrs,
                               null=null or get_null(el_def))
 
@@ -895,7 +993,11 @@ class XSDModelBuilder:
                 ct_def = ct_defs[0]
 
             doc = get_doc(ct_def, None, None)
-            this_model.doc = doc
+            if not doc:
+                parent_el = self.parent_map[ct_def]
+                if parent_el.tag.endswith("element"):
+                    doc = get_doc(parent_el, None, None)
+            this_model.doc = [doc] if doc else None
 
             self.write_attributes(ct_def, typename)
 
@@ -978,7 +1080,7 @@ class XSDModelBuilder:
             if f.get('django_field') in ('models.ForeignKey',
                                          'models.OneToOneField',
                                          'models.ManyToManyField'):
-                if not f['options'][0].startswith('"'):
+                if not f['options'][0].startswith("'"):
                     deps.append(f['options'][0])
         this_model.deps = list(set(deps + (this_model.deps or [])))
 
@@ -1005,6 +1107,11 @@ class XSDModelBuilder:
                 self.make_model(typename)
 
     def merge_models(self):
+        def are_coalesced(field1, field2):
+            return any('coalesce' in f1 and
+                       f2.get('coalesce', f2.get('name')) == f1['coalesce']
+                       for f1, f2 in [(field1, field2), (field2, field1)])
+
         def merge_attrs(m1, f1, m2, f2):
             attrs1 = f1['attrs']
             attrs2 = f2['attrs']
@@ -1021,15 +1128,100 @@ class XSDModelBuilder:
             f2['attrs'] = attrs
             m2.build_field_code(f2, force=True)
 
+        def merge_field_docs(model1, field1, model2, field2):
+            if 'doc' not in field1 and 'doc' not in field2:
+                return
+            merged = sorted(set(field1['doc'] + field2['doc']))
+            if field1['doc'] != merged:
+                field1['doc'] = merged
+                model1.build_field_code(field1, force=True)
+            if field2['doc'] != merged:
+                field2['doc'] = merged
+                if model2:
+                    model2.build_field_code(field2, force=True)
+
+        def merge_field(name, dotted_name, containing_models, models):
+            omnipresent = (len(containing_models) == len(models))
+
+            containing_opts = (m.get(dotted_name=dotted_name,
+                                     name=name).get('options', [])
+                               for m in containing_models)
+            if not omnipresent or any('null=True' in o
+                                      for o in containing_opts):
+                if any('primary_key=True' in o for o in containing_opts):
+                    logger.warning("Warning: %s is a primary key but wants"
+                                   " null=True in %s",
+                                   (name, dotted_name), merged_typename)
+                else:
+                    for m in containing_models:
+                        f = m.get(dotted_name=dotted_name, name=name)
+                        if 'options' not in f:
+                            f['options'] = []
+                        if 'null=True' not in f['options']:
+                            f['options'].append('null=True')
+                            m.build_field_code(f, force=True)
+
+            first_model_field = None
+            for m in containing_models:
+                f = m.get(dotted_name=dotted_name, name=name)
+                if not first_model_field:
+                    first_model_field = f
+                    first_model = m
+                else:
+                    if 'name' in f and f['name'] == 'attrs':
+                        merge_attrs(first_model, first_model_field, m, f)
+                    else:
+                        unify_special_cases(f, first_model_field)
+                    merge_field_docs(first_model, first_model_field, m, f)
+                    if normalize_code(f['code']) != \
+                            normalize_code(first_model_field['code']):
+                        force_list = get_opt(m.model_name, m.type_name) \
+                            .get('ignore_merge_mismatch_fields', ())
+                        if f.get('dotted_name') not in force_list:
+                            raise Exception(
+                                "first field in type %s: %s,\n"
+                                "second field in type %s: %s"
+                                % (containing_models[0].type_name,
+                                   first_model_field['code'],
+                                   m.type_name,
+                                   f['code'])
+                            )
+
+            f = first_model_field
+
+            if not omnipresent and not f.get('drop', False):
+                if len(containing_models) > len(models) / 2:
+                    lacking_models = set(models) - set(containing_models)
+                    f['code'] = '    # NULL in %s\n%s' % (
+                        ','.join(sorted(m.type_name for m in lacking_models)),
+                        f['code'],
+                    )
+                else:
+                    f['code'] = '    # Only in %s\n%s' % (
+                        ','.join(sorted(m.type_name
+                                        for m in containing_models)),
+                        f['code'],
+                    )
+            return f
+
         def merge_model_docs(models):
-            docs = sorted(set(m.doc for m in models if m.doc))
+            docs = sorted(set(cat(m.doc for m in models if m.doc)))
             if len(docs) == 0:
                 return None
-            if len(docs) == 1:
-                return docs[0]
-            return ' | '.join(m.doc for m in models if m.doc)
+            return docs
 
         def merge_model_parents(models, merged_models):
+            def fix_related_name(m, f):
+                old_relname_prefix = 'related_name="%s_as_' \
+                    % camelcase_to_underscore(m.model_name)
+                for j, option in enumerate(f.get('options', [])):
+                    if option.startswith(old_relname_prefix):
+                        f['options'][j] = 'related_name="%s_as_%s' \
+                            % (camelcase_to_underscore(parents[1]),
+                               option[len(old_relname_prefix):])
+                        m.build_field_code(f, force=True)
+                        break
+
             def check_fields(parent_model, parent_name, m, f, f1):
                 parent_opts = get_opt(parent_model.model_name,
                                       parent_model.type_name)
@@ -1050,16 +1242,11 @@ class XSDModelBuilder:
                     if m.parent is None:
                         inherited_fields = []
                         for i, f in enumerate(m.fields):
-                            f1 = parent_model.get(dotted_name=f.get('dotted_name'), name=f.get('name'))
+                            f1 = parent_model.get(**f)
                             if f1:
                                 if f1.get('name') == 'attrs':
                                     merge_attrs(parent_model, f1, m, f)
-                                old_relname_prefix = 'related_name="%s_as_' % camelcase_to_underscore(m.model_name)
-                                for j, option in enumerate(f.get('options', [])):
-                                    if option.startswith(old_relname_prefix):
-                                        f['options'][j] = 'related_name="%s_as_%s' % (camelcase_to_underscore(parents[1]), option[len(old_relname_prefix):])
-                                        m.build_field_code(f, force=True)
-                                        break
+                                fix_related_name(m, f)
                                 check_fields(parent_model, parents[1], m, f, f1)
                                 inherited_fields.insert(0, i)
                         for i in inherited_fields:
@@ -1073,7 +1260,7 @@ class XSDModelBuilder:
             s = re.sub(r'\n?    # (NULL|Only) in [^\n]+\n', '', s)
             s = re.sub(r'\n?    # [^\n]+ field coalesces to [^\n]+\n', '', s)
             s = re.sub(r'\n?    # The original [^\n]+\n', '', s)
-            s = re.sub(r', related_name="[^"]+"', '', s)
+            s = re.sub(r',\s+(#\s+)?related_name="[^"]+"', '', s)
             return s
 
         def unify_special_cases(field1, field2):
@@ -1130,7 +1317,7 @@ class XSDModelBuilder:
                                                    if m.deps)))
 
                 field_ids = sorted(set((f.get('coalesce', f.get('name')),
-                                        #None if 'coalesce' in f else f.get('dotted_name'))
+                                        ('coalesce' in f),
                                         f.get('dotted_name'))
                                        for f in cat(m.fields for m in models)))
                 field_ids = [(f[0], f[2], [m for m in models
@@ -1138,51 +1325,21 @@ class XSDModelBuilder:
                                                     name=f[0])])
                              for f in field_ids]
 
+                prev = None
                 for name, dotted_name, containing_models in field_ids:
-                    omnipresent = (len(containing_models) == len(models))
 
-                    if not omnipresent or any('null=True' in m.get(dotted_name=dotted_name, name=name).get('options', [])
-                                              for m in containing_models):
-                        if any('primary_key=True' in m.get(dotted_name=dotted_name, name=name).get('options', [])
-                               for m in containing_models):
-                            print "Warning: %s is a primary key but wants null=True in %s" % ((name, dotted_name), merged_typename)
-                        else:
-                            for m in containing_models:
-                                f = m.get(dotted_name=dotted_name, name=name)
-                                if 'options' not in f:
-                                    f['options'] = []
-                                if 'null=True' not in f['options']:
-                                    f['options'].append('null=True')
-                                    m.build_field_code(f, force=True)
+                    f = merge_field(name, dotted_name, containing_models,
+                                    models)
 
-                    first_model_field = None
-                    for m in containing_models:
-                        f = m.get(dotted_name=dotted_name, name=name)
-                        if not first_model_field:
-                            first_model_field = f
-                        else:
-                            if 'name' in f and f['name'] == 'attrs':
-                                merge_attrs(containing_models[0], first_model_field, m, f)
-                            else:
-                                unify_special_cases(f, first_model_field)
-                            if normalize_code(f['code']) != normalize_code(first_model_field['code']):
-                                force_list = get_opt(m.model_name, m.type_name) \
-                                    .get('ignore_merge_mismatch_fields', ())
-                                if f.get('dotted_name') not in force_list:
-                                    raise Exception("first field in type %s: %s, second field in type %s: %s" % (containing_models[0].type_name, first_model_field['code'], m.type_name, f['code']))
-
-                    f = first_model_field
-
-                    if len(merged_model.fields) and 'coalesce' in f and merged_model.fields[-1].get('coalesce') == f['coalesce']:
-                        # The field coalesces with the previous one, so keep only comments
-                        f['code'] = '\n'.join(line for line in f['code'].split('\n') if line.startswith('    #'))
-
-                    if not omnipresent and not f.get('drop', False):
-                        if len(containing_models) > len(models) / 2:
-                            f['code'] = '    # NULL in %s\n%s' % (','.join(sorted(m.type_name for m in set(models) - set(containing_models))), f['code'])
-                        else:
-                            f['code'] = '    # Only in %s\n%s' % (','.join(sorted(m.type_name for m in containing_models)), f['code'])
-
+                    if prev and are_coalesced(prev, f):
+                        # The field coalesces with the previous one, so
+                        # keep only comments and docs
+                        comment_lines = (line for line in f['code'].split('\n')
+                                         if line.startswith('    #'))
+                        f['code'] = '\n'.join(comment_lines)
+                        merge_field_docs(merged_model, prev, None, f)
+                    else:
+                        prev = f
                     merged_model.fields.append(f)
 
                 merged_model.doc = merge_model_docs(models)
