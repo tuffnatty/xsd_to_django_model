@@ -516,7 +516,51 @@ class XSDModelBuilder:
             el_def = self.parent_map[el_def]
         return ''
 
-    def get_field_data_from_simpletype(self, st_def):
+    def get_min_max(self, parent, restrict_def, validators,):
+        def parsedate(d):
+            return ['datetime.date(%d, %d, %d)' % (int(d[0:4]), int(d[5:7]),
+                                                   int(d[8:10]))]
+        min_inclusive = xpath(restrict_def, "xs:minInclusive/@value")
+        max_inclusive = xpath(restrict_def, "xs:maxInclusive/@value")
+        if parent == 'DateField':
+            if min_inclusive:
+                min_inclusive = parsedate(min_inclusive[0])
+            if max_inclusive:
+                max_inclusive = parsedate(max_inclusive[0])
+        if min_inclusive:
+            validators.append('MinValueValidator(%s)' % min_inclusive[0])
+        if max_inclusive:
+            validators.append('MaxValueValidator(%s)' % max_inclusive[0])
+
+    def get_max_length(self, options, restrict_def, pattern, enums):
+        l = None
+        length = (xpath(restrict_def, "xs:length/@value") or
+                  xpath(restrict_def, "xs:maxLength/@value"))
+        if length:
+            l = length[0]
+        elif pattern:
+            match = re.match(r'\\d\{(\d+,)?(\d+)\}$', pattern)
+            if match:
+                l = match.group(2)
+        if l:
+            options['max_length'] = int(l) * \
+                    GLOBAL_MODEL_OPTIONS.get('charfield_max_length_factor', 1)
+        elif enums:
+            options['max_length'] = max([len(x) for x in enums])
+
+    def get_digits_options(self, restrict_def, options, parent):
+        fraction_digits = xpath(restrict_def, "xs:fractionDigits/@value")
+        total_digits = xpath(restrict_def, "xs:totalDigits/@value")
+        if fraction_digits:
+            options['decimal_places'] = fraction_digits[0]
+        if total_digits:
+            if parent == 'DecimalField':
+                options['max_digits'] = total_digits[0]
+            elif parent == 'IntegerField' and int(total_digits[0]) > 9:
+                parent = 'BigIntegerField'
+        return parent
+
+    def get_field_data_from_simpletype(self, st_def, el_def=None):
         restrict_def = xpath(st_def, "xs:restriction")[0]
         basetype = restrict_def.get("base")
         try:
@@ -529,56 +573,28 @@ class XSDModelBuilder:
             doc, parent, options = self.get_field_data_from_type(basetype)
         assert type(options) is dict, "options is not a dict"
 
-        length = xpath(restrict_def, "xs:length/@value") or xpath(restrict_def, "xs:maxLength/@value")
         pattern = xpath(restrict_def, "xs:pattern/@value")
         enums = xpath(restrict_def, "xs:enumeration/@value")
         min_length = xpath(restrict_def, "xs:minLength/@value")
-        fraction_digits = xpath(restrict_def, "xs:fractionDigits/@value")
-        total_digits = xpath(restrict_def, "xs:totalDigits/@value")
-        min_inclusive = xpath(restrict_def, "xs:minInclusive/@value")
-        max_inclusive = xpath(restrict_def, "xs:maxInclusive/@value")
-        if parent == 'DateField':
-            def parsedate(d):
-                return ['datetime.date(%d, %d, %d)' % (int(d[0:4]), int(d[5:7]), int(d[8:10]))]
-            if min_inclusive:
-                min_inclusive = parsedate(min_inclusive[0])
-            if max_inclusive:
-                max_inclusive = parsedate(max_inclusive[0])
         validators = []
-        if length:
-            options['max_length'] = int(length[0]) * GLOBAL_MODEL_OPTIONS.get('charfield_max_length_factor', 1)
+        self.get_min_max(parent, restrict_def, validators)
         if min_length:
             if min_length[0] == '1':
                 options['blank'] = 'False'
             else:
                 validators.append('MinLengthValidator(%s)' % min_length[0])
-        if min_inclusive:
-            validators.append('MinValueValidator(%s)' % min_inclusive[0])
-        if max_inclusive:
-            validators.append('MaxValueValidator(%s)' % max_inclusive[0])
         if pattern:
             pattern = pattern[0]
             validators.append('RegexValidator(r"%s")' % pattern)
-            match = re.match(r'\\d\{(\d+,)?(\d+)\}$', pattern)
-            if match and 'max_length' not in options:
-                options['max_length'] = int(match.group(2)) * GLOBAL_MODEL_OPTIONS.get('charfield_max_length_factor', 1)
+        if parent != 'IntegerField':
+            self.get_max_length(options, restrict_def, pattern, enums)
         if enums:
-            if 'max_length' not in options:
-                options['max_length'] = max([len(x) for x in enums])
-            options['choices'] = '[%s]' % ', '.join(['("%s", "%s")' % (x, x) for x in enums])
-        if fraction_digits:
-            options['decimal_places'] = fraction_digits[0]
-        if total_digits:
-            if parent == 'DecimalField':
-                options['max_digits'] = total_digits[0]
-            elif parent == 'IntegerField':
-                if int(total_digits[0]) > 9:
-                    parent = 'BigIntegerField'
+            options['choices'] = '[%s]' % ', '.join('("%s", "%s")' % (x, x)
+                                                    for x in enums)
+        parent = self.get_digits_options(restrict_def, options, parent)
         if len(validators):
             options['validators'] = '[%s]' % ', '.join('validators.%s' % x
                                                        for x in validators)
-        if parent == 'IntegerField' and 'max_length' in options:
-            del options['max_length']
         if parent == 'CharField' and int(options.get('max_length', 1000)) > 500:
             # Some data does not fit, even if XSD says it should
             parent = 'TextField'
@@ -979,6 +995,13 @@ class XSDModelBuilder:
                     null=False,
                     is_root=False):
         this_model = self.models[typename]
+        null = (null or get_null(seq_def))
+        for seq2_def in xpath(seq_def, "xs:sequence"):
+            self.write_seq_or_choice((seq2_def, None), typename,
+                                     prefix=prefix,
+                                     doc_prefix=doc_prefix,
+                                     attrs=attrs,
+                                     null=null)
         for choice_def in xpath(seq_def, "xs:choice"):
             self.write_seq_or_choice((None, choice_def), typename,
                                      prefix=prefix,
