@@ -459,14 +459,62 @@ class Model:
         return None
 
 
+def parse_xmlns(file, ns_map):
+    events = "start", "start-ns"
+    root = None
+    for event, elem in etree.iterparse(file, events):
+        if event == "start-ns":
+            ns_map.append(elem)
+        elif event == "start":
+            if root is None:
+                root = elem
+    return etree.ElementTree(root)
+
+
 class XSDModelBuilder:
 
     def __init__(self, infile):
         self.types = set()
         self.models = {}
         self.fields = {}
-        self.tree = etree.parse(infile)
         self.have_json = False
+        ns_map = []
+        self.tree = parse_xmlns(infile, ns_map)
+        root = self.tree.getroot()
+        ns_list = set()
+        while len(xpath(self.tree, "//xs:import[@schemaLocation]")):
+            for imp in xpath(self.tree, "//xs:import[@schemaLocation]"):
+                ns_uri = imp.get('namespace')
+                ns = None
+                for k, v in ns_map:
+                    if v == ns_uri:
+                        ns = k + ':'
+                        break
+                if not ns or ns not in ns_list:
+                    loc = imp.get('schemaLocation')
+                    subtree = etree.parse(os.path.join(os.path.dirname(infile),
+                                                       loc))
+                    subroot = subtree.getroot()
+                    if ns:
+                        for el in subroot:
+                            name = el.get('name')
+                            if name:
+                                el.set('name', ns + name)
+                        ns_list.add(ns)
+                    root.extend(subroot)
+                root.remove(imp)
+        self.parent_map = {c: p for p in self.tree.iter() for c in p}
+
+    def get_parent_ns(self, el_def):
+        root = self.tree.getroot()
+        while el_def != root:
+            if el_def.tag.endswith(("}complexType", "}simpleType")):
+                name = el_def.get('name')
+                if name and ':' in name:
+                    ns, _ = name.split(':')
+                    return ns + ':'
+            el_def = self.parent_map[el_def]
+        return ''
 
     def get_field_data_from_simpletype(self, st_def):
         restrict_def = xpath(st_def, "xs:restriction")[0]
@@ -476,6 +524,8 @@ class XSDModelBuilder:
                                     BASETYPE_FIELD_MAP[basetype],
                                     {})
         except KeyError:
+            if ':' not in basetype:
+                basetype = self.get_parent_ns(st_def) + basetype
             doc, parent, options = self.get_field_data_from_type(basetype)
         assert type(options) is dict, "options is not a dict"
 
@@ -570,6 +620,8 @@ class XSDModelBuilder:
                     'options': ['%s=%s' % (k, v) for k, v in options.items()],
                 }
             else:
+                if ':' not in typename:
+                    typename = self.get_parent_ns(el_def) + typename
                 doc, parent, options = self.get_field_data_from_type(typename)
                 if parent is None:
                     if typename in BASETYPE_FIELD_MAP:
@@ -586,7 +638,8 @@ class XSDModelBuilder:
         return self.fields[typename]
 
     def make_field(self, typename, doc, parent, options):
-        name = '%sField' % typename.replace('.', '_')
+        name = '%sField' \
+            % typename.replace(':', '_').replace('.', '_').replace('-', '_')
         code = 'class %(name)s(models.%(parent)s):\n' % {
             'name': name,
             'parent': parent,
@@ -622,13 +675,12 @@ class XSDModelBuilder:
                                 "xs:extension[count(*)=0]/@base")[0]
             except IndexError:
                 pass
-        if el_type:
-            el_type = strip_ns(el_type)
         return el_type
 
     def get_element_complex_type(self, el_def):
         el_type = self.get_element_type(el_def)
         if el_type:
+            el_type = self.get_parent_ns(el_def) + el_type
             result = xpath(self.tree, "//xs:complexType[@name=$n]", n=el_type)
         else:
             result = xpath(el_def, "xs:complexType")
@@ -952,8 +1004,6 @@ class XSDModelBuilder:
             self.have_json = True
 
     def make_model(self, typename, ct_def=None, add_fields=None):
-        typename = strip_ns(typename)
-
         if not get_model_for_type(typename):
             logger.warning('Automatic model name: %s. Consider adding it to'
                            ' TYPE_MODEL_MAP\n',
@@ -1028,6 +1078,8 @@ class XSDModelBuilder:
                             "no base attribute in extension in %s complexType"
                             % typename
                         )
+                    if ':' not in parent:
+                        parent = self.get_parent_ns(ext_def) + parent
 
             if not parent:
                 parent_field = model.get('parent_field')
@@ -1048,17 +1100,16 @@ class XSDModelBuilder:
         if parent:
             if model.get('include_parent_fields'):
                 parent_def = xpath(self.tree, "//xs:complexType[@name=$n]",
-                                   n=strip_ns(parent))[0]
+                                   n=parent)[0]
                 self.write_attributes(parent_def, typename)
                 self.write_seq_or_choice(self.get_seq_or_choice(parent_def),
                                          typename, attrs=attrs)
                 parent = None
             else:
-                stripped_parent = strip_ns(parent)
-                self.make_model(stripped_parent)
+                self.make_model(parent)
                 if not this_model.parent_model:
-                    this_model.parent_model = self.models[stripped_parent]
-                parent_model_name = get_model_for_type(stripped_parent)
+                    this_model.parent_model = self.models[parent]
+                parent_model_name = get_model_for_type(parent)
                 deps.append(parent_model_name)
                 if not this_model.parent:
                     this_model.parent = parent_model_name
