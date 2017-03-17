@@ -24,6 +24,7 @@ directory, it will be imported.
 
 
 import codecs
+from copy import deepcopy
 from itertools import chain
 import json
 import logging
@@ -112,11 +113,33 @@ def get_merge_for_type(name):
     return False
 
 
+def get_opt(model_name, typename=None):
+    opt = MODEL_OPTIONS.get(model_name, {})
+    if not typename:
+        return opt
+    for opt2 in (o for pattern, o in opt.get('if_type', {}).iteritems()
+                 if re.match(pattern + '$', typename)):
+        opt = deepcopy(opt)
+        for k, v in opt2.iteritems():
+            try:
+                v1 = opt[k]
+            except KeyError:
+                opt[k] = v
+            else:
+                if type(v1) == dict and type(v) == dict:
+                    opt[k] = dict(v1, **v)
+                elif isinstance(v1, basestring) and isinstance(v, basestring):
+                    opt[k] = v
+                else:
+                    opt[k] = list(set(chain(v1, v)))
+    return opt
+
+
 def get_doc(el_def, name, model_name):
     name = name or el_def.get('name')
     if model_name:
         try:
-            return MODEL_OPTIONS.get(model_name, {})['field_docs'][name].replace('"', '\\"')
+            return get_opt(model_name)['field_docs'][name]
         except KeyError:
             pass
     doc = xpath(el_def, "xs:annotation/xs:documentation")
@@ -152,8 +175,8 @@ def coalesce(name, model):
 
 
 def match(name, model, kind):
-    fulltuple = model.get(kind, ()) + GLOBAL_MODEL_OPTIONS.get(kind, ())
-    for expr in fulltuple:
+    for expr in chain(model.get(kind, ()),
+                      GLOBAL_MODEL_OPTIONS.get(kind, ())):
         if re.match(expr + '$', name):
             return True
     return False
@@ -170,6 +193,12 @@ def override_field_options(field_name, options, model_options):
                     del options[n]
                     break
         options += add_field_options[field_name]
+
+
+def override_field_class(model_name, typename, name):
+    return get_opt(model_name, typename) \
+        .get('override_field_class', {}) \
+        .get(name)
 
 
 class Model:
@@ -243,7 +272,7 @@ class Model:
                                                   serialized_options=serialized_options)
 
     def build_code(self):
-        model_options = MODEL_OPTIONS.get(self.model_name, {})
+        model_options = get_opt(self.model_name)
 
         meta = [template % {'model_lower': self.model_name.lower()}
                 for template in (model_options.get('meta', []) +
@@ -295,7 +324,9 @@ class Model:
                             return
                     m = m.parent_model
 
-        if 'name' in kwargs and match(kwargs['name'], MODEL_OPTIONS.get(self.model_name, {}), 'drop_after_processing_fields'):
+        if 'name' in kwargs and match(kwargs['name'],
+                                      get_opt(self.model_name, self.type_name),
+                                      'drop_after_processing_fields'):
             return
 
         if 'django_field' in kwargs:
@@ -610,7 +641,7 @@ class XSDModelBuilder:
     def make_a_field(self, typename, name, dotted_name, el_def=None, attr_def=None, prefix='', attrs=None, null=False):
         model_name = get_model_for_type(typename)
         this_model = self.models[typename]
-        model = MODEL_OPTIONS.get(model_name, {})
+        model = get_opt(model_name, typename)
         el_attr_def = attr_def if el_def is None else el_def
         el_type = self.get_element_type(el_attr_def)
         coalesced_dotted_name = dotted_name
@@ -737,11 +768,10 @@ class XSDModelBuilder:
                                    el_attr_def,
                                    '%s.%s' % (typename, name))
 
-        try:
-            field = {'name': model.get('override_field_class', {})[name],
+        over_class = override_field_class(model_name, typename, name)
+        if over_class:
+            field = {'name': over_class,
                      'options': field.get('options', [])}
-        except KeyError:
-            pass
 
         options = field.get('options', [])
         doc = get_doc(el_attr_def, name, model_name)
@@ -840,7 +870,7 @@ class XSDModelBuilder:
 
         model_name = get_model_for_type(typename)
 
-        model = MODEL_OPTIONS.get(model_name, {})
+        model = get_opt(model_name, typename)
 
         sys.stderr.write('Making model for type %s\n' % typename)
 
@@ -1000,6 +1030,19 @@ class XSDModelBuilder:
             return ' | '.join(m.doc for m in models if m.doc)
 
         def merge_model_parents(models, merged_models):
+            def check_fields(parent_model, parent_name, m, f, f1):
+                parent_opts = get_opt(parent_model.model_name,
+                                      parent_model.type_name)
+                if normalize_code(f1['code']) == normalize_code(f['code']) \
+                        or (f1.get('dotted_name')
+                            in parent_opts.get('ignore_merge_mismatch_fields',
+                                               ())):
+                    return
+                raise Exception(
+                    'different field code while merging:\n%s: %s;\n%s: %s'
+                    % (parent_name, f1['code'], m.model_name, f['code'])
+                )
+
             parents = sorted(set(m.parent for m in models))
             if parents[0] is None and len(parents) == 2:
                 parent_model = merged_models[parents[1]]
@@ -1017,13 +1060,8 @@ class XSDModelBuilder:
                                         f['options'][j] = 'related_name="%s_as_%s' % (camelcase_to_underscore(parents[1]), option[len(old_relname_prefix):])
                                         m.build_field_code(f, force=True)
                                         break
-                                if normalize_code(f1['code']) == normalize_code(f['code']) \
-                                        or (f1.get('dotted_name')
-                                            in MODEL_OPTIONS.get(parent_model.model_name, {}) \
-                                                    .get('ignore_merge_mismatch_fields', ())):
-                                    inherited_fields.insert(0, i)
-                                else:
-                                    raise Exception('different field code while merging %s: %s; %s: %s' % (parents[1], f1['code'], m.model_name, f['code']))
+                                check_fields(parent_model, parents[1], m, f, f1)
+                                inherited_fields.insert(0, i)
                         for i in inherited_fields:
                             del m.fields[i]
                 del parents[0]
@@ -1128,7 +1166,9 @@ class XSDModelBuilder:
                             else:
                                 unify_special_cases(f, first_model_field)
                             if normalize_code(f['code']) != normalize_code(first_model_field['code']):
-                                if f.get('dotted_name') not in MODEL_OPTIONS.get(m.model_name, {}).get('ignore_merge_mismatch_fields', ()):
+                                force_list = get_opt(m.model_name, m.type_name) \
+                                    .get('ignore_merge_mismatch_fields', ())
+                                if f.get('dotted_name') not in force_list:
                                     raise Exception("first field in type %s: %s, second field in type %s: %s" % (containing_models[0].type_name, first_model_field['code'], m.type_name, f['code']))
 
                     f = first_model_field
