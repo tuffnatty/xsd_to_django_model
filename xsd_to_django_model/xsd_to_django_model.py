@@ -5,7 +5,8 @@ xsd_to_django_model
 Generate Django models from an XSD schema description (and a bunch of hints).
 
 Usage:
-    xsd_to_django_model.py [-m <models_filename>] [-f <fields_filename>] [-j <mapping_filename>] <xsd_filename> <xsd_type>...
+    xsd_to_django_model.py [-m <models_filename>] [-f <fields_filename>]
+                           [-j <mapping_filename>] <xsd_filename> <xsd_type>...
     xsd_to_django_model.py -h | --help
 
 Options:
@@ -14,15 +15,18 @@ Options:
     -f <fields_filename>   Output fields filename [default: fields.py].
     -j <mapping_filename>  Output JSON mapping filename [default: mapping.json].
     <xsd_filename>         Input XSD schema filename.
-    <xsd_type>             XSD type (or an XPath query for XSD type) for which a Django model should be generated.
+    <xsd_type>             XSD type (or an XPath query for XSD type) for which
+                           a Django model should be generated.
 
-If you have xsd_to_django_model_settings.py in your PYTHONPATH or in the current directory, it will be imported.
+If you have xsd_to_django_model_settings.py in your PYTHONPATH or in the current
+directory, it will be imported.
 """
 
 
 import codecs
 from itertools import chain
 import json
+import logging
 import pdb
 import re
 import sys
@@ -31,16 +35,26 @@ import traceback
 from docopt import docopt
 from lxml import etree
 
-
-TYPE_MODEL_MAP = {}
-MODEL_OPTIONS = {}
-GLOBAL_MODEL_OPTIONS = {}
-TYPE_OVERRIDES = {}
-IMPORTS = ''
 try:
-    from xsd_to_django_model_settings import *
+    from xsd_to_django_model_settings import TYPE_MODEL_MAP
 except ImportError:
-    pass
+    TYPE_MODEL_MAP = {}
+try:
+    from xsd_to_django_model_settings import MODEL_OPTIONS
+except ImportError:
+    MODEL_OPTIONS = {}
+try:
+    from xsd_to_django_model_settings import GLOBAL_MODEL_OPTIONS
+except ImportError:
+    GLOBAL_MODEL_OPTIONS = {}
+try:
+    from xsd_to_django_model_settings import TYPE_OVERRIDES
+except ImportError:
+    TYPE_OVERRIDES = {}
+try:
+    from xsd_to_django_model_settings import IMPORTS
+except ImportError:
+    IMPORTS = ''
 
 BASETYPE_FIELD_MAP = {
     'xs:boolean': 'BooleanField',
@@ -58,7 +72,17 @@ BASETYPE_FIELD_MAP = {
 }
 NS = {'xs': "http://www.w3.org/2001/XMLSchema"}
 
-HEADER = '# THIS FILE IS GENERATED AUTOMATICALLY. DO NOT EDIT\n# -*- coding: utf-8 -*-\n\nfrom __future__ import unicode_literals\n\n'
+HEADER = ('# THIS FILE IS GENERATED AUTOMATICALLY. DO NOT EDIT\n'
+          '# -*- coding: utf-8 -*-\n\n'
+          'from __future__ import unicode_literals\n\n')
+
+
+logging.basicConfig(level=logging.INFO)
+logger = logging.getLogger(__name__)
+
+
+def cat(seq):
+    return tuple(chain.from_iterable(seq))
 
 
 def xpath(root, path, **kwargs):
@@ -78,6 +102,7 @@ def get_a_type_for_model(name):
         if '(' not in expr and sub in (name, plus_name):
             return expr
     return None
+
 
 def get_merge_for_type(name):
     for expr, sub in TYPE_MODEL_MAP.iteritems():
@@ -116,7 +141,8 @@ def camelcase_to_underscore(name):
 
 
 def coalesce(name, model):
-    fulldict = dict(model.get('coalesce_fields', {}), **GLOBAL_MODEL_OPTIONS.get('coalesce_fields', {}))
+    fulldict = dict(model.get('coalesce_fields', {}),
+                    **GLOBAL_MODEL_OPTIONS.get('coalesce_fields', {}))
     for expr, sub in fulldict.iteritems():
         match = re.match(expr + '$', name)
         if match:
@@ -133,7 +159,8 @@ def match(name, model, kind):
 
 
 def override_field_options(field_name, options, model_options):
-    add_field_options = dict(model_options.get('field_options', {}), **GLOBAL_MODEL_OPTIONS.get('field_options', {}))
+    add_field_options = dict(model_options.get('field_options', {}),
+                             **GLOBAL_MODEL_OPTIONS.get('field_options', {}))
     if field_name in add_field_options:
         for option in add_field_options[field_name]:
             option_key, _ = option.split('=')
@@ -145,6 +172,7 @@ def override_field_options(field_name, options, model_options):
 
 
 class Model:
+
     def __init__(self, builder, model_name, type_name):
         self.builder = builder
         self.model_name = model_name
@@ -197,10 +225,11 @@ class Model:
 
             if kwargs.get('coalesce'):
                 kwargs['code'] = '    # %(dotted_name)s field coalesces to %(coalesce)s\n' % kwargs
-                for f in self.fields:
-                    if 'coalesce' in f and f['coalesce'] == kwargs['coalesce'] and 'code' in f and ' = ' in f['code']:
-                        skip_code = True
-                        break
+                skip_code = any(('coalesce' in f and
+                                 f['coalesce'] == kwargs['coalesce'] and
+                                 'code' in f and
+                                 ' = ' in f['code'])
+                                for f in self.fields)
             else:
                 if 'coalesce' in kwargs:
                     del kwargs['coalesce']
@@ -216,11 +245,14 @@ class Model:
         model_options = MODEL_OPTIONS.get(self.model_name, {})
 
         meta = [template % {'model_lower': self.model_name.lower()}
-                for template in model_options.get('meta', []) + GLOBAL_MODEL_OPTIONS.get('meta', [])]
-        if self.doc and not any(option for option in meta if option.startswith('verbose_name = ')):
+                for template in (model_options.get('meta', []) +
+                                 GLOBAL_MODEL_OPTIONS.get('meta', []))]
+        if self.doc and not any(option for option in meta
+                                if option.startswith('verbose_name = ')):
             meta.append('verbose_name = "%s"' % self.doc)
         if len(meta):
-            meta = '\n\n    class Meta:\n%s' % '\n'.join('        %s' % x for x in meta)
+            meta = '\n\n    class Meta:\n%s' % '\n'.join('        %s' % x
+                                                         for x in meta)
         else:
             meta = ''
 
@@ -236,7 +268,8 @@ class Model:
         if not content:
             content = '    pass'
 
-        code = ('# Corresponds to XSD type[s]: %(typename)s\nclass %(name)s(%(parent)s):\n%(content)s\n\n' % {
+        code = ('# Corresponds to XSD type[s]: %(typename)s\n'
+                'class %(name)s(%(parent)s):\n%(content)s\n\n\n' % {
                      'typename': self.type_name,
                      'name': self.model_name,
                      'parent': self.parent or 'models.Model',
@@ -249,11 +282,16 @@ class Model:
             if django_field in ('models.ManyToManyField', 'models.ForeignKey'):
                 while m:
                     for f in m.fields:
-                        if f.get('django_field') == django_field:
-                            if f['options'][0] == kwargs['options'][0]:
-                                if f['name'] != kwargs['name']:
-                                    kwargs['options'].append('related_name="%s_as_%s"' % (camelcase_to_underscore(self.model_name), kwargs['name']))
-                                    return
+                        if f.get('django_field') == django_field and \
+                               f['options'][0] == kwargs['options'][0] and \
+                               f['name'] != kwargs['name']:
+                            kwargs['options'].append(
+                                'related_name="%s_as_%s"' % (
+                                    camelcase_to_underscore(self.model_name),
+                                    kwargs['name']
+                                )
+                            )
+                            return
                     m = m.parent_model
 
         if 'name' in kwargs and match(kwargs['name'], MODEL_OPTIONS.get(self.model_name, {}), 'drop_after_processing_fields'):
@@ -273,25 +311,39 @@ class Model:
 
         self.fields.append(kwargs)
 
-    def add_reverse_field(self, dotted_name=None, one_to_one=False, one_to_many=False, typename=None, name=None, el_def=None):
+    def add_reverse_field(self,
+                          dotted_name=None,
+                          one_to_one=False,
+                          one_to_many=False,
+                          typename=None,
+                          name=None,
+                          el_def=None):
         reverse_name = camelcase_to_underscore(self.model_name)
         fk = {
             'name': reverse_name,
-            'options': ['"%s"' % self.model_name, 'on_delete=models.CASCADE', 'related_name="%s"' % name],
+            'options': [
+                "'%s'" % self.model_name,
+                'on_delete=models.CASCADE',
+                'related_name="%s"' % name,
+            ],
         }
         if one_to_one:
             fk['django_field'] = 'models.OneToOneField'
-            rel, ct2_def = self.builder.get_n_to_one_relation(typename, name, el_def)
+            rel, ct2_def = self.builder.get_n_to_one_relation(typename,
+                                                              name, el_def)
             kwargs = {'one_to_one': True}
         elif one_to_many:
             fk['django_field'] = 'models.ForeignKey'
             if type(one_to_many) == bool:
-                rel, ct2_def = self.builder.get_n_to_many_relation(typename, name, el_def)
+                rel, ct2_def = self.builder.get_n_to_many_relation(typename,
+                                                                   name, el_def)
             else:
                 rel, ct2_def = (one_to_many, None)
             kwargs = {'one_to_many': True}
         else:
-            raise Exception("add_reverse_field called without one_to_one or one_to_many")
+            raise Exception(
+                "add_reverse_field called without one_to_one or one_to_many"
+            )
         self.builder.make_model(rel, ct2_def, add_fields=[fk])
         self.add_field(dotted_name=dotted_name, name=name,
                        options=[get_model_for_type(rel), 'verbose_name="%s"' % get_doc(el_def, name, self.model_name)],
@@ -300,7 +352,8 @@ class Model:
     def get(self, dotted_name=None, name=None):
         if dotted_name and name:
             for f in self.fields:
-                if f.get('dotted_name') == dotted_name and f.get('name') == name:
+                if f.get('dotted_name') == dotted_name and \
+                        f.get('name') == name:
                     return f
         else:
             for f in self.fields:
@@ -312,13 +365,13 @@ class Model:
 
 
 class XSDModelBuilder:
+
     def __init__(self, infile):
         self.types = set()
         self.models = {}
         self.fields = {}
         self.tree = etree.parse(infile)
         self.have_json = False
-
 
     def get_field_data_from_simpletype(self, st_def):
         restrict_def = xpath(st_def, "xs:restriction")[0]
@@ -375,21 +428,23 @@ class XSDModelBuilder:
                 if int(total_digits[0]) > 9:
                     parent = 'BigIntegerField'
         if len(validators):
-            options['validators'] = '[%s]' % ', '.join(['validators.%s' % x for x in validators])
+            options['validators'] = '[%s]' % ', '.join('validators.%s' % x
+                                                       for x in validators)
         doc = get_doc(st_def, None, None)
         if parent == 'IntegerField' and 'max_length' in options:
             del options['max_length']
         if parent == 'CharField' and int(options.get('max_length', 1000)) > 500:
             # Some data does not fit, even if XSD says it should
             parent = 'TextField'
-        return doc, '%s' % parent, options
+        return doc, parent, options
 
     def get_field_data_from_type(self, typename):
         if typename in TYPE_OVERRIDES:
             return TYPE_OVERRIDES[typename]
         elif typename in BASETYPE_FIELD_MAP:
             return None, None, None
-        st_def = xpath(self.tree, "//xs:simpleType[@name=$n]", n=typename)
+        st_def = xpath(self.tree, "//xs:simpleType[@name=$n]",
+                       n=typename)
         if st_def:
             return self.get_field_data_from_simpletype(st_def[0])
         return None, None, None
@@ -399,15 +454,21 @@ class XSDModelBuilder:
             if not typename:
                 try:
                     st_def = xpath(el_def, "xs:simpleType")[0]
-                    doc, parent, options = self.get_field_data_from_simpletype(st_def)
+                    doc, parent, options = \
+                        self.get_field_data_from_simpletype(st_def, el_def)
                 except IndexError:
                     try:
                         ct_def = xpath(el_def, "xs:complexType")[0]
                     except IndexError:
-                        raise Exception("%s nor a simpleType neither a complexType within %s" % (typename, el_def.get("name")))
+                        raise Exception("%s nor a simpleType neither a"
+                                        " complexType within %s" % (
+                                            typename, el_def.get("name")))
                     self.make_model(el_path, ct_def)
                     model_name = get_model_for_type(el_path)
-                    return {'name': 'models.OneToOneField', 'options': [model_name, 'on_delete=models.CASCADE']}
+                    return {
+                        'name': 'models.OneToOneField',
+                        'options': [model_name, 'on_delete=models.CASCADE'],
+                    }
                 return {
                     'name': 'models.%s' % parent,
                     'options': ['%s=%s' % (k, v) for k, v in options.items()],
@@ -416,15 +477,24 @@ class XSDModelBuilder:
                 doc, parent, options = self.get_field_data_from_type(typename)
                 if parent is None:
                     if typename in BASETYPE_FIELD_MAP:
-                        return {'name': 'models.%s' % BASETYPE_FIELD_MAP[typename]}
+                        return {
+                            'name': 'models.%s' % BASETYPE_FIELD_MAP[typename]
+                        }
                     self.make_model(typename)
-                    return {'name': 'models.ForeignKey', 'options': [get_model_for_type(typename), 'on_delete=models.PROTECT']}
+                    return {
+                        'name': 'models.ForeignKey',
+                        'options': [get_model_for_type(typename),
+                                    'on_delete=models.PROTECT'],
+                    }
                 self.make_field(typename, doc, parent, options)
         return self.fields[typename]
 
     def make_field(self, typename, doc, parent, options):
         name = '%sField' % typename.replace('.', '_')
-        code = 'class %(name)s(models.%(parent)s):\n' % {'name': name, 'parent': parent}
+        code = 'class %(name)s(models.%(parent)s):\n' % {
+            'name': name,
+            'parent': parent,
+        }
 
         if doc:
             if '\n' in doc:
@@ -433,10 +503,11 @@ class XSDModelBuilder:
                 code += '    description = "%s"\n\n' % doc
 
         if len(options):
-            code += '    def __init__(self, *args, **kwargs):\n'
-            for k, v in options.items():
-                code += '        if "%s" not in kwargs: kwargs["%s"] = %s\n' % (k, k, v)
-            code += '        super(%s, self).__init__(*args, **kwargs)\n\n' % name
+            code += '    def __init__(self, *args, **kwargs):\n' + \
+                ''.join('        if "%s" not in kwargs:'
+                        ' kwargs["%s"] = %s\n' % (k, k, v)
+                        for k, v in options.items()) + \
+                '        super(%s, self).__init__(*args, **kwargs)\n\n' % name
         if not doc and not len(options):
             code += '    # SOMETHING STRANGE\n    pass\n'
 
@@ -451,7 +522,8 @@ class XSDModelBuilder:
         el_type = el_def.get("type")
         if not el_type:
             try:
-                el_type = xpath(el_def, "xs:complexType/xs:complexContent/xs:extension[count(*)=0]/@base")[0]
+                el_type = xpath(el_def, "xs:complexType/xs:complexContent/"
+                                "xs:extension[count(*)=0]/@base")[0]
             except IndexError:
                 pass
         if el_type:
@@ -472,7 +544,8 @@ class XSDModelBuilder:
     def get_seq_or_choice(self, parent_def):
         seq_def = xpath(parent_def, "xs:sequence")
         choice_def = xpath(parent_def, "xs:choice")
-        return seq_def[0] if seq_def else None, choice_def[0] if choice_def else None
+        return (seq_def[0] if seq_def else None,
+                choice_def[0] if choice_def else None)
 
     def write_seq_or_choice(self, seq_or_choice, typename, prefix='', attrs=None, null=False, is_root=False):
         seq_def, choice_def = seq_or_choice
@@ -481,7 +554,8 @@ class XSDModelBuilder:
             n_start = len(fields)
             self.make_fields(typename, choice_def, prefix=prefix, attrs=attrs, null=True, is_root=is_root)
             if len(fields) > n_start:
-                fields[n_start]['code'] = '    # xs:choice start\n' + fields[n_start]['code']
+                fields[n_start]['code'] = ('    # xs:choice start\n' +
+                                           fields[n_start]['code'])
                 fields[-1]['code'] += '\n    # xs:choice end'
         elif seq_def is not None:
             self.make_fields(typename, seq_def, prefix=prefix, attrs=attrs, null=null, is_root=is_root)
@@ -492,16 +566,16 @@ class XSDModelBuilder:
             return
         attr_defs = xpath(ct_def, "xs:attribute")
         if attr_defs is not None:
-            model_name = get_model_for_type(typename)
             for attr_def in attr_defs:
                 attr_name = attr_def.get("name")
                 dotted_name = '%s@%s' % (prefix, attr_name)
                 name = dotted_name.replace('@', '').replace('.', '_')
+                use_required = (attr_def.get("use") == "required")
                 self.make_a_field(typename, name, dotted_name,
                                   attr_def=attr_def,
                                   prefix=prefix,
                                   attrs=attrs,
-                                  null=null or attr_def.get("use") != "required")
+                                  null=null or not use_required)
 
     def get_n_to_many_relation(self, typename, name, el_def):
         if el_def.get("maxOccurs") == 'unbounded':
@@ -509,22 +583,26 @@ class XSDModelBuilder:
             el2_name = name
         else:
             try:
-                el2_def = xpath(self.get_element_complex_type(el_def), "xs:sequence/xs:element[@maxOccurs=$n]", n='unbounded')[0]
+                el2_def = xpath(self.get_element_complex_type(el_def),
+                                "xs:sequence/xs:element[@maxOccurs=$n]",
+                                n='unbounded')[0]
                 el2_name = '%s_%s' % (name, el2_def.get("name"))
-            except IndexError as e:
-                print "no maxOccurs=unbounded in %s, pretending it's unbounded" % el_def.get("name")
+            except IndexError:
+                logger.warning("no maxOccurs=unbounded in %s,"
+                               " pretending it's unbounded",
+                               el_def.get("name"))
                 el2_def = el_def
                 el2_name = name
         ct2_def = self.get_element_complex_type(el2_def)
         if ct2_def is None:
-            raise Exception("N_to_many field %s content is not a complexType\n" % name)
+            raise Exception("N:many field %s content not a complexType" % name)
         rel = ct2_def.get("name") or ('%s.%s' % (typename, el2_name))
         return rel, ct2_def
 
     def get_n_to_one_relation(self, typename, name, el_def):
         ct2_def = self.get_element_complex_type(el_def)
         if ct2_def is None:
-            raise Exception("n_to_one field %s content is not a complexType\n" % name)
+            raise Exception("N:1 field %s content is not a complexType" % name)
         rel = ct2_def.get("name") or ('%s.%s' % (typename, name))
         return rel, ct2_def
 
@@ -542,7 +620,7 @@ class XSDModelBuilder:
         elif model.get('parent_field') == name:
             this_model.add_field(dotted_name=dotted_name, parent_field=True)
             return
-        
+
         coalesce_target = coalesce(name, model)
         if coalesce_target:
             if name == dotted_name:
@@ -554,17 +632,27 @@ class XSDModelBuilder:
                 rel = model.get('many_to_many_field_overrides', {})[name]
                 ct2_def = None
             except KeyError:
-                rel, ct2_def = self.get_n_to_many_relation(typename, name, el_def)
+                rel, ct2_def = self.get_n_to_many_relation(typename, name,
+                                                           el_def)
             self.make_model(rel, ct2_def)
             this_model.add_field(dotted_name=dotted_name, name=name, django_field='models.ManyToManyField', options=[get_model_for_type(rel), 'verbose_name="%s"' % get_doc(el_def, name, model_name)])
             return
 
         elif match(name, model, 'one_to_many_fields'):
-            this_model.add_reverse_field(dotted_name=dotted_name, one_to_many=model.get('one_to_many_field_overrides', {}).get(name, True), typename=typename, name=name, el_def=el_def)
+            overrides = model.get('one_to_many_field_overrides', {})
+            this_model.add_reverse_field(dotted_name=dotted_name,
+                                         one_to_many=overrides.get(name, True),
+                                         typename=typename,
+                                         name=name,
+                                         el_def=el_def)
             return
 
         elif match(name, model, 'one_to_one_fields'):
-            this_model.add_reverse_field(dotted_name=dotted_name, one_to_one=True, typename=typename, name=name, el_def=el_def)
+            this_model.add_reverse_field(dotted_name=dotted_name,
+                                         one_to_one=True,
+                                         typename=typename,
+                                         name=name,
+                                         el_def=el_def)
             return
 
         elif match(name, model, 'json_fields'):
@@ -574,61 +662,79 @@ class XSDModelBuilder:
 
         if el_def:
             ct2_def = self.get_element_complex_type(el_def)
-            flatten_prefix = name.startswith(GLOBAL_MODEL_OPTIONS.get('flatten_prefixes', ()) +
-                                             model.get('flatten_prefixes', ()))
+            flatten_prefix = name.startswith(cat(o.get('flatten_prefixes', ())
+                                                 for o in (GLOBAL_MODEL_OPTIONS,
+                                                           model)))
             flatten = match(name, model, 'flatten_fields')
             if (ct2_def is not None and flatten_prefix) or flatten:
-                new_prefix = '%s.' % dotted_name
+                o = {
+                    'prefix': '%s.' % dotted_name,
+                    'attrs': attrs,
+                }
                 if ct2_def is not None:
-                    new_null = null or get_null(el_def)
+                    o['null'] = null or get_null(el_def)
                     ext2_defs = xpath(ct2_def, "xs:complexContent/xs:extension")
                     if not ext2_defs:
                         seq_or_choice2_def = self.get_seq_or_choice(ct2_def)
                         seq_or_choice3_def = (None, None)
                         ct3_def = None
                     else:
-                        seq_or_choice2_def = self.get_seq_or_choice(ext2_defs[0])
+                        seq_or_choice2_def = \
+                            self.get_seq_or_choice(ext2_defs[0])
                         basetype = ext2_defs[0].get("base")
-                        ct3_def = xpath(self.tree, "//xs:complexType[@name=$n]", n=basetype)[0]
+                        ct3_def = xpath(self.tree, "//xs:complexType[@name=$n]",
+                                        n=basetype)[0]
                         seq_or_choice3_def = self.get_seq_or_choice(ct3_def)
-                    fields = this_model.fields
-                    old_len = len(fields)
-                    self.write_attributes(ct3_def, typename, prefix=new_prefix, attrs=attrs, null=new_null)
-                    self.write_seq_or_choice(seq_or_choice3_def, typename, prefix=new_prefix, attrs=attrs, null=new_null)
-                    self.write_attributes(ct2_def, typename, prefix=new_prefix, attrs=attrs, null=new_null)
-                    self.write_seq_or_choice(seq_or_choice2_def, typename, prefix=new_prefix, attrs=attrs, null=new_null)
-                    #if len(fields) == old_len:
-                    #    raise Exception('    # SOMETHING STRANGE - flatten_fields RENDER VOID FOR %s\n' % new_prefix)
+                    self.write_attributes(ct3_def, typename, **o)
+                    self.write_seq_or_choice(seq_or_choice3_def, typename, **o)
+                    self.write_attributes(ct2_def, typename, **o)
+                    self.write_seq_or_choice(seq_or_choice2_def, typename, **o)
                     return
                 else:
-                    print 'WARNING: complexType not found while flattening prefix %s' % new_prefix
+                    logger.warning('complexType not found'
+                                   ' while flattening prefix %s',
+                                   o['prefix'])
 
         if len(name) > 63:
-            raise Exception("%s hits PostgreSQL 63 chars column name limit!" % name)
+            raise Exception(
+                "%s hits PostgreSQL 63 chars column name limit!" % name
+            )
 
         basetype = None
         reference_extension = match(name, model, 'reference_extension_fields')
         if reference_extension:
             new_prefix = '%s.' % dotted_name
             if ct2_def is None:
-                raise Exception('complexType not found while processing reference extension for prefix %s' % new_prefix)
+                raise Exception(
+                    'complexType not found while processing reference extension'
+                    ' for prefix %s' % new_prefix
+                )
             ext2_defs = xpath(ct2_def, "xs:complexContent/xs:extension")
             try:
                 basetype = ext2_defs[0].get("base")
             except IndexError:
-                print "No reference extension while processing prefix %s, falling back to normal processing" % new_prefix
+                logger.warning("No reference extension while processing prefix"
+                               " %s, falling back to normal processing",
+                               new_prefix)
                 reference_extension = False
 
         try:
             rel = model.get('foreign_key_overrides', {})[name]
             if rel != '%s.%s' % (typename, name):
-                ct2_def = xpath(self.tree, "//xs:complexType[@name=$n]", n=rel)[0]
+                ct2_def = xpath(self.tree, "//xs:complexType[@name=$n]",
+                                n=rel)[0]
             else:
-                rel, ct2_def = self.get_n_to_one_relation(typename, name, el_def)
+                rel, ct2_def = self.get_n_to_one_relation(typename, name,
+                                                          el_def)
             self.make_model(rel, ct2_def)
-            field = {'name': 'models.ForeignKey', 'options': [get_model_for_type(rel), 'on_delete=models.PROTECT']}
+            field = {
+                'name': 'models.ForeignKey',
+                'options': [get_model_for_type(rel), 'on_delete=models.PROTECT']
+            }
         except KeyError:
-            field = self.get_field(basetype or el_type, el_attr_def, '%s.%s' % (typename, name))
+            field = self.get_field(basetype or el_type,
+                                   el_attr_def,
+                                   '%s.%s' % (typename, name))
 
         try:
             field = {'name': model.get('override_field_class', {})[name],
@@ -647,7 +753,9 @@ class XSDModelBuilder:
         new_null = null or match(name, model, 'null_fields')
         if new_null:
             if name == model.get('primary_key', None):
-                print "WARNING: %s.%s is a primary key but has null=True. Skipping null=True" % (model_name, name)
+                logger.warning("WARNING: %s.%s is a primary key but has"
+                               " null=True. Skipping null=True",
+                               model_name, name)
             else:
                 options.append('null=True')
         else:
@@ -661,7 +769,11 @@ class XSDModelBuilder:
         if el_def:
             max_occurs = el_def.get("maxOccurs", None)
             if max_occurs:
-                raise Exception("caught maxOccurs=%s in %s.%s (@type=%s). Consider adding it to many_to_many_fields, one_to_many_fields or json_fields" % (max_occurs, typename, name, el_type))
+                raise Exception(
+                    "caught maxOccurs=%s in %s.%s (@type=%s). Consider adding"
+                    " it to many_to_many_fields, one_to_many_fields or"
+                    " json_fields" % (max_occurs, typename, name, el_type)
+                )
         if name == model.get('primary_key', None):
             options.append('primary_key=True')
             this_model.number_field = name
@@ -671,16 +783,29 @@ class XSDModelBuilder:
             options.append('db_index=True')
         override_field_options(name, options, model)
 
-        this_model.add_field(dotted_name=dotted_name, name=name, django_field=field['name'], options=options, coalesce=coalesce_target)
+        this_model.add_field(dotted_name=dotted_name,
+                             name=name,
+                             django_field=field['name'],
+                             options=options,
+                             coalesce=coalesce_target)
         if reference_extension:
             seq_or_choice2_def = self.get_seq_or_choice(ext2_defs[0])
-            self.write_seq_or_choice(seq_or_choice2_def, typename, prefix=new_prefix, attrs=attrs, null=null)
+            self.write_seq_or_choice(seq_or_choice2_def, typename,
+                                     prefix=new_prefix,
+                                     attrs=attrs,
+                                     null=null)
 
-
-    def make_fields(self, typename, seq_def, prefix='', attrs=None, null=False, is_root=False):
+    def make_fields(self, typename, seq_def,
+                    prefix='',
+                    attrs=None,
+                    null=False,
+                    is_root=False):
         this_model = self.models[typename]
         for choice_def in xpath(seq_def, "xs:choice"):
-            self.write_seq_or_choice((None, choice_def), typename, prefix=prefix, attrs=attrs, null=null)
+            self.write_seq_or_choice((None, choice_def), typename,
+                                     prefix=prefix,
+                                     attrs=attrs,
+                                     null=null)
         for el_def in xpath(seq_def, "xs:element"):
             el_name = el_def.get("name")
             dotted_name = prefix + el_name
@@ -693,15 +818,19 @@ class XSDModelBuilder:
                               null=null or get_null(el_def))
 
         if len(attrs) and is_root:
-            this_model.add_field(name='attrs', django_field='JSONField', attrs=attrs)
+            this_model.add_field(name='attrs',
+                                 django_field='JSONField',
+                                 attrs=attrs)
             self.have_json = True
 
     def make_model(self, typename, ct_def=None, add_fields=None):
         typename = strip_ns(typename)
 
         if not get_model_for_type(typename):
+            logger.warning('Automatic model name: %s. Consider adding it to'
+                           ' TYPE_MODEL_MAP\n',
+                           typename)
             TYPE_MODEL_MAP[typename.replace('.', r'\.')] = typename
-            sys.stderr.write('Automatic model name: %s. Consider adding it to TYPE_MODEL_MAP\n' % typename)
 
         if typename in self.types:
             return
@@ -717,24 +846,25 @@ class XSDModelBuilder:
         if typename not in self.models:
             this_model = Model(self, model_name, typename)
             self.models[typename] = this_model
-        ### MERGE PROCESSING
         elif not get_merge_for_type(typename):
-            raise Exception("Not merging type %s, model %s already exists and no merge (+) prefix specified" % (typename, model_name))
+            raise Exception(
+                "Not merging type %s, model %s already exists and no merge (+)"
+                " prefix specified" % (typename, model_name)
+            )
 
         parent = None
         deps = []
 
         if not model.get('custom', False):
             if ct_def is None:
-                ct_defs = xpath(self.tree, "//xs:complexType[@name=$n]", n=typename)
+                ct_defs = xpath(self.tree, "//xs:complexType[@name=$n]",
+                                n=typename)
                 if not ct_defs:
                     raise Exception("%s not found in schema" % typename)
                 ct_def = ct_defs[0]
 
             doc = get_doc(ct_def, None, None)
             this_model.doc = doc
-
-            fields = ''
 
             self.write_attributes(ct_def, typename)
 
@@ -743,25 +873,40 @@ class XSDModelBuilder:
                 try:
                     ext_def = xpath(ct_def, "xs:complexContent/xs:extension")[0]
                 except IndexError:
-                    sys.stderr.write("WARNING: no sequence/choice and no complexContent in %s complexType\n" % typename)
+                    logger.warning("no sequence/choice and no complexContent"
+                                   " in %s complexType",
+                                   typename)
                 else:
                     try:
                         seq_def = xpath(ext_def, "xs:sequence")[0]
                     except IndexError:
                         if len(ext_def) == 0:
-                            sys.stderr.write("WARNING: no additions in extension in complexContent in %s complexType\n" % typename)
+                            logger.warning("no additions in extension in"
+                                           " complexContent in %s complexType",
+                                           typename)
                         else:
-                            raise Exception("no sequence in extension in complexContent in %s complexType but %d other children exist" % (typename, len(ext_def)))
+                            raise Exception(
+                                "no sequence in extension in complexContent in"
+                                " %s complexType but %d other children exist"
+                                % (typename, len(ext_def))
+                            )
                     parent = ext_def.get("base")
                     if not parent:
-                        raise Exception("no base attribute in extension in %s complexType" % typename)
+                        raise Exception(
+                            "no base attribute in extension in %s complexType"
+                            % typename
+                        )
 
             if not parent:
                 parent_field = model.get('parent_field')
                 if parent_field:
                     if seq_def is None:
-                        raise Exception('parent_field is set for %s but no sequence' % typename)
-                    parent = xpath(seq_def, "xs:element[@name=$n]/@type", n=parent_field)[0]
+                        raise Exception(
+                            'parent_field is set for %s but no sequence'
+                            % typename
+                        )
+                    parent = xpath(seq_def, "xs:element[@name=$n]/@type",
+                                   n=parent_field)[0]
 
         if 'parent_type' in model:
             parent = model['parent_type']
@@ -770,9 +915,11 @@ class XSDModelBuilder:
 
         if parent:
             if model.get('include_parent_fields'):
-                parent_def = xpath(self.tree, "//xs:complexType[@name=$n]", n=strip_ns(parent))[0]
+                parent_def = xpath(self.tree, "//xs:complexType[@name=$n]",
+                                   n=strip_ns(parent))[0]
                 self.write_attributes(parent_def, typename)
-                self.write_seq_or_choice(self.get_seq_or_choice(parent_def), typename, attrs=attrs)
+                self.write_seq_or_choice(self.get_seq_or_choice(parent_def),
+                                         typename, attrs=attrs)
                 parent = None
             else:
                 stripped_parent = strip_ns(parent)
@@ -785,17 +932,21 @@ class XSDModelBuilder:
                     this_model.parent = parent_model_name
 
         if not model.get('custom', False):
-            self.write_seq_or_choice((seq_def, choice_def), typename, attrs=attrs, is_root=True)
+            self.write_seq_or_choice((seq_def, choice_def), typename,
+                                     attrs=attrs, is_root=True)
 
         for f in model.get('add_fields', []) + (add_fields or []):
-            if f['django_field'] in ('models.ForeignKey', 'models.ManyToManyField'):
+            if f['django_field'] in ('models.ForeignKey',
+                                     'models.ManyToManyField'):
                 dep_name = get_a_type_for_model(f['options'][0])
                 if dep_name:
                     self.make_model(dep_name)
             this_model.add_field(**f)
 
         for f in this_model.fields:
-            if f.get('django_field') in ('models.ForeignKey', 'models.OneToOneField', 'models.ManyToManyField'):
+            if f.get('django_field') in ('models.ForeignKey',
+                                         'models.OneToOneField',
+                                         'models.ManyToManyField'):
                 if not f['options'][0].startswith('"'):
                     deps.append(f['options'][0])
         this_model.deps = list(set(deps + (this_model.deps or [])))
@@ -805,7 +956,8 @@ class XSDModelBuilder:
                 this_model.number_field = model['number_field']
             except KeyError:
                 if this_model.parent_model:
-                    this_model.number_field = this_model.parent_model.number_field
+                    this_model.number_field = \
+                        this_model.parent_model.number_field
 
         this_model.build_code()
 
@@ -828,7 +980,9 @@ class XSDModelBuilder:
             attrs = {}
             for key in sorted(set(attrs1.keys() + attrs2.keys())):
                 if key in attrs1 and key in attrs2:
-                    attrs[key] = '|'.join(sorted(set(attrs1[key].split('|') + attrs2[key].split('|'))))
+                    attrs[key] = '|'.join(sorted(set(cat(a[key].split('|')
+                                                         for a in (attrs1,
+                                                                   attrs2)))))
                 else:
                     attrs[key] = attrs1.get(key, attrs2.get(key))
             f1['attrs'] = attrs
@@ -885,10 +1039,15 @@ class XSDModelBuilder:
 
         def unify_special_cases(field1, field2):
             for f1, f2 in ((field1, field2), (field2, field1)):
-                fk_and_one_to_one = (f1.get('django_field') == 'models.OneToOneField' and f2.get('django_field') == 'models.ForeignKey')
+                fk_and_one_to_one = (
+                    f1.get('django_field') == 'models.OneToOneField' and
+                    f2.get('django_field') == 'models.ForeignKey'
+                )
                 drop_and_add = (f1.get('drop') and not f2.get('drop'))
                 if drop_and_add:
-                   f2['code'] = '    # The original %(dotted_name)s is dropped and replaced by an added one\n%(code)s' % f2
+                    f2['code'] = \
+                        '    # The original %(dotted_name)s is dropped and' \
+                        ' replaced by an added one\n%(code)s' % f2
                 if fk_and_one_to_one or drop_and_add:
                     f1.clear()
                     f1.update(f2)
@@ -910,7 +1069,8 @@ class XSDModelBuilder:
             else:
                 merged1[model_name] = models
 
-        for model_name, models in chain(merged1.iteritems(), merged2.iteritems()):
+        for model_name, models in chain(merged1.iteritems(),
+                                        merged2.iteritems()):
             if len(models) == 1:
                 merged_model = models[0]
             else:
@@ -922,17 +1082,21 @@ class XSDModelBuilder:
 
                 parents = merge_model_parents(models, merged_models)
                 if len(parents) > 1:
-                    raise Exception("different parents %s for types %s" % (parents, merged_typename))
+                    raise Exception("different parents %s for types %s"
+                                    % (parents, merged_typename))
                 elif len(parents):
                     merged_model.parent = parents[0]
 
-                merged_model.deps = sorted(set(chain(*[m.deps for m in models if m.deps])))
+                merged_model.deps = sorted(set(cat(m.deps for m in models
+                                                   if m.deps)))
 
                 field_ids = sorted(set((f.get('coalesce', f.get('name')),
                                         #None if 'coalesce' in f else f.get('dotted_name'))
                                         f.get('dotted_name'))
-                                       for f in chain(*[m.fields for m in models])))
-                field_ids = [(f[0], f[1], [m for m in models if m.get(dotted_name=f[1], name=f[0])])
+                                       for f in cat(m.fields for m in models)))
+                field_ids = [(f[0], f[2], [m for m in models
+                                           if m.get(dotted_name=f[2],
+                                                    name=f[0])])
                              for f in field_ids]
 
                 for name, dotted_name, containing_models in field_ids:
@@ -947,7 +1111,7 @@ class XSDModelBuilder:
                             for m in containing_models:
                                 f = m.get(dotted_name=dotted_name, name=name)
                                 if 'options' not in f:
-                                   f['options'] = []
+                                    f['options'] = []
                                 if 'null=True' not in f['options']:
                                     f['options'].append('null=True')
                                     m.build_field_code(f, force=True)
@@ -1010,10 +1174,15 @@ class XSDModelBuilder:
         models_file.write('from django.core import validators\n')
         models_file.write('from django.db import models\n')
         if self.have_json:
-            models_file.write('from django.contrib.postgres.fields import ArrayField, JSONField\n')
+            models_file.write('from django.contrib.postgres.fields import'
+                              ' ArrayField, JSONField\n')
         models_file.write('\n')
         if len(self.fields):
-            models_file.write('from .fields import %s\n' % ', '.join(sorted(f['name'] for f in self.fields.values())))
+            models_file.write(
+                'from .fields import \\\n        %s\n'
+                % ', \\\n        '.join(sorted(f['name']
+                                               for f in self.fields.values()))
+            )
         models_file.write(IMPORTS + '\n\n\n')
         for model_name in sorted(self.models.keys()):
             self.write_model(self.models[model_name], models_file)
@@ -1021,7 +1190,11 @@ class XSDModelBuilder:
         mapping = {}
         for m in self.models.values():
             model_mapping = {}
-            for key in ('model_name', 'fields', 'parent', 'match_fields', 'number_field'):
+            for key in ('model_name',
+                        'fields',
+                        'parent',
+                        'match_fields',
+                        'number_field'):
                 value = getattr(m, key)
                 if value is not None:
                     model_mapping[key] = value
@@ -1040,7 +1213,7 @@ if __name__ == '__main__':
                       open(args['-f'], "w"),
                       codecs.open(args['-j'], "w", 'utf-8'))
     except Exception as e:
-        print 'EXCEPTION: ' + unicode(e).encode('utf-8')
+        logger.error('EXCEPTION: %s', unicode(e))
         type, value, tb = sys.exc_info()
         traceback.print_exc()
         pdb.post_mortem(tb)
