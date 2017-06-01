@@ -95,6 +95,7 @@ HEADER = ('# THIS FILE IS GENERATED AUTOMATICALLY. DO NOT EDIT\n'
           'from __future__ import unicode_literals\n\n')
 
 RE_SPACES = re.compile(r'  +')
+RE_KWARG = re.compile(r'^[a-zi0-9_]+=')
 
 
 logging.basicConfig(level=logging.INFO)
@@ -218,9 +219,9 @@ def override_field_options(field_name, options, model_options):
                              **GLOBAL_MODEL_OPTIONS.get('field_options', {}))
     if field_name in add_field_options:
         for option in add_field_options[field_name]:
-            option_key, _ = option.split('=')
+            option_key, _ = option.split('=', 1)
             for n, old_option in enumerate(options):
-                if old_option.split('=')[0] == option_key:
+                if old_option.split('=', 1)[0] == option_key:
                     del options[n]
                     break
         options += add_field_options[field_name]
@@ -269,7 +270,7 @@ class Model:
             if type(doc) is not list:
                 kwargs['doc'] = [doc]
         doc = stringify(doc)
-        if options and '=' not in options[0]:
+        if options and not RE_KWARG.match(options[0]):
             if options[0][0] == '"':
                 options[0] = doc
             else:
