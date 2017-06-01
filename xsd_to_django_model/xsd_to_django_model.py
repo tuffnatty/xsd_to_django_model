@@ -188,6 +188,12 @@ def get_null(el_def):
     return el_def.get("minOccurs", None) == "0"
 
 
+def get_ns(typename):
+    if typename and ':' in typename:
+        return typename.split(':')[0]
+    return ''
+
+
 def strip_ns(typename):
     if typename and ':' in typename and not typename.startswith("xs:"):
         _, typename = typename.split(':')
@@ -508,6 +514,7 @@ class XSDModelBuilder:
                     root.extend(subroot)
                 root.remove(imp)
         self.parent_map = {c: p for p in self.tree.iter() for c in p}
+        self.ns_map = dict(ns_map)
 
     def get_parent_ns(self, el_def):
         root = self.tree.getroot()
@@ -695,6 +702,9 @@ class XSDModelBuilder:
                                 "xs:extension[count(*)=0]/@base")[0]
             except IndexError:
                 pass
+        ns = get_ns(el_type)
+        if ns and self.ns_map[ns] == self.ns_map['']:
+            el_type = strip_ns(el_type)
         return el_type
 
     def get_element_complex_type(self, el_def):
