@@ -154,7 +154,7 @@ def get_opt(model_name, typename=None):
     return opt
 
 
-def get_doc(el_def, name, model_name):
+def get_doc(el_def, name, model_name, doc_prefix=None):
     name = name or el_def.get('name')
     if model_name:
         try:
@@ -165,10 +165,13 @@ def get_doc(el_def, name, model_name):
                 xpath(el_def, "xs:complexType/xs:annotation/xs:documentation"))
     doc = (d.text for d in doc if d.text)
     try:
-        return RE_SPACES.sub(' ', next(doc).strip()).rstrip('.') \
-            .replace(' )', ')')
+        doc = RE_SPACES.sub(' ', next(doc).strip()).rstrip('.') \
+            .replace(' )', ')').replace('\n\n', '\n')
     except StopIteration:
-        return None
+        doc = None
+    if doc_prefix is not None:
+        return doc_prefix + (doc or "UNDOCUMENTED")
+    return doc
 
 
 def stringify(s):
@@ -818,8 +821,7 @@ class XSDModelBuilder:
                 coalesced_dotted_name = coalesce_target
             name = coalesce_target
 
-        doc = doc_prefix + (get_doc(el_attr_def, name, model_name) or
-                            "UNDOCUMENTED")
+        doc = get_doc(el_attr_def, name, model_name, doc_prefix=doc_prefix)
 
         if match(name, model, 'many_to_many_fields'):
             try:
@@ -1186,15 +1188,27 @@ class XSDModelBuilder:
                        f2.get('coalesce', f2.get('name')) == f1['coalesce']
                        for f1, f2 in [(field1, field2), (field2, field1)])
 
+        def squeeze_docs(docs_seq):
+            merged = sorted(set(docs_seq))
+            prev_doc = None
+            processed = []
+            for doc in merged:
+                if prev_doc:
+                    if doc.startswith(prev_doc):
+                        del processed[-1]
+                processed.append(doc)
+                prev_doc = doc
+            return processed
+
         def merge_attrs(m1, f1, m2, f2):
             attrs1 = f1['attrs']
             attrs2 = f2['attrs']
             attrs = {}
             for key in sorted(set(attrs1.keys() + attrs2.keys())):
                 if key in attrs1 and key in attrs2:
-                    attrs[key] = '|'.join(sorted(set(cat(a[key].split('|')
-                                                         for a in (attrs1,
-                                                                   attrs2)))))
+                    attrs[key] = '|'.join(squeeze_docs(cat(a[key].split('|')
+                                                           for a in (attrs1,
+                                                                     attrs2))))
                 else:
                     attrs[key] = attrs1.get(key, attrs2.get(key))
             f1['attrs'] = attrs
@@ -1205,7 +1219,7 @@ class XSDModelBuilder:
         def merge_field_docs(model1, field1, model2, field2):
             if 'doc' not in field1 and 'doc' not in field2:
                 return
-            merged = sorted(set(field1['doc'] + field2['doc']))
+            merged = squeeze_docs(field1['doc'] + field2['doc'])
             if field1['doc'] != merged:
                 field1['doc'] = merged
                 model1.build_field_code(field1, force=True)
