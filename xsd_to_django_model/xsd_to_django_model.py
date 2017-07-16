@@ -96,6 +96,8 @@ HEADER = ('# THIS FILE IS GENERATED AUTOMATICALLY. DO NOT EDIT\n'
 
 RE_SPACES = re.compile(r'  +')
 RE_KWARG = re.compile(r'^[a-zi0-9_]+=')
+RE_CAMELCASE_TO_UNDERSCORE_1 = re.compile(r'(.)([A-Z][a-z]+)')
+RE_CAMELCASE_TO_UNDERSCORE_2 = re.compile(r'([a-z0-9])([A-Z])')
 
 
 logging.basicConfig(level=logging.INFO)
@@ -201,8 +203,8 @@ def strip_ns(typename):
 
 
 def camelcase_to_underscore(name):
-    s1 = re.sub('(.)([A-Z][a-z]+)', r'\1_\2', name)
-    return re.sub('([a-z0-9])([A-Z])', r'\1_\2', s1).lower()
+    s1 = RE_CAMELCASE_TO_UNDERSCORE_1.sub(r'\1_\2', name)
+    return RE_CAMELCASE_TO_UNDERSCORE_2.sub(r'\1_\2', s1).lower()
 
 
 def coalesce(name, model):
@@ -571,6 +573,16 @@ class XSDModelBuilder:
                 parent = 'BigIntegerField'
         return parent
 
+    def get_field_choices_from_simpletype(self, st_def):
+        restrict_def = xpath(st_def, "xs:restriction")[0]
+        enumerations = xpath(restrict_def, "xs:enumeration")
+        choices = []
+        for enumeration in enumerations:
+            choices.append((enumeration.get('value'),
+                            (get_doc(enumeration, None, None) or
+                             enumeration.get('value'))))
+        return choices
+
     def get_field_data_from_simpletype(self, st_def, el_def=None):
         restrict_def = xpath(st_def, "xs:restriction")[0]
         basetype = restrict_def.get("base")
@@ -600,8 +612,10 @@ class XSDModelBuilder:
         if parent != 'IntegerField':
             self.get_max_length(options, restrict_def, pattern, enums)
         if enums:
-            options['choices'] = '[%s]' % ', '.join('("%s", "%s")' % (x, x)
-                                                    for x in enums)
+            choices = self.get_field_choices_from_simpletype(st_def)
+            options['choices'] = \
+                '[%s]' % ', '.join('("%s", %s)' % (c[0], stringify(c[1]))
+                                   for c in choices)
         parent = self.get_digits_options(restrict_def, options, parent)
         if len(validators):
             options['validators'] = '[%s]' % ', '.join('validators.%s' % x
@@ -661,10 +675,16 @@ class XSDModelBuilder:
                         'options': [get_model_for_type(typename),
                                     'on_delete=models.PROTECT'],
                     }
-                self.make_field(typename, doc, parent, options)
+                if 'choices' in options:
+                    st_def = xpath(self.tree, "//xs:simpleType[@name=$n]",
+                                   n=typename)[0]
+                    choices = self.get_field_choices_from_simpletype(st_def)
+                else:
+                    choices = None
+                self.make_field(typename, doc, parent, options, choices)
         return self.fields[typename]
 
-    def make_field(self, typename, doc, parent, options):
+    def make_field(self, typename, doc, parent, options, choices):
         name = '%sField' \
             % typename.replace(':', '_').replace('.', '_').replace('-', '_')
         code = 'class %(name)s(models.%(parent)s):\n' % {
@@ -693,6 +713,8 @@ class XSDModelBuilder:
             'name': name,
             'parent': 'models.%s' % parent,
         }
+        if choices:
+            self.fields[typename]['choices'] = choices
 
     def get_element_type(self, el_def):
         el_type = el_def.get("type")
@@ -703,7 +725,7 @@ class XSDModelBuilder:
             except IndexError:
                 pass
         ns = get_ns(el_type)
-        if ns and self.ns_map[ns] == self.ns_map['']:
+        if ns and '' in self.ns_map and self.ns_map[ns] == self.ns_map['']:
             el_type = strip_ns(el_type)
         return el_type
 
@@ -946,6 +968,13 @@ class XSDModelBuilder:
             field = self.get_field(basetype or el_type,
                                    el_attr_def,
                                    '%s.%s' % (typename, name))
+            choices = field.get('choices', [])
+            if any(c[0] not in doc for c in choices):
+                doc += '\n' + '\n'.join(
+                    '%s%s' % (c[0], ' - %s' % c[1] if c[1] != c[0] else '')
+                    for c in choices
+                    if '\n%s - ' % c[0] not in doc
+                )
 
         over_class = override_field_class(model_name, typename, name)
         if over_class:
@@ -1359,6 +1388,7 @@ class XSDModelBuilder:
             s = re.sub(r'\n?    # [^\n]+ field coalesces to [^\n]+\n', '', s)
             s = re.sub(r'\n?    # The original [^\n]+\n', '', s)
             s = re.sub(r',\s+(#\s+)?related_name="[^"]+"', '', s)
+            s = re.sub(r',\s+[a-z_]+=None\b', '', s)
             return s
 
         def unify_special_cases(field1, field2):
