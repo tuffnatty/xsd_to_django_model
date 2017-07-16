@@ -63,6 +63,7 @@ BASETYPE_FIELD_MAP = {
     'xs:dateTime': 'DateTimeField',
     'xs:decimal': 'DecimalField',
     'xs:double': 'FloatField',
+    'xs:gYearMonth': 'DateField', # Really YYYY-MM
     'xs:int': 'IntegerField',
     'xs:integer': 'IntegerField',
     'xs:long': 'BigIntegerField',
@@ -172,7 +173,7 @@ def get_doc(el_def, name, model_name, doc_prefix=None):
     except StopIteration:
         doc = None
     if doc_prefix is not None:
-        return doc_prefix + (doc or "UNDOCUMENTED")
+        return doc_prefix + (doc or name)
     return doc
 
 
@@ -705,7 +706,11 @@ class XSDModelBuilder:
                         for k, v in options.items()) + \
                 '        super(%s, self).__init__(*args, **kwargs)\n\n' % name
         if not doc and not len(options):
-            code += '    # SOMETHING STRANGE\n    pass\n'
+            if parent is None:
+              code += '    # SOMETHING STRANGE\n'
+            else:
+              code += '    # Simple exact redefinition of ' + parent + ' parent!\n'
+            code += '    pass\n'
 
         code += '\n'
         self.fields[typename] = {
