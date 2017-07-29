@@ -866,11 +866,13 @@ class XSDModelBuilder:
                 rel, ct2_def = self.get_n_to_many_relation(typename, name,
                                                            el_def)
             self.make_model(rel, ct2_def)
+            options = [get_model_for_type(rel)]
+            override_field_options(name, options, model)
             this_model.add_field(dotted_name=dotted_name,
                                  name=name,
                                  django_field='models.ManyToManyField',
                                  doc=[doc],
-                                 options=[get_model_for_type(rel)])
+                                 options=options)
             return
 
         elif match(name, model, 'one_to_many_fields'):
