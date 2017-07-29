@@ -716,6 +716,12 @@ class XSDModelBuilder:
         if choices:
             self.fields[typename]['choices'] = choices
 
+    def simplify_ns(self, typename):
+        ns = get_ns(typename)
+        if ns and '' in self.ns_map and self.ns_map[ns] == self.ns_map['']:
+            return strip_ns(typename)
+        return typename
+
     def get_element_type(self, el_def):
         el_type = el_def.get("type")
         if not el_type:
@@ -724,10 +730,7 @@ class XSDModelBuilder:
                                 "xs:extension[count(*)=0]/@base")[0]
             except IndexError:
                 pass
-        ns = get_ns(el_type)
-        if ns and '' in self.ns_map and self.ns_map[ns] == self.ns_map['']:
-            el_type = strip_ns(el_type)
-        return el_type
+        return self.simplify_ns(el_type)
 
     def get_element_complex_type(self, el_def):
         el_type = self.get_element_type(el_def)
@@ -1137,7 +1140,7 @@ class XSDModelBuilder:
                                 " %s complexType but %d other children exist"
                                 % (typename, len(ext_def))
                             )
-                    parent = ext_def.get("base")
+                    parent = self.simplify_ns(ext_def.get("base"))
                     if not parent:
                         raise Exception(
                             "no base attribute in extension in %s complexType"
