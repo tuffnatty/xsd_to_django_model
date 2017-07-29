@@ -208,8 +208,8 @@ def camelcase_to_underscore(name):
 
 
 def coalesce(name, model):
-    fulldict = dict(model.get('coalesce_fields', {}),
-                    **GLOBAL_MODEL_OPTIONS.get('coalesce_fields', {}))
+    fulldict = dict(GLOBAL_MODEL_OPTIONS.get('coalesce_fields', {}),
+                    **model.get('coalesce_fields', {}))
     for expr, sub in fulldict.iteritems():
         match = re.match(expr + '$', name)
         if match:
@@ -226,8 +226,8 @@ def match(name, model, kind):
 
 
 def override_field_options(field_name, options, model_options):
-    add_field_options = dict(model_options.get('field_options', {}),
-                             **GLOBAL_MODEL_OPTIONS.get('field_options', {}))
+    add_field_options = dict(GLOBAL_MODEL_OPTIONS.get('field_options', {}),
+                             **model_options.get('field_options', {}))
     if field_name in add_field_options:
         for option in add_field_options[field_name]:
             option_key, _ = option.split('=', 1)
