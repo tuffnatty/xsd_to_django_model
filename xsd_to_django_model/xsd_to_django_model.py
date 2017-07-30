@@ -209,8 +209,8 @@ def camelcase_to_underscore(name):
 
 
 def coalesce(name, model):
-    fulldict = dict(model.get('coalesce_fields', {}),
-                    **GLOBAL_MODEL_OPTIONS.get('coalesce_fields', {}))
+    fulldict = dict(GLOBAL_MODEL_OPTIONS.get('coalesce_fields', {}),
+                    **model.get('coalesce_fields', {}))
     for expr, sub in fulldict.iteritems():
         match = re.match(expr + '$', name)
         if match:
@@ -227,8 +227,8 @@ def match(name, model, kind):
 
 
 def override_field_options(field_name, options, model_options):
-    add_field_options = dict(model_options.get('field_options', {}),
-                             **GLOBAL_MODEL_OPTIONS.get('field_options', {}))
+    add_field_options = dict(GLOBAL_MODEL_OPTIONS.get('field_options', {}),
+                             **model_options.get('field_options', {}))
     if field_name in add_field_options:
         for option in add_field_options[field_name]:
             option_key, _ = option.split('=', 1)
@@ -721,6 +721,12 @@ class XSDModelBuilder:
         if choices:
             self.fields[typename]['choices'] = choices
 
+    def simplify_ns(self, typename):
+        ns = get_ns(typename)
+        if ns and '' in self.ns_map and self.ns_map[ns] == self.ns_map['']:
+            return strip_ns(typename)
+        return typename
+
     def get_element_type(self, el_def):
         el_type = el_def.get("type")
         if not el_type:
@@ -729,10 +735,7 @@ class XSDModelBuilder:
                                 "xs:extension[count(*)=0]/@base")[0]
             except IndexError:
                 pass
-        ns = get_ns(el_type)
-        if ns and '' in self.ns_map and self.ns_map[ns] == self.ns_map['']:
-            el_type = strip_ns(el_type)
-        return el_type
+        return self.simplify_ns(el_type)
 
     def get_element_complex_type(self, el_def):
         el_type = self.get_element_type(el_def)
@@ -868,11 +871,13 @@ class XSDModelBuilder:
                 rel, ct2_def = self.get_n_to_many_relation(typename, name,
                                                            el_def)
             self.make_model(rel, ct2_def)
+            options = [get_model_for_type(rel)]
+            override_field_options(name, options, model)
             this_model.add_field(dotted_name=dotted_name,
                                  name=name,
                                  django_field='models.ManyToManyField',
                                  doc=[doc],
-                                 options=[get_model_for_type(rel)])
+                                 options=options)
             return
 
         elif match(name, model, 'one_to_many_fields'):
@@ -1142,7 +1147,7 @@ class XSDModelBuilder:
                                 " %s complexType but %d other children exist"
                                 % (typename, len(ext_def))
                             )
-                    parent = ext_def.get("base")
+                    parent = self.simplify_ns(ext_def.get("base"))
                     if not parent:
                         raise Exception(
                             "no base attribute in extension in %s complexType"
