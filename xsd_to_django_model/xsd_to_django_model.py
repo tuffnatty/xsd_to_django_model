@@ -707,9 +707,9 @@ class XSDModelBuilder:
                 '        super(%s, self).__init__(*args, **kwargs)\n\n' % name
         if not doc and not len(options):
             if parent is None:
-              code += '    # SOMETHING STRANGE\n'
+                code += '    # SOMETHING STRANGE\n'
             else:
-              code += '    # Simple exact redefinition of ' + parent + ' parent!\n'
+                code += '    # Simple exact redefinition of %s parent!\n' % parent
             code += '    pass\n'
 
         code += '\n'
