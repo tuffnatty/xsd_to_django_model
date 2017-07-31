@@ -57,13 +57,14 @@ except ImportError:
     IMPORTS = ''
 
 BASETYPE_FIELD_MAP = {
+    'xs:base64Binary': 'BinaryField',
     'xs:boolean': 'BooleanField',
     'xs:byte': 'SmallIntegerField',
     'xs:date': 'DateField',
     'xs:dateTime': 'DateTimeField',
     'xs:decimal': 'DecimalField',
     'xs:double': 'FloatField',
-    'xs:gYearMonth': 'DateField', # Really YYYY-MM
+    'xs:gYearMonth': 'DateField',  # Really YYYY-MM
     'xs:int': 'IntegerField',
     'xs:integer': 'IntegerField',
     'xs:long': 'BigIntegerField',
@@ -709,7 +710,8 @@ class XSDModelBuilder:
             if parent is None:
                 code += '    # SOMETHING STRANGE\n'
             else:
-                code += '    # Simple exact redefinition of %s parent!\n' % parent
+                code += \
+                    '    # Simple exact redefinition of %s parent!\n' % parent
             code += '    pass\n'
 
         code += '\n'
