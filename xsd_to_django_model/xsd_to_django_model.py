@@ -106,8 +106,15 @@ logging.basicConfig(level=logging.INFO)
 logger = logging.getLogger(__name__)
 
 
+depth = -1
+
+
 def cat(seq):
     return tuple(chain.from_iterable(seq))
+
+
+def info(s):
+    sys.stderr.write('%s%s' % (' ' * depth, s))
 
 
 def xpath(root, path, **kwargs):
@@ -1081,6 +1088,9 @@ class XSDModelBuilder:
             self.have_json = True
 
     def make_model(self, typename, ct_def=None, add_fields=None):
+        global depth
+        depth += 1
+
         if not get_model_for_type(typename):
             logger.warning('Automatic model name: %s. Consider adding it to'
                            ' TYPE_MODEL_MAP\n',
@@ -1088,6 +1098,7 @@ class XSDModelBuilder:
             TYPE_MODEL_MAP[typename.replace('.', r'\.')] = typename
 
         if typename in self.types:
+            depth -= 1
             return
 
         self.types.add(typename)
@@ -1096,7 +1107,7 @@ class XSDModelBuilder:
 
         model = get_opt(model_name, typename)
 
-        sys.stderr.write('Making model for type %s\n' % typename)
+        info('Making model for type %s\n' % typename)
 
         if typename not in self.models:
             this_model = Model(self, model_name, typename)
@@ -1224,7 +1235,8 @@ class XSDModelBuilder:
         if 'match_fields' in model:
             this_model.match_fields = model['match_fields']
 
-        sys.stderr.write('Done making model %s (%s)\n' % (model_name, typename))
+        info('Done making model %s (%s)\n' % (model_name, typename))
+        depth -= 1
 
     def make_models(self, typenames):
         for typename in typenames:
