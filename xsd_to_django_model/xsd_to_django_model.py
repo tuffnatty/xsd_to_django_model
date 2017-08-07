@@ -88,6 +88,9 @@ FIELD_TMPL = {
     'one_to_one':
         '    # %(name)s is declared as a reverse relation from %(options0)s\n'
         '    # %(name)s = OneToOneField(%(serialized_options)s)',
+    'wrap':
+        '    %(name)s = %(wrap)s(%(final_django_field)s(%(serialized_options)s)'
+        ', %(wrap_options)s)',
     'default':
         '    %(name)s = %(final_django_field)s(%(serialized_options)s)',
 }
@@ -307,18 +310,21 @@ class Model:
         skip_code = False
         if force or 'code' not in kwargs:
             tmpl_key = next((k for k in ('drop', 'parent_field',
-                                         'one_to_many', 'one_to_one')
+                                         'one_to_many', 'one_to_one',
+                                         'wrap')
                              if k in kwargs),
                             'default')
 
             final_django_field = kwargs.get('django_field')
             options = self.normalize_field_options(kwargs)
+            kwargs['wrap_options'] = 'null=True' if 'wrap' in kwargs else ''
             if final_django_field == 'models.CharField' and \
                     not any(o.startswith('max_length=') for o in options):
                 final_django_field = 'models.TextField'
-            elif ('null=True' in options and
-                  final_django_field in ('models.BooleanField',
-                                         'models.ManyToManyField')):
+            if ('null=True' in options and
+                ('wrap' in kwargs or
+                 final_django_field in ('models.BooleanField',
+                                        'models.ManyToManyField'))):
                 if final_django_field == 'models.BooleanField':
                     final_django_field = 'models.NullBooleanField'
                 options = [o for o in options if o != 'null=True']
@@ -972,6 +978,17 @@ class XSDModelBuilder:
                                new_prefix)
                 reference_extension = False
 
+        if match(name, model, 'array_fields'):
+            assert ct2_def is not None, \
+                '%s has no complexType required for array_fields' % dotted_name
+            final_el_attr_def = xpath(ct2_def, "xs:sequence/xs:element")[0]
+            final_type = self.get_element_type(final_el_attr_def)
+            doc = get_doc(final_el_attr_def, name, model_name,
+                          doc_prefix=doc + '::')
+        else:
+            final_el_attr_def = el_attr_def
+            final_type = basetype or el_type
+
         try:
             rel = model.get('foreign_key_overrides', {})[name]
             if rel != '%s.%s' % (typename, name):
@@ -986,16 +1003,17 @@ class XSDModelBuilder:
                 'options': [get_model_for_type(rel), 'on_delete=models.PROTECT']
             }
         except KeyError:
-            field = self.get_field(basetype or el_type,
-                                   el_attr_def,
+            field = self.get_field(final_type,
+                                   final_el_attr_def,
                                    '%s.%s' % (typename, name))
-            choices = field.get('choices', [])
-            if any(c[0] not in doc for c in choices):
-                doc += '\n' + '\n'.join(
-                    '%s%s' % (c[0], ' - %s' % c[1] if c[1] != c[0] else '')
-                    for c in choices
-                    if '\n%s - ' % c[0] not in doc
-                )
+
+        choices = field.get('choices', [])
+        if any(c[0] not in doc for c in choices):
+            doc += '\n' + '\n'.join(
+                '%s%s' % (c[0], ' - %s' % c[1] if c[1] != c[0] else '')
+                for c in choices
+                if '\n%s - ' % c[0] not in doc
+            )
 
         over_class = override_field_class(model_name, typename, name)
         if over_class:
@@ -1013,20 +1031,24 @@ class XSDModelBuilder:
             else:
                 options.append('null=True')
         else:
-            default = el_attr_def.get('default')
+            default = final_el_attr_def.get('default')
             if default:
                 if basetype == "xs:boolean" and default == "true":
                     options.append('default=True')
                 else:
                     options.append('default="%s"' % default)
 
+        if match(name, model, 'array_fields'):
+            field['wrap'] = 'ArrayField'
+
         if el_def:
             max_occurs = el_def.get("maxOccurs", "1")
-            if max_occurs != "1":
-                raise Exception(
+            assert \
+                (max_occurs == "1") != (field.get('wrap', 0) == "ArrayField"), (
                     "caught maxOccurs=%s in %s.%s (@type=%s). Consider adding"
-                    " it to many_to_many_fields, one_to_many_fields or"
-                    " json_fields" % (max_occurs, typename, name, el_type)
+                    " it to many_to_many_fields, one_to_many_fields,"
+                    " array_fields, or json_fields" % (max_occurs, typename,
+                                                       name, el_type)
                 )
         if name == model.get('primary_key', None):
             options.append('primary_key=True')
@@ -1042,7 +1064,9 @@ class XSDModelBuilder:
                              doc=[doc],
                              django_field=field['name'],
                              options=options,
-                             coalesce=coalesce_target)
+                             coalesce=coalesce_target,
+                             **({'wrap': field['wrap']} if field.get('wrap', 0)
+                                else {}))
         if reference_extension:
             seq_or_choice2_def = self.get_seq_or_choice(ext2_defs[0])
             self.write_seq_or_choice(seq_or_choice2_def, typename,
