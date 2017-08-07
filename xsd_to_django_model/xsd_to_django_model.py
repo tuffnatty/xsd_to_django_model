@@ -439,6 +439,9 @@ class Model:
                           typename=None,
                           name=None,
                           el_def=None):
+        assert one_to_one or one_to_many, \
+            "add_reverse_field called without one_to_one or one_to_many"
+
         reverse_name = camelcase_to_underscore(self.model_name)
         fk = {
             'name': reverse_name,
@@ -461,10 +464,6 @@ class Model:
             else:
                 rel, ct2_def = (one_to_many, None)
             kwargs = {'one_to_many': True}
-        else:
-            raise Exception(
-                "add_reverse_field called without one_to_one or one_to_many"
-            )
         self.builder.make_model(rel, ct2_def, add_fields=[fk])
         self.add_field(dotted_name=dotted_name,
                        name=name,
@@ -661,13 +660,13 @@ class XSDModelBuilder:
                     doc, parent, options = \
                         self.get_field_data_from_simpletype(st_def, el_def)
                 except IndexError:
-                    try:
-                        ct_def = xpath(el_def, "xs:complexType")[0]
-                    except IndexError:
-                        raise Exception("%s nor a simpleType neither a"
-                                        " complexType within %s" % (
-                                            typename, el_def.get("name")))
-                    self.make_model(el_path, ct_def)
+                    ct_defs = xpath(el_def, "xs:complexType")
+                    assert len(ct_defs), (
+                        "%s nor a simpleType neither a complexType within %s" %
+                        (typename, el_def.get("name"))
+                    )
+
+                    self.make_model(el_path, ct_defs[0])
                     model_name = get_model_for_type(el_path)
                     return {
                         'name': 'models.OneToOneField',
@@ -838,16 +837,19 @@ class XSDModelBuilder:
                                el_def.get("name"))
                 el2_def = el_def
                 el2_name = name
+
         ct2_def = self.get_element_complex_type(el2_def)
-        if ct2_def is None:
-            raise Exception("N:many field %s content not a complexType" % name)
+        assert ct2_def is not None, \
+            "N:many field %s content not a complexType" % name
+
         rel = ct2_def.get("name") or ('%s.%s' % (typename, el2_name))
         return rel, ct2_def
 
     def get_n_to_one_relation(self, typename, name, el_def):
         ct2_def = self.get_element_complex_type(el_def)
-        if ct2_def is None:
-            raise Exception("N:1 field %s content is not a complexType" % name)
+        assert ct2_def is not None, \
+            "N:1 field %s content is not a complexType" % name
+
         rel = ct2_def.get("name") or ('%s.%s' % (typename, name))
         return rel, ct2_def
 
@@ -955,20 +957,17 @@ class XSDModelBuilder:
                                    ' while flattening prefix %s',
                                    o['prefix'])
 
-        if len(name) > 63:
-            raise Exception(
-                "%s hits PostgreSQL 63 chars column name limit!" % name
-            )
+        assert len(name) <= 63, \
+            "%s hits PostgreSQL column name 63 char limit!" % name
 
         basetype = None
         reference_extension = match(name, model, 'reference_extension_fields')
         if reference_extension:
             new_prefix = '%s.' % dotted_name
-            if ct2_def is None:
-                raise Exception(
-                    'complexType not found while processing reference extension'
-                    ' for prefix %s' % new_prefix
-                )
+            assert ct2_def is not None, (
+                'complexType not found while processing reference extension'
+                ' for prefix %s' % new_prefix
+            )
             ext2_defs = xpath(ct2_def, "xs:complexContent/xs:extension")
             try:
                 basetype = ext2_defs[0].get("base")
@@ -1138,8 +1137,8 @@ class XSDModelBuilder:
         if typename not in self.models:
             this_model = Model(self, model_name, typename)
             self.models[typename] = this_model
-        elif not get_merge_for_type(typename):
-            raise Exception(
+        else:
+            assert get_merge_for_type(typename), (
                 "Not merging type %s, model %s already exists and no merge (+)"
                 " prefix specified" % (typename, model_name)
             )
@@ -1151,8 +1150,7 @@ class XSDModelBuilder:
             if ct_def is None:
                 ct_defs = xpath(self.tree, "//xs:complexType[@name=$n]",
                                 n=typename)
-                if not ct_defs:
-                    raise Exception("%s not found in schema" % typename)
+                assert ct_defs, "%s not found in schema" % typename
                 ct_def = ct_defs[0]
 
             doc = get_doc(ct_def, None, None)
@@ -1176,33 +1174,28 @@ class XSDModelBuilder:
                     try:
                         seq_def = xpath(ext_def, "xs:sequence")[0]
                     except IndexError:
-                        if len(ext_def) == 0:
-                            logger.warning("no additions in extension in"
-                                           " complexContent in %s complexType",
-                                           typename)
-                        else:
-                            raise Exception(
-                                "no sequence in extension in complexContent in"
-                                " %s complexType but %d other children exist"
-                                % (typename, len(ext_def))
-                            )
-                    parent = self.simplify_ns(ext_def.get("base"))
-                    if not parent:
-                        raise Exception(
-                            "no base attribute in extension in %s complexType"
-                            % typename
+                        assert len(ext_def) == 0, (
+                            "no sequence in extension in complexContent in"
+                            " %s complexType but %d other children exist"
+                            % (typename, len(ext_def))
                         )
+                        logger.warning("no additions in extension in"
+                                       " complexContent in %s complexType",
+                                       typename)
+                    parent = self.simplify_ns(ext_def.get("base"))
+                    assert parent, (
+                        "no base attribute in extension in %s complexType"
+                        % typename
+                    )
                     if ':' not in parent:
                         parent = self.get_parent_ns(ext_def) + parent
 
             if not parent:
                 parent_field = model.get('parent_field')
                 if parent_field:
-                    if seq_def is None:
-                        raise Exception(
-                            'parent_field is set for %s but no sequence'
-                            % typename
-                        )
+                    assert seq_def is not None, \
+                        'parent_field is set for %s but no sequence' % typename
+
                     parent = xpath(seq_def, "xs:element[@name=$n]/@type",
                                    n=parent_field)[0]
 
@@ -1354,15 +1347,14 @@ class XSDModelBuilder:
                             normalize_code(first_model_field['code']):
                         force_list = get_opt(m.model_name, m.type_name) \
                             .get('ignore_merge_mismatch_fields', ())
-                        if f.get('dotted_name') not in force_list:
-                            raise Exception(
-                                "first field in type %s: %s,\n"
-                                "second field in type %s: %s"
-                                % (containing_models[0].type_name,
-                                   first_model_field['code'],
-                                   m.type_name,
-                                   f['code'])
-                            )
+                        assert f.get('dotted_name') in force_list, (
+                            "first field in type %s: %s,\n"
+                            "second field in type %s: %s"
+                            % (containing_models[0].type_name,
+                               first_model_field['code'],
+                               m.type_name,
+                               f['code'])
+                        )
 
             f = first_model_field
 
@@ -1402,12 +1394,11 @@ class XSDModelBuilder:
             def check_fields(parent_model, parent_name, m, f, f1):
                 parent_opts = get_opt(parent_model.model_name,
                                       parent_model.type_name)
-                if normalize_code(f1['code']) == normalize_code(f['code']) \
-                        or (f1.get('dotted_name')
-                            in parent_opts.get('ignore_merge_mismatch_fields',
-                                               ())):
-                    return
-                raise Exception(
+                assert (
+                    normalize_code(f1['code']) == normalize_code(f['code']) or
+                    (f1.get('dotted_name') in
+                     parent_opts.get('ignore_merge_mismatch_fields', ()))
+                ), (
                     'different field code while merging:\n%s: %s;\n%s: %s'
                     % (parent_name, f1['code'], m.model_name, f['code'])
                 )
@@ -1485,10 +1476,11 @@ class XSDModelBuilder:
                 merged_model.number_field = models[0].number_field
 
                 parents = merge_model_parents(models, merged_models)
-                if len(parents) > 1:
-                    raise Exception("different parents %s for types %s"
-                                    % (parents, merged_typename))
-                elif len(parents):
+                assert len(parents) <= 1, \
+                    "different parents %s for types %s" % (parents,
+                                                           merged_typename)
+
+                if parents:
                     merged_model.parent = parents[0]
 
                 merged_model.deps = sorted(set(cat(m.deps for m in models
