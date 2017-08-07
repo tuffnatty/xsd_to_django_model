@@ -390,7 +390,9 @@ class Model:
 
     def add_field(self, **kwargs):
         def fix_related_name(m, django_field, kwargs):
-            if django_field in ('models.ManyToManyField', 'models.ForeignKey'):
+            if django_field in ('models.ManyToManyField', 'models.ForeignKey') \
+                    and not any(o.startswith('related_name=')
+                                for o in kwargs['options']):
                 while m:
                     for f in m.fields:
                         if f.get('django_field') == django_field and \
