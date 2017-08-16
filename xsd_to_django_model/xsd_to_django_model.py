@@ -1294,9 +1294,10 @@ class XSDModelBuilder:
                 try:
                     ext_def = xpath(ct_def, "xs:complexContent/xs:extension")[0]
                 except IndexError:
-                    logger.warning("no sequence/choice and no complexContent"
-                                   " in %s complexType",
-                                   typename)
+                    if len(xpath(ct_def, "xs:attribute")) == 0:
+                        logger.warning("no sequence/choice, no attributes, and"
+                                       " no complexContent in %s complexType",
+                                       typename)
                 else:
                     self.write_attributes(ext_def, typename, attrs=attrs)
                     try:
