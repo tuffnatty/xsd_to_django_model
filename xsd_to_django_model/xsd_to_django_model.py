@@ -678,7 +678,8 @@ class XSDModelBuilder:
             if ':' not in basetype:
                 basetype = self.get_parent_ns(st_def) + basetype
             doc, parent, options = self.get_field_data_from_type(basetype)
-        assert type(options) is dict, "options is not a dict"
+        assert type(options) is dict, \
+            "options is not a dict while processing type %s" % basetype
 
         pattern = xpath(restrict_def, "xs:pattern/@value")
         enums = xpath(restrict_def, "xs:enumeration/@value")
