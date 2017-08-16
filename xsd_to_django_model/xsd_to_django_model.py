@@ -127,6 +127,10 @@ def xpath(root, path, **kwargs):
     return root.xpath(path, namespaces=NS, **kwargs)
 
 
+def xpath_one(root, path, **kwargs):
+    return next(iter(xpath(root, path, **kwargs)), None)
+
+
 def get_model_for_type(name):
     for expr, sub in TYPE_MODEL_MAP.iteritems():
         if re.match(expr + '$', name):
@@ -652,8 +656,7 @@ class XSDModelBuilder:
         return parent
 
     def get_field_choices_from_simpletype(self, st_def):
-        restrict_def = xpath(st_def, "xs:restriction")[0]
-        enumerations = xpath(restrict_def, "xs:enumeration")
+        enumerations = xpath(st_def, "xs:restriction/xs:enumeration")
         choices = []
         for enumeration in enumerations:
             choices.append((enumeration.get('value'),
@@ -715,26 +718,35 @@ class XSDModelBuilder:
             return TYPE_OVERRIDES[typename]
         elif typename in BASETYPE_FIELD_MAP:
             return None, None, None
-        st_def = xpath(self.tree, "//xs:simpleType[@name=$n]",
-                       n=typename)
-        if st_def:
-            return self.get_field_data_from_simpletype(st_def[0])
-        return None, None, None
+        st_def = xpath_one(self.tree, "//xs:simpleType[@name=$n]",
+                           n=typename)
+        if st_def is None:
+            return None, None, None
+        return self.get_field_data_from_simpletype(st_def)
+
+    def get_simpletype_primitive(self, st_def):
+        base = None
+        while st_def is not None:
+            this_base = xpath_one(st_def, "xs:restriction/@base")
+            if this_base is None:
+                break
+            base = this_base
+            st_def = xpath_one(self.tree, "//xs:simpleType[@name=$n]", n=base)
+        return base
 
     def get_field(self, typename, el_def=None, el_path=''):
         orig_typename = typename
         if typename not in self.fields:
             if not typename:
-                try:
-                    st_def = xpath(el_def, "xs:simpleType")[0]
-                except IndexError:
-                    ct_defs = xpath(el_def, "xs:complexType")
-                    assert len(ct_defs), (
+                st_def = xpath_one(el_def, "xs:simpleType")
+                if st_def is None:
+                    ct_def = xpath_one(el_def, "xs:complexType")
+                    assert ct_def is not None, (
                         "%s nor a simpleType neither a complexType within %s" %
                         (typename, el_def.get("name"))
                     )
 
-                    self.make_model(el_path, ct_defs[0])
+                    self.make_model(el_path, ct_def)
                     model_name = get_model_for_type(el_path)
                     return orig_typename, {
                         'name': 'models.OneToOneField',
@@ -743,15 +755,7 @@ class XSDModelBuilder:
                 else:
                     doc, parent, options = \
                         self.get_field_data_from_simpletype(st_def, el_def)
-                    bases = xpath(st_def, "xs:restriction/@base")
-                    if len(bases):
-                        if not orig_typename:
-                            orig_typename = bases[0]
-                        else:
-                            assert bases[0] == orig_typename, (
-                                "xs:restriction/@base %s differs from type %s"
-                                % (bases[0], typename)
-                            )
+                    orig_typename = self.get_simpletype_primitive(st_def)
                 return orig_typename, {
                     'name': 'models.%s' % parent,
                     'options': ['%s=%s' % (k, v) for k, v in options.items()],
@@ -778,6 +782,8 @@ class XSDModelBuilder:
                 else:
                     choices = None
                 self.make_field(typename, doc, parent, options, choices)
+        st_def = xpath(self.tree, "//xs:simpleType[@name=$n]", n=typename)[0]
+        orig_typename = self.get_simpletype_primitive(st_def)
         return orig_typename, self.fields[typename]
 
     def make_field(self, typename, doc, parent, options, choices):
@@ -826,30 +832,20 @@ class XSDModelBuilder:
     def get_element_type(self, el_def):
         el_type = el_def.get("type")
         if not el_type:
-            try:
-                el_type = xpath(el_def, "xs:complexType/xs:complexContent/"
-                                "xs:extension[count(*)=0]/@base")[0]
-            except IndexError:
-                pass
+            el_type = xpath_one(el_def, "xs:complexType/xs:complexContent/"
+                                "xs:extension[count(*)=0]/@base")
         return self.simplify_ns(el_type)
 
     def get_element_complex_type(self, el_def):
         el_type = self.get_element_type(el_def)
         if el_type:
             el_type = self.get_parent_ns(el_def) + el_type
-            result = xpath(self.tree, "//xs:complexType[@name=$n]", n=el_type)
-        else:
-            result = xpath(el_def, "xs:complexType")
-        try:
-            return result[0]
-        except IndexError:
-            return None
+            return xpath_one(self.tree, "//xs:complexType[@name=$n]", n=el_type)
+        return xpath_one(el_def, "xs:complexType")
 
     def get_seq_or_choice(self, parent_def):
-        seq_def = xpath(parent_def, "xs:sequence")
-        choice_def = xpath(parent_def, "xs:choice")
-        return (seq_def[0] if seq_def else None,
-                choice_def[0] if choice_def else None)
+        return (xpath_one(parent_def, "xs:sequence"),
+                xpath_one(parent_def, "xs:choice"))
 
     def write_seq_or_choice(self, seq_or_choice, typename,
                             prefix='',
@@ -887,19 +883,17 @@ class XSDModelBuilder:
                          null=False):
         if ct_def is None:
             return
-        attr_defs = xpath(ct_def, "xs:attribute")
-        if attr_defs is not None:
-            for attr_def in attr_defs:
-                attr_name = attr_def.get("name") or attr_def.get("ref")
-                dotted_name = '%s@%s' % (prefix, attr_name)
-                name = '%s%s' % (prefix.replace('.', '_'), attr_name)
-                use_required = (attr_def.get("use") == "required")
-                self.make_a_field(typename, name, dotted_name,
-                                  attr_def=attr_def,
-                                  prefix=prefix,
-                                  doc_prefix=doc_prefix,
-                                  attrs=attrs,
-                                  null=null or not use_required)
+        for attr_def in xpath(ct_def, "xs:attribute"):
+            attr_name = attr_def.get("name") or attr_def.get("ref")
+            dotted_name = '%s@%s' % (prefix, attr_name)
+            name = '%s%s' % (prefix.replace('.', '_'), attr_name)
+            use_required = (attr_def.get("use") == "required")
+            self.make_a_field(typename, name, dotted_name,
+                              attr_def=attr_def,
+                              prefix=prefix,
+                              doc_prefix=doc_prefix,
+                              attrs=attrs,
+                              null=null or not use_required)
         if len(xpath(ct_def, "xs:anyAttribute")):
             attrs[''] = "Any additional attributes"
             logger.warning(
@@ -913,13 +907,13 @@ class XSDModelBuilder:
             el2_def = el_def
             el2_name = name
         else:
-            try:
-                el2_def = xpath(self.get_element_complex_type(el_def),
+            el2_def = xpath_one(self.get_element_complex_type(el_def),
                                 "xs:sequence/xs:element[@maxOccurs=$n]",
-                                n='unbounded')[0]
+                                n='unbounded')
+            if el2_def is not None:
                 el2_def = resolve_el_ref(self.tree, el2_def)
                 el2_name = '%s_%s' % (name, el2_def.get("name"))
-            except IndexError:
+            else:
                 logger.warning("no maxOccurs=unbounded in %s,"
                                " pretending it's unbounded",
                                el_def.get("name"))
@@ -947,14 +941,12 @@ class XSDModelBuilder:
                            "/xs:restriction is not yet supported",
                            ct_def.get('name'))
 
-        sext_def, cext_def = (None, None)
-        try:
-            sext_def = xpath(ct_def, "xs:simpleContent/xs:extension")[0]
-        except IndexError:
-            try:
-                cext_def = xpath(ct_def, "xs:complexContent/xs:extension")[0]
-            except IndexError:
-                pass
+        sext_def = xpath_one(ct_def, "xs:simpleContent/xs:extension")
+        cext_def = xpath_one(ct_def, "xs:complexContent/xs:extension")
+        assert sext_def is None or cext_def is None, (
+            "both xs:simpleContent and xs:complexContent while flattening %s"
+            % typename
+        )
         ext_def = sext_def or cext_def
 
         if cext_def is not None:
@@ -1075,10 +1067,10 @@ class XSDModelBuilder:
                 'complexType not found while processing reference extension'
                 ' for prefix %s' % new_prefix
             )
-            ext2_defs = xpath(ct2_def, "xs:complexContent/xs:extension")
-            try:
-                basetype = ext2_defs[0].get("base")
-            except IndexError:
+            ext2_def = xpath_one(ct2_def, "xs:complexContent/xs:extension")
+            if ext2_def is not None:
+                basetype = ext2_def.get("base")
+            else:
                 logger.warning("No reference extension while processing prefix"
                                " %s, falling back to normal processing",
                                new_prefix)
@@ -1181,7 +1173,7 @@ class XSDModelBuilder:
                              **({'wrap': field['wrap']} if field.get('wrap', 0)
                                 else {}))
         if reference_extension:
-            seq_or_choice2_def = self.get_seq_or_choice(ext2_defs[0])
+            seq_or_choice2_def = self.get_seq_or_choice(ext2_def)
             self.write_seq_or_choice(seq_or_choice2_def, typename,
                                      prefix=new_prefix,
                                      doc_prefix=doc_prefix,
@@ -1266,10 +1258,9 @@ class XSDModelBuilder:
 
         if not model.get('custom', False):
             if ct_def is None:
-                ct_defs = xpath(self.tree, "//xs:complexType[@name=$n]",
-                                n=typename)
-                assert ct_defs, "%s not found in schema" % typename
-                ct_def = ct_defs[0]
+                ct_def = xpath_one(self.tree, "//xs:complexType[@name=$n]",
+                                   n=typename)
+                assert ct_def is not None, "%s not found in schema" % typename
 
             this_model.abstract = (model.get('abstract', False) or
                                    ct_def.get('abstract') == 'true')
@@ -1303,9 +1294,8 @@ class XSDModelBuilder:
 
             seq_def, choice_def = self.get_seq_or_choice(ct_def)
             if seq_def is None and choice_def is None:
-                try:
-                    ext_def = xpath(ct_def, "xs:complexContent/xs:extension")[0]
-                except IndexError:
+                ext_def = xpath_one(ct_def, "xs:complexContent/xs:extension")
+                if ext_def is None:
                     if len(xpath(ct_def, "xs:attribute")) == 0:
                         logger.warning("no sequence/choice, no attributes, and"
                                        " no complexContent in %s complexType",
