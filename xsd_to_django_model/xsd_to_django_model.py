@@ -721,12 +721,11 @@ class XSDModelBuilder:
         return None, None, None
 
     def get_field(self, typename, el_def=None, el_path=''):
+        orig_typename = typename
         if typename not in self.fields:
             if not typename:
                 try:
                     st_def = xpath(el_def, "xs:simpleType")[0]
-                    doc, parent, options = \
-                        self.get_field_data_from_simpletype(st_def, el_def)
                 except IndexError:
                     ct_defs = xpath(el_def, "xs:complexType")
                     assert len(ct_defs), (
@@ -736,11 +735,23 @@ class XSDModelBuilder:
 
                     self.make_model(el_path, ct_defs[0])
                     model_name = get_model_for_type(el_path)
-                    return {
+                    return orig_typename, {
                         'name': 'models.OneToOneField',
                         'options': [model_name, 'on_delete=models.CASCADE'],
                     }
-                return {
+                else:
+                    doc, parent, options = \
+                        self.get_field_data_from_simpletype(st_def, el_def)
+                    bases = xpath(st_def, "xs:restriction/@base")
+                    if len(bases):
+                        if not orig_typename:
+                            orig_typename = bases[0]
+                        else:
+                            assert bases[0] == orig_typename, (
+                                "xs:restriction/@base %s differs from type %s"
+                                % (bases[0], typename)
+                            )
+                return orig_typename, {
                     'name': 'models.%s' % parent,
                     'options': ['%s=%s' % (k, v) for k, v in options.items()],
                 }
@@ -750,11 +761,11 @@ class XSDModelBuilder:
                 doc, parent, options = self.get_field_data_from_type(typename)
                 if parent is None:
                     if typename in BASETYPE_FIELD_MAP:
-                        return {
+                        return orig_typename, {
                             'name': 'models.%s' % BASETYPE_FIELD_MAP[typename]
                         }
                     self.make_model(typename)
-                    return {
+                    return orig_typename, {
                         'name': 'models.ForeignKey',
                         'options': [get_model_for_type(typename),
                                     'on_delete=models.PROTECT'],
@@ -766,7 +777,7 @@ class XSDModelBuilder:
                 else:
                     choices = None
                 self.make_field(typename, doc, parent, options, choices)
-        return self.fields[typename]
+        return orig_typename, self.fields[typename]
 
     def make_field(self, typename, doc, parent, options, choices):
         name = '%sField' \
@@ -1005,23 +1016,38 @@ class XSDModelBuilder:
                 }
                 if ct2_def is not None:
                     o['null'] = null or get_null(el_def)
-                    ext2_defs = xpath(ct2_def, "xs:complexContent/xs:extension")
-                    if not ext2_defs:
+                    process_simpletype_base = False
+                    if len(xpath(ct2_def, "xs:simpleContent/xs:restriction")):
+                        logger.warning("xs:complexType[name=%s]"
+                                       "/xs:simpleContent/xs:restriction"
+                                       " is not yet supported",
+                                       ct2_def.get('name'))
+                    ext2_defs = xpath(ct2_def, "xs:simpleContent/xs:extension")
+                    if len(ext2_defs):
+                        el_type = ext2_defs[0].get('base')
+                        self.write_attributes(ext2_defs[0], typename, **o)
+                        process_simpletype_base = True
+                    else:
+                        ext2_defs = \
+                            xpath(ct2_def, "xs:complexContent/xs:extension")
+                    seq_or_choice3_def = (None, None)
+                    ct3_def = None
+                    if not len(ext2_defs):
                         seq_or_choice2_def = self.get_seq_or_choice(ct2_def)
-                        seq_or_choice3_def = (None, None)
-                        ct3_def = None
                     else:
                         seq_or_choice2_def = \
                             self.get_seq_or_choice(ext2_defs[0])
-                        basetype = ext2_defs[0].get("base")
-                        ct3_def = xpath(self.tree, "//xs:complexType[@name=$n]",
-                                        n=basetype)[0]
-                        seq_or_choice3_def = self.get_seq_or_choice(ct3_def)
+                        if not process_simpletype_base:
+                            ct3_def = xpath(self.tree,
+                                            "//xs:complexType[@name=$n]",
+                                            n=ext2_defs[0].get("base"))[0]
+                            seq_or_choice3_def = self.get_seq_or_choice(ct3_def)
                     self.write_attributes(ct3_def, typename, **o)
                     self.write_seq_or_choice(seq_or_choice3_def, typename, **o)
                     self.write_attributes(ct2_def, typename, **o)
                     self.write_seq_or_choice(seq_or_choice2_def, typename, **o)
-                    return
+                    if not process_simpletype_base:
+                        return
                 else:
                     logger.warning('complexType not found'
                                    ' while flattening prefix %s',
@@ -1060,6 +1086,11 @@ class XSDModelBuilder:
 
         try:
             rel = model.get('foreign_key_overrides', {})[name]
+        except KeyError:
+            final_type, field = self.get_field(final_type,
+                                               final_el_attr_def,
+                                               '%s.%s' % (typename, name))
+        else:
             if rel != '%s.%s' % (typename, name):
                 ct2_def = xpath(self.tree, "//xs:complexType[@name=$n]",
                                 n=rel)[0]
@@ -1071,10 +1102,6 @@ class XSDModelBuilder:
                 'name': 'models.ForeignKey',
                 'options': [get_model_for_type(rel), 'on_delete=models.PROTECT']
             }
-        except KeyError:
-            field = self.get_field(final_type,
-                                   final_el_attr_def,
-                                   '%s.%s' % (typename, name))
 
         choices = field.get('choices', [])
         if any(c[0] not in doc for c in choices):
@@ -1223,6 +1250,13 @@ class XSDModelBuilder:
                 ct_def = ct_defs[0]
 
             this_model.abstract = (ct_def.get('abstract') == 'true')
+
+            if len(xpath(ct_def, "xs:simpleContent")):
+                logger.warning(
+                    'xs:complexType[name="%s"]/xs:simpleContent is only'
+                    ' supported within flatten_fields',
+                    typename
+                )
 
             doc = get_doc(ct_def, None, None)
             if not doc:
