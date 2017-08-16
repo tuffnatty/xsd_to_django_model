@@ -565,8 +565,12 @@ class XSDModelBuilder:
         self.tree = parse_xmlns(infile, ns_map)
         root = self.tree.getroot()
         ns_list = set()
-        while len(xpath(self.tree, "//xs:import[@schemaLocation]")):
-            for imp in xpath(self.tree, "//xs:import[@schemaLocation]"):
+        while True:
+            imports = list(xpath(self.tree, "//xs:import[@schemaLocation]") +
+                           xpath(self.tree, "//xs:include[@schemaLocation]"))
+            if not len(imports):
+                break
+            for imp in imports:
                 ns_uri = imp.get('namespace')
                 ns = None
                 for k, v in ns_map:
