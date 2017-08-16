@@ -310,6 +310,10 @@ def resolve_el_ref(tree, el_def):
     return resolve_ref(tree, el_def, "xs:element")
 
 
+def resolve_group_ref(tree, group_def):
+    return resolve_ref(tree, group_def, "xs:group")
+
+
 class Model:
 
     def __init__(self, builder, model_name, type_name):
@@ -1188,18 +1192,21 @@ class XSDModelBuilder:
                     is_root=False):
         this_model = self.models[typename]
         null = (null or get_null(seq_def))
-        for seq2_def in xpath(seq_def, "xs:sequence"):
-            self.write_seq_or_choice((seq2_def, None), typename,
+        seqs = []
+        for group_def in xpath(seq_def, "xs:group"):
+            group_def = resolve_group_ref(self.tree, group_def)
+            seqs.extend([(s, None) for s in xpath(group_def, "xs:sequence")])
+            seqs.extend([(None, c) for c in xpath(group_def, "xs:choice")])
+        seqs.extend([(s, None) for s in xpath(seq_def, "xs:sequence")])
+        seqs.extend([(None, c) for c in xpath(seq_def, "xs:choice")])
+
+        for seq_or_choice_def in seqs:
+            self.write_seq_or_choice(seq_or_choice_def, typename,
                                      prefix=prefix,
                                      doc_prefix=doc_prefix,
                                      attrs=attrs,
                                      null=null)
-        for choice_def in xpath(seq_def, "xs:choice"):
-            self.write_seq_or_choice((None, choice_def), typename,
-                                     prefix=prefix,
-                                     doc_prefix=doc_prefix,
-                                     attrs=attrs,
-                                     null=null)
+
         for el_def in xpath(seq_def, "xs:element"):
             el_name = el_def.get("name") or el_def.get("ref")
             dotted_name = prefix + el_name
