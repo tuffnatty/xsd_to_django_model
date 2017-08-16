@@ -1082,10 +1082,17 @@ class XSDModelBuilder:
                 reference_extension = False
 
         if match(name, model, 'array_fields'):
-            assert ct2_def is not None, \
-                '%s has no complexType required for array_fields' % dotted_name
-            final_el_attr_def = xpath(ct2_def, "xs:sequence/xs:element")[0]
-            final_type = self.get_element_type(final_el_attr_def)
+            if el_def.get('maxOccurs', '1') == 'unbounded':
+                final_el_attr_def = el_attr_def
+                final_type = basetype or el_type
+            else:
+                assert ct2_def is not None, (
+                    '%s has no maxOccurs=unbounded or complexType, required for'
+                    ' array_fields'
+                    % dotted_name
+                )
+                final_el_attr_def = xpath(ct2_def, "xs:sequence/xs:element")[0]
+                final_type = self.get_element_type(final_el_attr_def)
             doc = get_doc(final_el_attr_def, name, model_name,
                           doc_prefix=doc + '::')
         else:
@@ -1147,7 +1154,7 @@ class XSDModelBuilder:
         if el_def is not None:
             max_occurs = el_def.get("maxOccurs", "1")
             assert \
-                (max_occurs == "1") != (field.get('wrap', 0) == "ArrayField"), (
+                (max_occurs == "1") or (field.get('wrap', 0) == "ArrayField"), (
                     "caught maxOccurs=%s in %s.%s (@type=%s). Consider adding"
                     " it to many_to_many_fields, one_to_many_fields,"
                     " array_fields, or json_fields" % (max_occurs, typename,
