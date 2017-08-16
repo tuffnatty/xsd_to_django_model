@@ -1273,6 +1273,12 @@ class XSDModelBuilder:
                     ' supported within flatten_fields',
                     typename
                 )
+            if len(xpath(ct_def, "xs:complexContent/xs:restriction")):
+                logger.warning(
+                    'xs:complexType[name="%s"]/xs:complexContent/xs:restriction'
+                    ' is not supported yet',
+                    typename
+                )
 
             doc = get_doc(ct_def, None, None)
             if not doc:
