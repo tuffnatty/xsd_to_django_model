@@ -1144,12 +1144,12 @@ class XSDModelBuilder:
                                model_name, name)
             else:
                 options.append('null=True')
-
-        default = \
-            final_el_attr_def.get('default') or final_el_attr_def.get('fixed')
-        if default:
-            default = parse_default(final_type, default)
-            options.append('default=%s' % repr(default))
+        else:
+            default = (final_el_attr_def.get('default') or
+                       final_el_attr_def.get('fixed'))
+            if default:
+                default = parse_default(final_type, default)
+                options.append('default=%s' % repr(default))
 
         if match(name, model, 'array_fields'):
             field['wrap'] = 'ArrayField'
