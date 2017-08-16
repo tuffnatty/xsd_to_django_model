@@ -1,0 +1,19 @@
+<xs:schema xmlns:xs="http://www.w3.org/2001/XMLSchema"
+            xmlns="http://example.org/prod"
+            targetNamespace="http://example.org/prod"
+            elementFormDefault="qualified">
+  <xs:element name="product" type="ProductType"/>
+  <xs:element name="size" type="xs:integer" fixed="10"/>
+  <xs:complexType name="ProductType">
+    <xs:sequence>
+      <xs:element name="name" default="N/A">
+        <xs:simpleType>
+          <xs:restriction base="xs:string">
+            <xs:minLength value="1"/>
+          </xs:restriction>
+        </xs:simpleType>
+      </xs:element>
+      <xs:element ref="size" minOccurs="0"/>
+    </xs:sequence>
+  </xs:complexType>
+</xs:schema>

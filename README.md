@@ -3,7 +3,9 @@ Generate Django models from an XSD schema description (and a bunch of hints)
 
 ## TODO
 * More documentation.
-* Examples.
+* More examples.
+* `<xs:complexType><xs:complexContent><xs:restriction>...` support.
+* ...?
 
 ## Getting started
 
@@ -22,3 +24,7 @@ Options:
 
 If you have xsd_to_django_model_settings.py in your PYTHONPATH or in the current directory, it will be imported.
 ```
+
+## Examples
+
+See the `examples` subdirectory.

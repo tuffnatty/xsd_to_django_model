@@ -1,0 +1,6 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!-- manual hack to merge multiple xsd files - Ph. -->
+<xs:schema xmlns:xs="http://www.w3.org/2001/XMLSchema" xmlns:prod="http://example.org/prod">
+	<xs:import namespace="http://example.org/ord" schemaLocation="chapter05ord.xsd"/>
+	<xs:import namespace="http://example.org/prod" schemaLocation="chapter05prod.xsd"/>
+</xs:schema>
