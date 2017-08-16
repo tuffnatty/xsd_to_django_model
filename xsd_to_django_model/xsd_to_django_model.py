@@ -1262,6 +1262,11 @@ class XSDModelBuilder:
 
             this_model.abstract = (ct_def.get('abstract') == 'true')
 
+            if ct_def.get('mixed') == 'true':
+                logger.warning(
+                    'xs:complexType[name="%s"] mixed=true is not supported yet',
+                    typename
+                )
             if len(xpath(ct_def, "xs:simpleContent")):
                 logger.warning(
                     'xs:complexType[name="%s"]/xs:simpleContent is only'
