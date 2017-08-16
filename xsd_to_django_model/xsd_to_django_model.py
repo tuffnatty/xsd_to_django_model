@@ -1311,15 +1311,17 @@ class XSDModelBuilder:
                     self.write_attributes(ext_def, typename, attrs=attrs)
                     seq_def, choice_def = self.get_seq_or_choice(ext_def)
                     if seq_def is None and choice_def is None:
-                        assert len(ext_def) == 0, (
-                            "no sequence or choice in extension in"
-                            " complexContent in %s complexType but %d other"
-                            " children exist"
-                            % (typename, len(ext_def))
+                        n_attributes = len(xpath(ext_def, "xs:attribute"))
+                        assert len(ext_def) == n_attributes, (
+                            "no sequence or choice and no attributes in"
+                            " extension in complexContent in %s complexType but"
+                            " %d other children exist"
+                            % (typename, len(ext_def) - n_attributes)
                         )
-                        logger.warning("no additions in extension in"
-                                       " complexContent in %s complexType",
-                                       typename)
+                        if not n_attributes:
+                            logger.warning("no additions in extension in"
+                                           " complexContent in %s complexType",
+                                           typename)
                     parent = self.simplify_ns(ext_def.get("base"))
                     assert parent, (
                         "no base attribute in extension in %s complexType"
