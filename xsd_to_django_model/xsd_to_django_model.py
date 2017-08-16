@@ -595,13 +595,16 @@ class XSDModelBuilder:
 
     def get_parent_ns(self, el_def):
         root = self.tree.getroot()
-        while el_def != root:
-            if el_def.tag.endswith(("}complexType", "}simpleType")):
-                name = el_def.get('name')
+        ptr = el_def
+        while ptr != root:
+            parent = self.parent_map[ptr]
+            if ptr.tag.endswith(("}complexType", "}simpleType")) or \
+                    (parent == root and ptr == el_def):
+                name = ptr.get('name')
                 if name and ':' in name:
                     ns, _ = name.split(':')
                     return ns + ':'
-            el_def = self.parent_map[el_def]
+            ptr = parent
         return ''
 
     def get_min_max(self, parent, restrict_def, validators,):
