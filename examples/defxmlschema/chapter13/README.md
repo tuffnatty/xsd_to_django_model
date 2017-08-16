@@ -8,4 +8,6 @@ The settings file demonstrates:
 * `flatten_fields` usage for `xs:complexType/xs:complexContent` fields.
 * `TYPE_OVERRIDES` usage for overriding a primitive field type which we don't yet support.
 
-    PYTHONPATH=. ../../../xsd_to_django_model/xsd_to_django_model.py chapter13.xsd ItemsType
+```
+PYTHONPATH=. ../../../xsd_to_django_model/xsd_to_django_model.py chapter13.xsd ItemsType
+```

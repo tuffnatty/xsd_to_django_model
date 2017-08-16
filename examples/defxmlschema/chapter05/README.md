@@ -10,4 +10,6 @@ An extra technique is demonstrated for different namespaces in multiple XSD file
 
 The resulting models look fairly well.
 
-    PYTHONPATH=. ../../../xsd_to_django_model/xsd_to_django_model.py chapter05.xsd OrderType
+```
+PYTHONPATH=. ../../../xsd_to_django_model/xsd_to_django_model.py chapter05.xsd OrderType
+```

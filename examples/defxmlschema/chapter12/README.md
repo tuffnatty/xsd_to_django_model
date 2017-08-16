@@ -9,4 +9,6 @@ The settings file demonstrates:
 * `coalesce_fields` usage for renaming a field produced by flattening an `xs:complexType` with just a single attribute.
 * `TYPE_OVERRIDES` usage for overriding a field type which cannot be introspected automatically.
 
-    PYTHONPATH=. ../../../xsd_to_django_model/xsd_to_django_model.py chapter12.xsd ItemsType
+```
+PYTHONPATH=. ../../../xsd_to_django_model/xsd_to_django_model.py chapter12.xsd ItemsType
+```

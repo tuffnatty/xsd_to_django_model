@@ -7,4 +7,6 @@ The settings file demonstrates:
 * `flatten_fields` usage for `xs:complexType/xs:simpleContent/xs:extension` fields.
 * `flatten_fields` usage for `xs:complexType/xs:complexContent` fields.
 
-    PYTHONPATH=. ../../../xsd_to_django_model/xsd_to_django_model.py chapter04ord1.xsd OrderType
+```
+PYTHONPATH=. ../../../xsd_to_django_model/xsd_to_django_model.py chapter04ord1.xsd OrderType
+```
