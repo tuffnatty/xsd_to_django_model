@@ -899,6 +899,13 @@ class XSDModelBuilder:
                                   doc_prefix=doc_prefix,
                                   attrs=attrs,
                                   null=null or not use_required)
+        if len(xpath(ct_def, "xs:anyAttribute")):
+            attrs[''] = "Any additional attributes"
+            logger.warning(
+                'xs:complexType[name="%s"]/xs:anyAttribute is not supported'
+                ' yet',
+                typename
+            )
 
     def get_n_to_many_relation(self, typename, name, el_def):
         if el_def.get("maxOccurs") == 'unbounded':
@@ -1002,7 +1009,7 @@ class XSDModelBuilder:
                 attrs[coalesced_dotted_name] = doc
             return
 
-        if el_def:
+        if el_def is not None:
             ct2_def = self.get_element_complex_type(el_def)
             flatten_prefix = name.startswith(cat(o.get('flatten_prefixes', ())
                                                  for o in (GLOBAL_MODEL_OPTIONS,
@@ -1202,6 +1209,9 @@ class XSDModelBuilder:
                               attrs=attrs,
                               null=null or get_null(el_def))
 
+        if len(xpath(seq_def, "xs:any")):
+            attrs[''] = "Any additional elements"
+
         if len(attrs) and is_root:
             this_model.add_field(name='attrs',
                                  django_field='JSONField',
@@ -1241,6 +1251,7 @@ class XSDModelBuilder:
 
         parent = None
         deps = []
+        attrs = {}
 
         if not model.get('custom', False):
             if ct_def is None:
@@ -1265,7 +1276,7 @@ class XSDModelBuilder:
                     doc = get_doc(parent_el, None, None)
             this_model.doc = [doc] if doc else None
 
-            self.write_attributes(ct_def, typename)
+            self.write_attributes(ct_def, typename, attrs=attrs)
 
             seq_def, choice_def = self.get_seq_or_choice(ct_def)
             if seq_def is None and choice_def is None:
@@ -1276,6 +1287,7 @@ class XSDModelBuilder:
                                    " in %s complexType",
                                    typename)
                 else:
+                    self.write_attributes(ext_def, typename, attrs=attrs)
                     try:
                         seq_def = xpath(ext_def, "xs:sequence")[0]
                     except IndexError:
@@ -1307,13 +1319,11 @@ class XSDModelBuilder:
         if 'parent_type' in model:
             parent = model['parent_type']
 
-        attrs = {}
-
         if parent:
             if model.get('include_parent_fields'):
                 parent_def = xpath(self.tree, "//xs:complexType[@name=$n]",
                                    n=parent)[0]
-                self.write_attributes(parent_def, typename)
+                self.write_attributes(parent_def, typename, attrs=attrs)
                 self.write_seq_or_choice(self.get_seq_or_choice(parent_def),
                                          typename, attrs=attrs)
                 parent = None
