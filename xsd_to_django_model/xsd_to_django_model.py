@@ -289,6 +289,23 @@ def parse_default(basetype, default):
         % (default, basetype)
 
 
+def resolve_ref(tree, attr_def, attr_or_el):
+    if attr_def is None:
+        return None
+    ref = attr_def.get('ref')
+    if ref:
+        return xpath(tree, "//%s[@name=$n]" % attr_or_el, n=ref)[0]
+    return attr_def
+
+
+def resolve_attr_ref(tree, attr_def):
+    return resolve_ref(tree, attr_def, "xs:attribute")
+
+
+def resolve_el_ref(tree, el_def):
+    return resolve_ref(tree, el_def, "xs:element")
+
+
 class Model:
 
     def __init__(self, builder, model_name, type_name):
@@ -848,7 +865,7 @@ class XSDModelBuilder:
         attr_defs = xpath(ct_def, "xs:attribute")
         if attr_defs is not None:
             for attr_def in attr_defs:
-                attr_name = attr_def.get("name")
+                attr_name = attr_def.get("name") or attr_def.get("ref")
                 dotted_name = '%s@%s' % (prefix, attr_name)
                 name = '%s%s' % (prefix.replace('.', '_'), attr_name)
                 use_required = (attr_def.get("use") == "required")
@@ -868,6 +885,7 @@ class XSDModelBuilder:
                 el2_def = xpath(self.get_element_complex_type(el_def),
                                 "xs:sequence/xs:element[@maxOccurs=$n]",
                                 n='unbounded')[0]
+                el2_def = resolve_el_ref(self.tree, el2_def)
                 el2_name = '%s_%s' % (name, el2_def.get("name"))
             except IndexError:
                 logger.warning("no maxOccurs=unbounded in %s,"
@@ -901,7 +919,8 @@ class XSDModelBuilder:
         model_name = get_model_for_type(typename)
         this_model = self.models[typename]
         model = get_opt(model_name, typename)
-        el_attr_def = attr_def if el_def is None else el_def
+        el_attr_def = (resolve_attr_ref(self.tree, attr_def) if el_def is None
+                       else resolve_el_ref(self.tree, el_def))
         el_type = self.get_element_type(el_attr_def)
         coalesced_dotted_name = dotted_name
 
@@ -1132,7 +1151,7 @@ class XSDModelBuilder:
                                      attrs=attrs,
                                      null=null)
         for el_def in xpath(seq_def, "xs:element"):
-            el_name = el_def.get("name")
+            el_name = el_def.get("name") or el_def.get("ref")
             dotted_name = prefix + el_name
             name = prefix.replace('.', '_') + el_name
 
