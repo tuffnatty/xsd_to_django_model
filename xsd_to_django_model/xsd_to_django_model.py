@@ -25,6 +25,8 @@ directory, it will be imported.
 
 import codecs
 from copy import deepcopy
+import datetime
+import decimal
 from itertools import chain
 import json
 import logging
@@ -255,6 +257,36 @@ def override_field_class(model_name, typename, name):
     return get_opt(model_name, typename) \
         .get('override_field_class', {}) \
         .get(name)
+
+
+def parse_default(basetype, default):
+    if basetype == "xs:boolean":
+        assert default in ("true", "false"), (
+            "cannot parse boolean %s.%s default value: %s"
+            % (model_name, name, default)
+        )
+        return (default == "true")
+    if basetype == "xs:date":
+        return datetime.datetime.strptime(default, "%Y-%m-%d").date()
+    if basetype == "xs:dateTime":
+        return datetime.datetime.strptime(default, "%Y-%m-%dT%H:%M:%S")
+    if basetype == "xs:double":
+        return float(default)
+    if basetype == "xs:decimal":
+        return decimal.Decimal(default)
+    if basetype == "xs:gYearMonth":
+        return datetime.datetime.strptime(default + "-01", "%Y-%m-%d").date()
+    if basetype == "xs:long":
+        return long(default)
+    if basetype == "xs:string":
+        return default
+    if basetype == "xs:token":
+        return ''.join(default.split())
+    if basetype in ("xs:byte", "xs:int", "xs:integer",
+                    "xs:nonNegativeInteger", "xs:positiveInteger", "xs:short"):
+        return int(default)
+    assert False, "parsing default value '%s' for %s type not implemented" \
+        % (default, basetype)
 
 
 class Model:
@@ -1035,18 +1067,17 @@ class XSDModelBuilder:
                                model_name, name)
             else:
                 options.append('null=True')
-        else:
-            default = final_el_attr_def.get('default')
-            if default:
-                if basetype == "xs:boolean" and default == "true":
-                    options.append('default=True')
-                else:
-                    options.append('default="%s"' % default)
+
+        default = \
+            final_el_attr_def.get('default') or final_el_attr_def.get('fixed')
+        if default:
+            default = parse_default(final_type, default)
+            options.append('default=%s' % repr(default))
 
         if match(name, model, 'array_fields'):
             field['wrap'] = 'ArrayField'
 
-        if el_def:
+        if el_def is not None:
             max_occurs = el_def.get("maxOccurs", "1")
             assert \
                 (max_occurs == "1") != (field.get('wrap', 0) == "ArrayField"), (
