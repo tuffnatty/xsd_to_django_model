@@ -1300,12 +1300,12 @@ class XSDModelBuilder:
                                        typename)
                 else:
                     self.write_attributes(ext_def, typename, attrs=attrs)
-                    try:
-                        seq_def = xpath(ext_def, "xs:sequence")[0]
-                    except IndexError:
+                    seq_def, choice_def = self.get_seq_or_choice(ext_def)
+                    if seq_def is None and choice_def is None:
                         assert len(ext_def) == 0, (
-                            "no sequence in extension in complexContent in"
-                            " %s complexType but %d other children exist"
+                            "no sequence or choice in extension in"
+                            " complexContent in %s complexType but %d other"
+                            " children exist"
                             % (typename, len(ext_def))
                         )
                         logger.warning("no additions in extension in"
@@ -1322,10 +1322,13 @@ class XSDModelBuilder:
             if not parent:
                 parent_field = model.get('parent_field')
                 if parent_field:
-                    assert seq_def is not None, \
-                        'parent_field is set for %s but no sequence' % typename
+                    assert seq_def or choice_def, (
+                        'parent_field is set for %s but no sequence or choice'
+                        % typename
+                    )
 
-                    parent = xpath(seq_def, "xs:element[@name=$n]/@type",
+                    parent = xpath(seq_def or choice_def,
+                                   "xs:element[@name=$n]/@type",
                                    n=parent_field)[0]
 
         if 'parent_type' in model:
