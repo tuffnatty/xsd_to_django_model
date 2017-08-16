@@ -1085,17 +1085,17 @@ class XSDModelBuilder:
                 reference_extension = False
 
         if match(name, model, 'array_fields'):
-            if el_def.get('maxOccurs', '1') == 'unbounded':
-                final_el_attr_def = el_attr_def
-                final_type = basetype or el_type
+            if ct2_def is not None:
+                final_el_attr_def = xpath(ct2_def, "xs:sequence/xs:element")[0]
+                final_type = self.get_element_type(final_el_attr_def)
             else:
-                assert ct2_def is not None, (
+                assert el_def.get('maxOccurs', '1') == 'unbounded', (
                     '%s has no maxOccurs=unbounded or complexType, required for'
                     ' array_fields'
                     % dotted_name
                 )
-                final_el_attr_def = xpath(ct2_def, "xs:sequence/xs:element")[0]
-                final_type = self.get_element_type(final_el_attr_def)
+                final_el_attr_def = el_attr_def
+                final_type = basetype or el_type
             doc = get_doc(final_el_attr_def, name, model_name,
                           doc_prefix=doc + '::')
         else:
