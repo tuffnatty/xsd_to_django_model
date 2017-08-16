@@ -271,6 +271,7 @@ class Model:
         self.written = False
         self.doc = None
         self.number_field = None
+        self.abstract = False
 
     def build_attrs_options(self, kwargs):
         if kwargs.get('name') == 'attrs':
@@ -367,6 +368,10 @@ class Model:
         if self.doc and not any(option for option in meta
                                 if option.startswith('verbose_name = ')):
             meta.append('verbose_name = %s' % stringify(self.doc))
+        if self.abstract and not any(option for option in meta
+                                     if option.startswith('abstract = ')):
+            meta.append('abstract = True')
+
         if len(meta):
             meta = '\n\n    class Meta:\n%s' % '\n'.join('        %s' % x
                                                          for x in meta)
@@ -1152,6 +1157,8 @@ class XSDModelBuilder:
                                 n=typename)
                 assert ct_defs, "%s not found in schema" % typename
                 ct_def = ct_defs[0]
+
+            this_model.abstract = (ct_def.get('abstract') == 'true')
 
             doc = get_doc(ct_def, None, None)
             if not doc:
