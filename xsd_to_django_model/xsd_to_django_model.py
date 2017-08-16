@@ -941,6 +941,37 @@ class XSDModelBuilder:
         rel = ct2_def.get("name") or ('%s.%s' % (typename, name))
         return rel, ct2_def
 
+    def flatten_ct(self, ct_def, typename, **kwargs):
+        if len(xpath(ct_def, "xs:simpleContent/xs:restriction")):
+            logger.warning("xs:complexType[name=%s]/xs:simpleContent"
+                           "/xs:restriction is not yet supported",
+                           ct_def.get('name'))
+
+        sext_def, cext_def = (None, None)
+        try:
+            sext_def = xpath(ct_def, "xs:simpleContent/xs:extension")[0]
+        except IndexError:
+            try:
+                cext_def = xpath(ct_def, "xs:complexContent/xs:extension")[0]
+            except IndexError:
+                pass
+        ext_def = sext_def or cext_def
+
+        if cext_def is not None:
+            ct2_def = xpath(self.tree, "//xs:complexType[@name=$n]",
+                            n=cext_def.get("base"))[0]
+            self.flatten_ct(ct2_def, typename, **kwargs)
+
+        if ext_def is not None:
+            self.write_attributes(ext_def, typename, **kwargs)
+        self.write_attributes(ct_def, typename, **kwargs)
+
+        seq_or_choice_def = self.get_seq_or_choice(ext_def
+                                                   if ext_def is not None
+                                                   else ct_def)
+        self.write_seq_or_choice(seq_or_choice_def, typename, **kwargs)
+        return sext_def.get('base') if sext_def is not None else None
+
     def make_a_field(self, typename, name, dotted_name,
                      el_def=None,
                      attr_def=None,
@@ -1024,38 +1055,10 @@ class XSDModelBuilder:
                 }
                 if ct2_def is not None:
                     o['null'] = null or get_null(el_def)
-                    process_simpletype_base = False
-                    if len(xpath(ct2_def, "xs:simpleContent/xs:restriction")):
-                        logger.warning("xs:complexType[name=%s]"
-                                       "/xs:simpleContent/xs:restriction"
-                                       " is not yet supported",
-                                       ct2_def.get('name'))
-                    ext2_defs = xpath(ct2_def, "xs:simpleContent/xs:extension")
-                    if len(ext2_defs):
-                        el_type = ext2_defs[0].get('base')
-                        self.write_attributes(ext2_defs[0], typename, **o)
-                        process_simpletype_base = True
-                    else:
-                        ext2_defs = \
-                            xpath(ct2_def, "xs:complexContent/xs:extension")
-                    seq_or_choice3_def = (None, None)
-                    ct3_def = None
-                    if not len(ext2_defs):
-                        seq_or_choice2_def = self.get_seq_or_choice(ct2_def)
-                    else:
-                        seq_or_choice2_def = \
-                            self.get_seq_or_choice(ext2_defs[0])
-                        if not process_simpletype_base:
-                            ct3_def = xpath(self.tree,
-                                            "//xs:complexType[@name=$n]",
-                                            n=ext2_defs[0].get("base"))[0]
-                            seq_or_choice3_def = self.get_seq_or_choice(ct3_def)
-                    self.write_attributes(ct3_def, typename, **o)
-                    self.write_seq_or_choice(seq_or_choice3_def, typename, **o)
-                    self.write_attributes(ct2_def, typename, **o)
-                    self.write_seq_or_choice(seq_or_choice2_def, typename, **o)
-                    if not process_simpletype_base:
+                    simpletype_base = self.flatten_ct(ct2_def, typename, **o)
+                    if not simpletype_base:
                         return
+                    el_type = simpletype_base
                 else:
                     logger.warning('complexType not found'
                                    ' while flattening prefix %s',
