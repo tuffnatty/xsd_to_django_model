@@ -72,6 +72,7 @@ BASETYPE_FIELD_MAP = {
     'xs:positiveInteger': 'PositiveIntegerField',
     'xs:short': 'SmallIntegerField',
     'xs:string': 'CharField',
+    'xs:token': 'CharField',
 }
 NS = {'xs': "http://www.w3.org/2001/XMLSchema"}
 
