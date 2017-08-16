@@ -1268,7 +1268,8 @@ class XSDModelBuilder:
                 assert ct_defs, "%s not found in schema" % typename
                 ct_def = ct_defs[0]
 
-            this_model.abstract = (ct_def.get('abstract') == 'true')
+            this_model.abstract = (model.get('abstract', False) or
+                                   ct_def.get('abstract') == 'true')
 
             if ct_def.get('mixed') == 'true':
                 logger.warning(
