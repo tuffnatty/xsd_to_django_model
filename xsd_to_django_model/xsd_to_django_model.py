@@ -662,6 +662,12 @@ class XSDModelBuilder:
         return choices
 
     def get_field_data_from_simpletype(self, st_def, el_def=None):
+        if len(xpath(st_def, "xs:union")):
+            logger.warning("xs:simpleType[name=%s]/xs:union is not supported"
+                           " yet",
+                           st_def.get('name'))
+            return (get_doc(st_def, None, None), "TextField", {})
+
         restrict_def = xpath(st_def, "xs:restriction")[0]
         basetype = restrict_def.get("base")
         try:
