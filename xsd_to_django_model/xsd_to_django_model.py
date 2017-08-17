@@ -958,7 +958,7 @@ class XSDModelBuilder:
             "both xs:simpleContent and xs:complexContent while flattening %s"
             % typename
         )
-        ext_def = sext_def or cext_def
+        ext_def = sext_def if sext_def is not None else cext_def
 
         if cext_def is not None:
             ct2_def = xpath(self.tree, "//xs:complexType[@name=$n]",
