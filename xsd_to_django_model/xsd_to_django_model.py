@@ -851,7 +851,7 @@ class XSDModelBuilder:
         return xpath_one(el_def, "xs:complexType")
 
     def get_seq_or_choice(self, parent_def):
-        return (xpath_one(parent_def, "xs:sequence"),
+        return (xpath_one(parent_def, "xs:sequence|xs:all"),
                 xpath_one(parent_def, "xs:choice"))
 
     def write_seq_or_choice(self, seq_or_choice, typename,
@@ -919,7 +919,7 @@ class XSDModelBuilder:
             el2_name = name
         else:
             el2_def = xpath_one(self.get_element_complex_type(el_def),
-                                "xs:sequence/xs:element[@maxOccurs=$n]",
+                                "(xs:sequence|xs:all)/xs:element[@maxOccurs=$n]",
                                 n='unbounded')
             if el2_def is not None:
                 el2_def = resolve_el_ref(self.tree, el2_def)
@@ -1089,7 +1089,8 @@ class XSDModelBuilder:
 
         if match(name, model, 'array_fields'):
             if ct2_def is not None:
-                final_el_attr_def = xpath(ct2_def, "xs:sequence/xs:element")[0]
+                final_el_attr_def = xpath(ct2_def,
+                                          "(xs:sequence|xs:all)/xs:element")[0]
                 final_type = self.get_element_type(final_el_attr_def)
             else:
                 assert el_def.get('maxOccurs', '1') == 'unbounded', (
@@ -1202,9 +1203,10 @@ class XSDModelBuilder:
         seqs = []
         for group_def in xpath(seq_def, "xs:group"):
             group_def = resolve_group_ref(self.tree, group_def)
-            seqs.extend([(s, None) for s in xpath(group_def, "xs:sequence")])
+            seqs.extend([(s, None)
+                         for s in xpath(group_def, "xs:sequence|xs:all")])
             seqs.extend([(None, c) for c in xpath(group_def, "xs:choice")])
-        seqs.extend([(s, None) for s in xpath(seq_def, "xs:sequence")])
+        seqs.extend([(s, None) for s in xpath(seq_def, "xs:sequence|xs:all")])
         seqs.extend([(None, c) for c in xpath(seq_def, "xs:choice")])
 
         for seq_or_choice_def in seqs:
