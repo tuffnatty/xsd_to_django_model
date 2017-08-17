@@ -15,11 +15,7 @@ from .fields import \
 
 # Corresponds to XSD type[s]: ProductType
 class Product(models.Model):
-    effDate = models.DateField(
-        "effDate",
-        default=datetime.date(1900, 1, 1),
-        null=True
-    )
+    effDate = models.DateField("effDate", null=True)
     # xs:choice start
     size_system = models.TextField("size::size_system", null=True)
     size = models.IntegerField("size", null=True)

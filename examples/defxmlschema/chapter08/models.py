@@ -23,8 +23,7 @@ class SizesType(models.Model):
     mediumDressSize = MediumDressSizeTypeField("mediumDressSize", null=True)
     smallDressSize = SmallDressSizeTypeField("smallDressSize", null=True)
     smlxSize = SMLXSizeTypeField(
-        "smlxSize\n"
-"small\n"
+        "small\n"
 "medium\n"
 "large\n"
 "extra large",

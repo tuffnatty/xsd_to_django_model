@@ -1984,7 +1984,8 @@ class SpecifyParcel(models.Model):
     )
 
     class Meta:
-        verbose_name = "Уточнение границ земельного участка"
+        verbose_name = "Уточнение границ земельного участка\n"
+"Уточнение границы одного ЗУ (являющимся либо ЕЗ либо \"обычным\" участком)"
 
 
 # Corresponds to XSD type[s]: typename1.Package_SpecifyParcel
