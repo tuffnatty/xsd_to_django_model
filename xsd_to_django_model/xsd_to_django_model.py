@@ -756,7 +756,7 @@ class XSDModelBuilder:
                     self.make_model(el_path, ct_def)
                     model_name = get_model_for_type(el_path)
                     return orig_typename, {
-                        'name': 'models.OneToOneField',
+                        'name': 'models.ForeignKey',
                         'options': [model_name, 'on_delete=models.CASCADE'],
                     }
                 else:
