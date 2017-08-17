@@ -909,11 +909,6 @@ class XSDModelBuilder:
                               null=null or not use_required)
         if len(xpath(ct_def, "xs:anyAttribute")):
             attrs[''] = "Any additional attributes"
-            logger.warning(
-                'xs:complexType[name="%s"]/xs:anyAttribute is not supported'
-                ' yet',
-                typename
-            )
 
     def get_n_to_many_relation(self, typename, name, el_def):
         if el_def.get("maxOccurs") == 'unbounded':
