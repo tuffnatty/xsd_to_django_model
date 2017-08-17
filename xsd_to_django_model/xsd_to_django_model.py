@@ -184,15 +184,12 @@ def get_doc(el_def, name, model_name, doc_prefix=None):
             pass
     doc = chain(xpath(el_def, "xs:annotation/xs:documentation"),
                 xpath(el_def, "xs:complexType/xs:annotation/xs:documentation"))
-    doc = (d.text for d in doc if d.text)
-    try:
-        doc = RE_SPACES.sub(' ', next(doc).strip()).rstrip('.') \
-            .replace(' )', ')').replace('\n\n', '\n')
-    except StopIteration:
-        doc = None
-    if doc_prefix is not None:
-        return doc_prefix + (doc or name)
-    return doc
+    doc = [RE_SPACES.sub(' ', d.text.strip())
+           .rstrip('.').replace(' )', ')').replace('\n\n', '\n')
+           for d in doc if d.text]
+    if doc:
+        return (doc_prefix or '') + '\n'.join(doc)
+    return None
 
 
 def stringify(s):
