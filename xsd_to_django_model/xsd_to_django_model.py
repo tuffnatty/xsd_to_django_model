@@ -790,8 +790,9 @@ class XSDModelBuilder:
                 else:
                     choices = None
                 self.make_field(typename, doc, parent, options, choices)
-        st_def = xpath(self.tree, "//xs:simpleType[@name=$n]", n=typename)[0]
-        orig_typename = self.get_simpletype_primitive(st_def)
+        st_def = xpath_one(self.tree, "//xs:simpleType[@name=$n]", n=typename)
+        orig_typename = ("xs:string" if st_def is None
+                         else self.get_simpletype_primitive(st_def))
         return orig_typename, self.fields[typename]
 
     def make_field(self, typename, doc, parent, options, choices):
