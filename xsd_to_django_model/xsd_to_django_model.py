@@ -293,13 +293,16 @@ def parse_default(basetype, default):
         % (default, basetype)
 
 
-def resolve_ref(tree, attr_def, attr_or_el):
-    if attr_def is None:
-        return None
-    ref = attr_def.get('ref')
-    if ref:
-        return xpath(tree, "//%s[@name=$n]" % attr_or_el, n=ref)[0]
-    return attr_def
+def resolve_ref(tree, el_def, tag):
+    if el_def is not None:
+        ref = el_def.get('ref')
+        if ref:
+            return xpath(tree, "//%s[@name=$n]" % tag, n=ref)[0]
+    return el_def
+
+
+def resolve_attr_group_ref(tree, attr_def):
+    return resolve_ref(tree, attr_def, "xs:attributeGroup")
 
 
 def resolve_attr_ref(tree, attr_def):
@@ -887,7 +890,11 @@ class XSDModelBuilder:
                          null=False):
         if ct_def is None:
             return
-        for attr_def in xpath(ct_def, "xs:attribute"):
+        attr_defs = []
+        for group_def in xpath(ct_def, "xs:attributeGroup"):
+            group_def = resolve_attr_group_ref(self.tree, group_def)
+            attr_defs.extend(xpath(group_def, "xs:attribute"))
+        for attr_def in chain(attr_defs, xpath(ct_def, "xs:attribute")):
             attr_name = attr_def.get("name") or attr_def.get("ref")
             dotted_name = '%s@%s' % (prefix, attr_name)
             name = '%s%s' % (prefix.replace('.', '_'), attr_name)
