@@ -1,0 +1,445 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<xs:schema xmlns:xs="http://www.w3.org/2001/XMLSchema" elementFormDefault="qualified">
+	<xs:simpleType name="dRegionsRF">
+		<xs:annotation>
+			<xs:documentation>Субъекты РФ</xs:documentation>
+		</xs:annotation>
+		<xs:restriction base="xs:string">
+			<xs:enumeration value="01">
+				<xs:annotation>
+					<xs:documentation>Республика Адыгея (Адыгея)</xs:documentation>
+				</xs:annotation>
+			</xs:enumeration>
+			<xs:enumeration value="02">
+				<xs:annotation>
+					<xs:documentation>Республика Башкортостан</xs:documentation>
+				</xs:annotation>
+			</xs:enumeration>
+			<xs:enumeration value="03">
+				<xs:annotation>
+					<xs:documentation>Республика Бурятия</xs:documentation>
+				</xs:annotation>
+			</xs:enumeration>
+			<xs:enumeration value="04">
+				<xs:annotation>
+					<xs:documentation>Республика Алтай</xs:documentation>
+				</xs:annotation>
+			</xs:enumeration>
+			<xs:enumeration value="05">
+				<xs:annotation>
+					<xs:documentation>Республика Дагестан</xs:documentation>
+				</xs:annotation>
+			</xs:enumeration>
+			<xs:enumeration value="06">
+				<xs:annotation>
+					<xs:documentation>Республика Ингушетия</xs:documentation>
+				</xs:annotation>
+			</xs:enumeration>
+			<xs:enumeration value="07">
+				<xs:annotation>
+					<xs:documentation>Кабардино-Балкарская Республика</xs:documentation>
+				</xs:annotation>
+			</xs:enumeration>
+			<xs:enumeration value="08">
+				<xs:annotation>
+					<xs:documentation>Республика Калмыкия</xs:documentation>
+				</xs:annotation>
+			</xs:enumeration>
+			<xs:enumeration value="09">
+				<xs:annotation>
+					<xs:documentation>Карачаево-Черкесская Республика</xs:documentation>
+				</xs:annotation>
+			</xs:enumeration>
+			<xs:enumeration value="10">
+				<xs:annotation>
+					<xs:documentation>Республика Карелия</xs:documentation>
+				</xs:annotation>
+			</xs:enumeration>
+			<xs:enumeration value="11">
+				<xs:annotation>
+					<xs:documentation>Республика Коми</xs:documentation>
+				</xs:annotation>
+			</xs:enumeration>
+			<xs:enumeration value="12">
+				<xs:annotation>
+					<xs:documentation>Республика Марий Эл</xs:documentation>
+				</xs:annotation>
+			</xs:enumeration>
+			<xs:enumeration value="13">
+				<xs:annotation>
+					<xs:documentation>Республика Мордовия</xs:documentation>
+				</xs:annotation>
+			</xs:enumeration>
+			<xs:enumeration value="14">
+				<xs:annotation>
+					<xs:documentation>Республика Саха (Якутия)</xs:documentation>
+				</xs:annotation>
+			</xs:enumeration>
+			<xs:enumeration value="15">
+				<xs:annotation>
+					<xs:documentation>Республика Северная Осетия-Алания</xs:documentation>
+				</xs:annotation>
+			</xs:enumeration>
+			<xs:enumeration value="16">
+				<xs:annotation>
+					<xs:documentation>Республика Татарстан (Татарстан)</xs:documentation>
+				</xs:annotation>
+			</xs:enumeration>
+			<xs:enumeration value="17">
+				<xs:annotation>
+					<xs:documentation>Республика Тыва</xs:documentation>
+				</xs:annotation>
+			</xs:enumeration>
+			<xs:enumeration value="18">
+				<xs:annotation>
+					<xs:documentation>Удмуртская Республика</xs:documentation>
+				</xs:annotation>
+			</xs:enumeration>
+			<xs:enumeration value="19">
+				<xs:annotation>
+					<xs:documentation>Республика Хакасия</xs:documentation>
+				</xs:annotation>
+			</xs:enumeration>
+			<xs:enumeration value="20">
+				<xs:annotation>
+					<xs:documentation>Чеченская Республика</xs:documentation>
+				</xs:annotation>
+			</xs:enumeration>
+			<xs:enumeration value="21">
+				<xs:annotation>
+					<xs:documentation>Чувашская Республика-Чувашия</xs:documentation>
+				</xs:annotation>
+			</xs:enumeration>
+			<xs:enumeration value="22">
+				<xs:annotation>
+					<xs:documentation>Алтайский край</xs:documentation>
+				</xs:annotation>
+			</xs:enumeration>
+			<xs:enumeration value="23">
+				<xs:annotation>
+					<xs:documentation>Краснодарский край</xs:documentation>
+				</xs:annotation>
+			</xs:enumeration>
+			<xs:enumeration value="24">
+				<xs:annotation>
+					<xs:documentation>Красноярский край</xs:documentation>
+				</xs:annotation>
+			</xs:enumeration>
+			<xs:enumeration value="25">
+				<xs:annotation>
+					<xs:documentation>Приморский край</xs:documentation>
+				</xs:annotation>
+			</xs:enumeration>
+			<xs:enumeration value="26">
+				<xs:annotation>
+					<xs:documentation>Ставропольский край</xs:documentation>
+				</xs:annotation>
+			</xs:enumeration>
+			<xs:enumeration value="27">
+				<xs:annotation>
+					<xs:documentation>Хабаровский край</xs:documentation>
+				</xs:annotation>
+			</xs:enumeration>
+			<xs:enumeration value="28">
+				<xs:annotation>
+					<xs:documentation>Амурская область</xs:documentation>
+				</xs:annotation>
+			</xs:enumeration>
+			<xs:enumeration value="29">
+				<xs:annotation>
+					<xs:documentation>Архангельская область</xs:documentation>
+				</xs:annotation>
+			</xs:enumeration>
+			<xs:enumeration value="30">
+				<xs:annotation>
+					<xs:documentation>Астраханская область</xs:documentation>
+				</xs:annotation>
+			</xs:enumeration>
+			<xs:enumeration value="31">
+				<xs:annotation>
+					<xs:documentation>Белгородская область</xs:documentation>
+				</xs:annotation>
+			</xs:enumeration>
+			<xs:enumeration value="32">
+				<xs:annotation>
+					<xs:documentation>Брянская область</xs:documentation>
+				</xs:annotation>
+			</xs:enumeration>
+			<xs:enumeration value="33">
+				<xs:annotation>
+					<xs:documentation>Владимирская область</xs:documentation>
+				</xs:annotation>
+			</xs:enumeration>
+			<xs:enumeration value="34">
+				<xs:annotation>
+					<xs:documentation>Волгоградская область</xs:documentation>
+				</xs:annotation>
+			</xs:enumeration>
+			<xs:enumeration value="35">
+				<xs:annotation>
+					<xs:documentation>Вологодская область</xs:documentation>
+				</xs:annotation>
+			</xs:enumeration>
+			<xs:enumeration value="36">
+				<xs:annotation>
+					<xs:documentation>Воронежская область</xs:documentation>
+				</xs:annotation>
+			</xs:enumeration>
+			<xs:enumeration value="37">
+				<xs:annotation>
+					<xs:documentation>Ивановская область</xs:documentation>
+				</xs:annotation>
+			</xs:enumeration>
+			<xs:enumeration value="38">
+				<xs:annotation>
+					<xs:documentation>Иркутская область</xs:documentation>
+				</xs:annotation>
+			</xs:enumeration>
+			<xs:enumeration value="39">
+				<xs:annotation>
+					<xs:documentation>Калининградская область</xs:documentation>
+				</xs:annotation>
+			</xs:enumeration>
+			<xs:enumeration value="40">
+				<xs:annotation>
+					<xs:documentation>Калужская область</xs:documentation>
+				</xs:annotation>
+			</xs:enumeration>
+			<xs:enumeration value="41">
+				<xs:annotation>
+					<xs:documentation>Камчатский край</xs:documentation>
+				</xs:annotation>
+			</xs:enumeration>
+			<xs:enumeration value="42">
+				<xs:annotation>
+					<xs:documentation>Кемеровская область</xs:documentation>
+				</xs:annotation>
+			</xs:enumeration>
+			<xs:enumeration value="43">
+				<xs:annotation>
+					<xs:documentation>Кировская область</xs:documentation>
+				</xs:annotation>
+			</xs:enumeration>
+			<xs:enumeration value="44">
+				<xs:annotation>
+					<xs:documentation>Костромская область</xs:documentation>
+				</xs:annotation>
+			</xs:enumeration>
+			<xs:enumeration value="45">
+				<xs:annotation>
+					<xs:documentation>Курганская область</xs:documentation>
+				</xs:annotation>
+			</xs:enumeration>
+			<xs:enumeration value="46">
+				<xs:annotation>
+					<xs:documentation>Курская область</xs:documentation>
+				</xs:annotation>
+			</xs:enumeration>
+			<xs:enumeration value="47">
+				<xs:annotation>
+					<xs:documentation>Ленинградская область</xs:documentation>
+				</xs:annotation>
+			</xs:enumeration>
+			<xs:enumeration value="48">
+				<xs:annotation>
+					<xs:documentation>Липецкая область</xs:documentation>
+				</xs:annotation>
+			</xs:enumeration>
+			<xs:enumeration value="49">
+				<xs:annotation>
+					<xs:documentation>Магаданская область</xs:documentation>
+				</xs:annotation>
+			</xs:enumeration>
+			<xs:enumeration value="50">
+				<xs:annotation>
+					<xs:documentation>Московская область</xs:documentation>
+				</xs:annotation>
+			</xs:enumeration>
+			<xs:enumeration value="51">
+				<xs:annotation>
+					<xs:documentation>Мурманская область</xs:documentation>
+				</xs:annotation>
+			</xs:enumeration>
+			<xs:enumeration value="52">
+				<xs:annotation>
+					<xs:documentation>Нижегородская область</xs:documentation>
+				</xs:annotation>
+			</xs:enumeration>
+			<xs:enumeration value="53">
+				<xs:annotation>
+					<xs:documentation>Новгородская область</xs:documentation>
+				</xs:annotation>
+			</xs:enumeration>
+			<xs:enumeration value="54">
+				<xs:annotation>
+					<xs:documentation>Новосибирская область</xs:documentation>
+				</xs:annotation>
+			</xs:enumeration>
+			<xs:enumeration value="55">
+				<xs:annotation>
+					<xs:documentation>Омская область</xs:documentation>
+				</xs:annotation>
+			</xs:enumeration>
+			<xs:enumeration value="56">
+				<xs:annotation>
+					<xs:documentation>Оренбургская область</xs:documentation>
+				</xs:annotation>
+			</xs:enumeration>
+			<xs:enumeration value="57">
+				<xs:annotation>
+					<xs:documentation>Орловская область</xs:documentation>
+				</xs:annotation>
+			</xs:enumeration>
+			<xs:enumeration value="58">
+				<xs:annotation>
+					<xs:documentation>Пензенская область</xs:documentation>
+				</xs:annotation>
+			</xs:enumeration>
+			<xs:enumeration value="59">
+				<xs:annotation>
+					<xs:documentation>Пермский край</xs:documentation>
+				</xs:annotation>
+			</xs:enumeration>
+			<xs:enumeration value="60">
+				<xs:annotation>
+					<xs:documentation>Псковская область</xs:documentation>
+				</xs:annotation>
+			</xs:enumeration>
+			<xs:enumeration value="61">
+				<xs:annotation>
+					<xs:documentation>Ростовская область</xs:documentation>
+				</xs:annotation>
+			</xs:enumeration>
+			<xs:enumeration value="62">
+				<xs:annotation>
+					<xs:documentation>Рязанская область</xs:documentation>
+				</xs:annotation>
+			</xs:enumeration>
+			<xs:enumeration value="63">
+				<xs:annotation>
+					<xs:documentation>Самарская область</xs:documentation>
+				</xs:annotation>
+			</xs:enumeration>
+			<xs:enumeration value="64">
+				<xs:annotation>
+					<xs:documentation>Саратовская область</xs:documentation>
+				</xs:annotation>
+			</xs:enumeration>
+			<xs:enumeration value="65">
+				<xs:annotation>
+					<xs:documentation>Сахалинская область</xs:documentation>
+				</xs:annotation>
+			</xs:enumeration>
+			<xs:enumeration value="66">
+				<xs:annotation>
+					<xs:documentation>Свердловская область</xs:documentation>
+				</xs:annotation>
+			</xs:enumeration>
+			<xs:enumeration value="67">
+				<xs:annotation>
+					<xs:documentation>Смоленская область</xs:documentation>
+				</xs:annotation>
+			</xs:enumeration>
+			<xs:enumeration value="68">
+				<xs:annotation>
+					<xs:documentation>Тамбовская область</xs:documentation>
+				</xs:annotation>
+			</xs:enumeration>
+			<xs:enumeration value="69">
+				<xs:annotation>
+					<xs:documentation>Тверская область</xs:documentation>
+				</xs:annotation>
+			</xs:enumeration>
+			<xs:enumeration value="70">
+				<xs:annotation>
+					<xs:documentation>Томская область</xs:documentation>
+				</xs:annotation>
+			</xs:enumeration>
+			<xs:enumeration value="71">
+				<xs:annotation>
+					<xs:documentation>Тульская область</xs:documentation>
+				</xs:annotation>
+			</xs:enumeration>
+			<xs:enumeration value="72">
+				<xs:annotation>
+					<xs:documentation>Тюменская область</xs:documentation>
+				</xs:annotation>
+			</xs:enumeration>
+			<xs:enumeration value="73">
+				<xs:annotation>
+					<xs:documentation>Ульяновская область</xs:documentation>
+				</xs:annotation>
+			</xs:enumeration>
+			<xs:enumeration value="74">
+				<xs:annotation>
+					<xs:documentation>Челябинская область</xs:documentation>
+				</xs:annotation>
+			</xs:enumeration>
+			<xs:enumeration value="75">
+				<xs:annotation>
+					<xs:documentation>Забайкальский край</xs:documentation>
+				</xs:annotation>
+			</xs:enumeration>
+			<xs:enumeration value="76">
+				<xs:annotation>
+					<xs:documentation>Ярославская область</xs:documentation>
+				</xs:annotation>
+			</xs:enumeration>
+			<xs:enumeration value="77">
+				<xs:annotation>
+					<xs:documentation>Москва</xs:documentation>
+				</xs:annotation>
+			</xs:enumeration>
+			<xs:enumeration value="78">
+				<xs:annotation>
+					<xs:documentation>Санкт-Петербург</xs:documentation>
+				</xs:annotation>
+			</xs:enumeration>
+			<xs:enumeration value="79">
+				<xs:annotation>
+					<xs:documentation>Еврейская автономная область</xs:documentation>
+				</xs:annotation>
+			</xs:enumeration>
+			<xs:enumeration value="83">
+				<xs:annotation>
+					<xs:documentation>Ненецкий автономный округ</xs:documentation>
+				</xs:annotation>
+			</xs:enumeration>
+			<xs:enumeration value="86">
+				<xs:annotation>
+					<xs:documentation>Ханты-Мансийский автономный округ - Югра</xs:documentation>
+				</xs:annotation>
+			</xs:enumeration>
+			<xs:enumeration value="87">
+				<xs:annotation>
+					<xs:documentation>Чукотский автономный округ</xs:documentation>
+				</xs:annotation>
+			</xs:enumeration>
+			<xs:enumeration value="89">
+				<xs:annotation>
+					<xs:documentation>Ямало-Ненецкий автономный округ</xs:documentation>
+				</xs:annotation>
+			</xs:enumeration>
+			<xs:enumeration value="91">
+				<xs:annotation>
+					<xs:documentation>Республика Крым</xs:documentation>
+				</xs:annotation>
+			</xs:enumeration>
+			<xs:enumeration value="92">
+				<xs:annotation>
+					<xs:documentation>Севастополь</xs:documentation>
+				</xs:annotation>
+			</xs:enumeration>
+			<xs:enumeration value="98">
+				<xs:annotation>
+					<xs:documentation>Неопределено</xs:documentation>
+				</xs:annotation>
+			</xs:enumeration>
+			<xs:enumeration value="99">
+				<xs:annotation>
+					<xs:documentation>Значение отсутствует</xs:documentation>
+				</xs:annotation>
+			</xs:enumeration>
+		</xs:restriction>
+	</xs:simpleType>
+</xs:schema>

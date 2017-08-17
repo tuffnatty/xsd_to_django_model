@@ -1,0 +1,71 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<xs:schema xmlns:xs="http://www.w3.org/2001/XMLSchema" elementFormDefault="qualified" attributeFormDefault="unqualified">
+	<!--Все простые типы данных-->
+	<xs:include schemaLocation="P_CommonSimpleType_v02.xsd"/>
+	<xs:include schemaLocation="P_CommonSimpleType_v04.xsd"/>
+	<xs:include schemaLocation="P_CommonSimpleType_v07.xsd"/>
+	<!--Общие составные типы данных-->
+	<xs:include schemaLocation="smev-supplementary-commons-1.0.1.xsd"/>
+	<!--Повторно используемая подсхема "Кадастровый инженер"-->
+	<xs:complexType name="tEngineer">
+		<xs:annotation>
+			<xs:documentation>Кадастровый инженер</xs:documentation>
+		</xs:annotation>
+		<xs:complexContent>
+			<xs:extension base="tCadastralEngineer">
+				<xs:sequence>
+					<xs:element name="Organization" type="tOrganization" minOccurs="0">
+						<xs:annotation>
+							<xs:documentation>Юридическое лицо, если кадастровый инженер является работником юридического лица</xs:documentation>
+						</xs:annotation>
+					</xs:element>
+				</xs:sequence>
+			</xs:extension>
+		</xs:complexContent>
+	</xs:complexType>
+	<xs:complexType name="tCadastralEngineer">
+		<xs:annotation>
+			<xs:documentation>Сведения о кадастровом инженере</xs:documentation>
+		</xs:annotation>
+		<xs:sequence>
+			<xs:group ref="PhysicalPersonQualifiedName-ModelGroup"/>
+			<xs:element name="NCertificate" type="sCertificate50">
+				<xs:annotation>
+					<xs:documentation>Номер квалификационного аттестата кадастрового инженера</xs:documentation>
+				</xs:annotation>
+			</xs:element>
+			<xs:element name="Telephone" type="sNe50">
+				<xs:annotation>
+					<xs:documentation>Контактный телефон</xs:documentation>
+				</xs:annotation>
+			</xs:element>
+			<xs:element name="Address" type="sNe4000">
+				<xs:annotation>
+					<xs:documentation>Почтовый адрес для связи с кадастровым инженером</xs:documentation>
+				</xs:annotation>
+			</xs:element>
+			<xs:element name="Email" type="EmailAddressType">
+				<xs:annotation>
+					<xs:documentation>Адрес электронной почты</xs:documentation>
+				</xs:annotation>
+			</xs:element>
+		</xs:sequence>
+	</xs:complexType>
+	<xs:complexType name="tOrganization">
+		<xs:annotation>
+			<xs:documentation>Юридическое лицо, если кадастровый инженер является работником юридического лица</xs:documentation>
+		</xs:annotation>
+		<xs:sequence>
+			<xs:element name="Name" type="sNameNew255">
+				<xs:annotation>
+					<xs:documentation>Наименование юридического лица</xs:documentation>
+				</xs:annotation>
+			</xs:element>
+			<xs:element name="AddressOrganization" type="sNe4000">
+				<xs:annotation>
+					<xs:documentation>Адрес местонахождения юридического лица</xs:documentation>
+				</xs:annotation>
+			</xs:element>
+		</xs:sequence>
+	</xs:complexType>
+</xs:schema>

@@ -1,0 +1,30 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<xs:schema xmlns:xs="http://www.w3.org/2001/XMLSchema" elementFormDefault="qualified">
+	<xs:simpleType name="dApartmentType">
+		<xs:annotation>
+			<xs:documentation>Тип адресного элемента четвертого уровня</xs:documentation>
+		</xs:annotation>
+		<xs:restriction base="xs:string">
+			<xs:enumeration value="кв">
+				<xs:annotation>
+					<xs:documentation>Квартира</xs:documentation>
+				</xs:annotation>
+			</xs:enumeration>
+			<xs:enumeration value="бокс">
+				<xs:annotation>
+					<xs:documentation>Бокс</xs:documentation>
+				</xs:annotation>
+			</xs:enumeration>
+			<xs:enumeration value="к">
+				<xs:annotation>
+					<xs:documentation>Комната</xs:documentation>
+				</xs:annotation>
+			</xs:enumeration>
+			<xs:enumeration value="пом">
+				<xs:annotation>
+					<xs:documentation>Помещение</xs:documentation>
+				</xs:annotation>
+			</xs:enumeration>
+		</xs:restriction>
+	</xs:simpleType>
+</xs:schema>

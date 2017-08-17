@@ -1,0 +1,85 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<xs:schema xmlns:xs="http://www.w3.org/2001/XMLSchema" elementFormDefault="qualified">
+	<xs:simpleType name="dEncumbrances">
+		<xs:annotation>
+			<xs:documentation>Ограничения (обременения) прав</xs:documentation>
+		</xs:annotation>
+		<xs:restriction base="xs:string">
+			<xs:enumeration value="022001000000">
+				<xs:annotation>
+					<xs:documentation>Сервитут</xs:documentation>
+				</xs:annotation>
+			</xs:enumeration>
+			<xs:enumeration value="022001001000">
+				<xs:annotation>
+					<xs:documentation>Публичный сервитут</xs:documentation>
+				</xs:annotation>
+			</xs:enumeration>
+			<xs:enumeration value="022001002000">
+				<xs:annotation>
+					<xs:documentation>Частный сервитут</xs:documentation>
+				</xs:annotation>
+			</xs:enumeration>
+			<xs:enumeration value="022002000000">
+				<xs:annotation>
+					<xs:documentation>Арест</xs:documentation>
+				</xs:annotation>
+			</xs:enumeration>
+			<xs:enumeration value="022003000000">
+				<xs:annotation>
+					<xs:documentation>Запрещение</xs:documentation>
+				</xs:annotation>
+			</xs:enumeration>
+			<xs:enumeration value="022004000000">
+				<xs:annotation>
+					<xs:documentation>Ограничения прав на земельный участок, предусмотренные статьями 56, 56.1 Земельного кодекса Российской Федерации</xs:documentation>
+				</xs:annotation>
+			</xs:enumeration>
+			<xs:enumeration value="022005000000">
+				<xs:annotation>
+					<xs:documentation>Решение об изъятии земельного участка, жилого помещения</xs:documentation>
+				</xs:annotation>
+			</xs:enumeration>
+			<xs:enumeration value="022006000000">
+				<xs:annotation>
+					<xs:documentation>Аренда (в том числе, субаренда)</xs:documentation>
+				</xs:annotation>
+			</xs:enumeration>
+			<xs:enumeration value="022007000000">
+				<xs:annotation>
+					<xs:documentation>Ипотека</xs:documentation>
+				</xs:annotation>
+			</xs:enumeration>
+			<xs:enumeration value="022008000000">
+				<xs:annotation>
+					<xs:documentation>Ипотека в силу закона</xs:documentation>
+				</xs:annotation>
+			</xs:enumeration>
+			<xs:enumeration value="022009000000">
+				<xs:annotation>
+					<xs:documentation>Безвозмездное (срочное) пользование земельным/лесным участком</xs:documentation>
+				</xs:annotation>
+			</xs:enumeration>
+			<xs:enumeration value="022010000000">
+				<xs:annotation>
+					<xs:documentation>Доверительное управление</xs:documentation>
+				</xs:annotation>
+			</xs:enumeration>
+			<xs:enumeration value="022011000000">
+				<xs:annotation>
+					<xs:documentation>Рента</xs:documentation>
+				</xs:annotation>
+			</xs:enumeration>
+			<xs:enumeration value="022012000000">
+				<xs:annotation>
+					<xs:documentation>Запрет на совершение действий в сфере ГКУ в отношении ОН</xs:documentation>
+				</xs:annotation>
+			</xs:enumeration>
+			<xs:enumeration value="022099000000">
+				<xs:annotation>
+					<xs:documentation>Иные ограничения (обременения) прав</xs:documentation>
+				</xs:annotation>
+			</xs:enumeration>
+		</xs:restriction>
+	</xs:simpleType>
+</xs:schema>

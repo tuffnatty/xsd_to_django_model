@@ -13,10 +13,9 @@ from django.db import models
 # Corresponds to XSD type[s]: SizeType
 class SizeType(models.Model):
     system = models.TextField("system")
-    dim = models.IntegerField("dim", default=1, null=True)
+    dim = models.IntegerField("dim", null=True)
     value = models.IntegerField(
         "value",
-        default=10,
         null=True,
         validators=[validators.MinValueValidator(2), validators.MaxValueValidator(20)]
     )

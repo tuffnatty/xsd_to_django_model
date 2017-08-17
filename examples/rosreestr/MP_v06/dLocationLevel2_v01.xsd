@@ -1,0 +1,50 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<xs:schema xmlns:xs="http://www.w3.org/2001/XMLSchema" elementFormDefault="qualified">
+	<xs:simpleType name="dLocationLevel2Type">
+		<xs:annotation>
+			<xs:documentation>Тип адресного элемента второго уровня</xs:documentation>
+		</xs:annotation>
+		<xs:restriction base="xs:string">
+			<xs:enumeration value="корп">
+				<xs:annotation>
+					<xs:documentation>Корпус</xs:documentation>
+				</xs:annotation>
+			</xs:enumeration>
+			<xs:enumeration value="д">
+				<xs:annotation>
+					<xs:documentation>Дом</xs:documentation>
+				</xs:annotation>
+			</xs:enumeration>
+			<xs:enumeration value="уч">
+				<xs:annotation>
+					<xs:documentation>Участок</xs:documentation>
+				</xs:annotation>
+			</xs:enumeration>
+			<xs:enumeration value="вл">
+				<xs:annotation>
+					<xs:documentation>Владение</xs:documentation>
+				</xs:annotation>
+			</xs:enumeration>
+			<xs:enumeration value="гараж">
+				<xs:annotation>
+					<xs:documentation>Гараж</xs:documentation>
+				</xs:annotation>
+			</xs:enumeration>
+			<xs:enumeration value="бокс">
+				<xs:annotation>
+					<xs:documentation>бокс</xs:documentation>
+				</xs:annotation>
+			</xs:enumeration>
+			<xs:enumeration value="строение">
+				<xs:annotation>
+					<xs:documentation>строение</xs:documentation>
+				</xs:annotation>
+			</xs:enumeration>
+			<xs:enumeration value="сооружение">
+				<xs:annotation>
+					<xs:documentation>сооружение</xs:documentation>
+				</xs:annotation>
+			</xs:enumeration>
+		</xs:restriction>
+	</xs:simpleType>
+</xs:schema>

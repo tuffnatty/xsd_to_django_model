@@ -1,0 +1,25 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<xs:schema xmlns:xs="http://www.w3.org/2001/XMLSchema" elementFormDefault="qualified">
+	<xs:simpleType name="dNaturalObjects">
+		<xs:annotation>
+			<xs:documentation>Природные объекты</xs:documentation>
+		</xs:annotation>
+		<xs:restriction base="xs:string">
+			<xs:enumeration value="233001000000">
+				<xs:annotation>
+					<xs:documentation>Лес</xs:documentation>
+				</xs:annotation>
+			</xs:enumeration>
+			<xs:enumeration value="233002000000">
+				<xs:annotation>
+					<xs:documentation>Водный объект</xs:documentation>
+				</xs:annotation>
+			</xs:enumeration>
+			<xs:enumeration value="233003000000">
+				<xs:annotation>
+					<xs:documentation>Иной природный объект</xs:documentation>
+				</xs:annotation>
+			</xs:enumeration>
+		</xs:restriction>
+	</xs:simpleType>
+</xs:schema>

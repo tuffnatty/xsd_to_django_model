@@ -1,0 +1,221 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<xs:schema xmlns:xs="http://www.w3.org/2001/XMLSchema" elementFormDefault="qualified">
+	<xs:simpleType name="CadastralBlockType">
+		<xs:annotation>
+			<xs:documentation>Номер кадастрового квартала с ограничением на количество символов для частей кадастрового номера</xs:documentation>
+		</xs:annotation>
+		<xs:restriction base="xs:string">
+			<xs:maxLength value="13"/>
+			<xs:minLength value="12"/>
+			<xs:pattern value="\d{2}:\d{2}:\d{6,7}"/>
+		</xs:restriction>
+	</xs:simpleType>
+	<xs:simpleType name="d21_1">
+		<xs:annotation>
+			<xs:documentation>Число с ограничением длины до двадцати одной цифры, в том числе одна цифра после запятой</xs:documentation>
+		</xs:annotation>
+		<xs:restriction base="xs:decimal">
+			<xs:totalDigits value="21"/>
+			<xs:fractionDigits value="1"/>
+		</xs:restriction>
+	</xs:simpleType>
+	<xs:simpleType name="d23_1">
+		<xs:annotation>
+			<xs:documentation>Число с ограничением длины до двадцати трех цифр, в том числе одна цифра после запятой</xs:documentation>
+		</xs:annotation>
+		<xs:restriction base="xs:decimal">
+			<xs:totalDigits value="23"/>
+			<xs:fractionDigits value="1"/>
+		</xs:restriction>
+	</xs:simpleType>
+	<xs:simpleType name="dValueHa">
+		<xs:annotation>
+			<xs:documentation>Число с ограничением длины до пятнадцати цифр, в том числе 4 цифры после запятой. Не может быть меньше значения 0.0001.</xs:documentation>
+		</xs:annotation>
+		<xs:restriction base="xs:decimal">
+			<xs:totalDigits value="15"/>
+			<xs:fractionDigits value="4"/>
+			<xs:minInclusive value="0.0001"/>
+		</xs:restriction>
+	</xs:simpleType>
+	<xs:simpleType name="i20">
+		<xs:annotation>
+			<xs:documentation>Целое число (положительное или отрицательное, или ноль) с ограничением длины до 20 знаков</xs:documentation>
+		</xs:annotation>
+		<xs:restriction base="xs:integer">
+			<xs:totalDigits value="20"/>
+		</xs:restriction>
+	</xs:simpleType>
+	<xs:simpleType name="i6Min1">
+		<xs:annotation>
+			<xs:documentation>Целое число (положительное или ноль) с ограничением длины до 6 знаков начинается с 1</xs:documentation>
+		</xs:annotation>
+		<xs:restriction base="xs:integer">
+			<xs:totalDigits value="6"/>
+			<xs:fractionDigits value="0"/>
+			<xs:minInclusive value="1"/>
+		</xs:restriction>
+	</xs:simpleType>
+	<xs:simpleType name="nn1">
+		<xs:annotation>
+			<xs:documentation>Целое положительное число или ноль (строка с длиной 1 знак)</xs:documentation>
+		</xs:annotation>
+		<xs:restriction base="xs:nonNegativeInteger">
+			<xs:totalDigits value="1"/>
+		</xs:restriction>
+	</xs:simpleType>
+	<xs:simpleType name="nn2">
+		<xs:annotation>
+			<xs:documentation>Целое положительное число или ноль (строка с длиной 2 знака)</xs:documentation>
+		</xs:annotation>
+		<xs:restriction base="xs:nonNegativeInteger">
+			<xs:totalDigits value="2"/>
+		</xs:restriction>
+	</xs:simpleType>
+	<xs:simpleType name="nn20">
+		<xs:annotation>
+			<xs:documentation>Целое положительное число или ноль (строка с длиной 20 символов)</xs:documentation>
+		</xs:annotation>
+		<xs:restriction base="xs:nonNegativeInteger">
+			<xs:totalDigits value="20"/>
+		</xs:restriction>
+	</xs:simpleType>
+	<xs:simpleType name="OKTMOType">
+		<xs:annotation>
+			<xs:documentation>Код ОКТМО</xs:documentation>
+		</xs:annotation>
+		<xs:restriction base="xs:string">
+			<xs:maxLength value="11"/>
+		</xs:restriction>
+	</xs:simpleType>
+	<xs:simpleType name="p20">
+		<xs:annotation>
+			<xs:documentation>Положительное целое число длиной до 20 символов</xs:documentation>
+		</xs:annotation>
+		<xs:restriction base="xs:positiveInteger">
+			<xs:totalDigits value="20"/>
+		</xs:restriction>
+	</xs:simpleType>
+	<xs:simpleType name="p22Min1">
+		<xs:annotation>
+			<xs:documentation>Целое число больше нуля длиной до 22 символов начинается с 1</xs:documentation>
+		</xs:annotation>
+		<xs:restriction base="xs:positiveInteger">
+			<xs:totalDigits value="22"/>
+			<xs:minInclusive value="1"/>
+		</xs:restriction>
+	</xs:simpleType>
+	<xs:simpleType name="s120">
+		<xs:annotation>
+			<xs:documentation>строка с ограничением длины до 120 знаков</xs:documentation>
+		</xs:annotation>
+		<xs:restriction base="xs:string">
+			<xs:maxLength value="120"/>
+		</xs:restriction>
+	</xs:simpleType>
+	<xs:simpleType name="s150">
+		<xs:annotation>
+			<xs:documentation>Строка с ограничением длины до 150 знаков</xs:documentation>
+		</xs:annotation>
+		<xs:restriction base="xs:string">
+			<xs:maxLength value="150"/>
+		</xs:restriction>
+	</xs:simpleType>
+	<xs:simpleType name="s5000">
+		<xs:annotation>
+			<xs:documentation>Строка с ограничением длины до 5000 знаков</xs:documentation>
+		</xs:annotation>
+		<xs:restriction base="xs:string">
+			<xs:maxLength value="5000"/>
+		</xs:restriction>
+	</xs:simpleType>
+	<xs:simpleType name="sCertificate50">
+		<xs:annotation>
+			<xs:documentation>Номер аттестата для кадастрового инженера, формат которого определен Порядком ведения Реестра кадастровых инженеров</xs:documentation>
+		</xs:annotation>
+		<xs:restriction base="xs:string">
+			<xs:maxLength value="50"/>
+			<xs:pattern value="[0-9]{2}-[0-9]{2}-[0-9]{1,}"/>
+		</xs:restriction>
+	</xs:simpleType>
+	<xs:simpleType name="sInBounds">
+		<xs:annotation>
+			<xs:documentation>Местоположение ориентира (0 - вне границ участка, 1 - в границах участка, 2 - не определено)</xs:documentation>
+		</xs:annotation>
+		<xs:restriction base="xs:string">
+			<xs:enumeration value="0">
+				<xs:annotation>
+					<xs:documentation>Расположение ориентира вне границ участка</xs:documentation>
+				</xs:annotation>
+			</xs:enumeration>
+			<xs:enumeration value="1">
+				<xs:annotation>
+					<xs:documentation>Расположение ориентира в границах участка</xs:documentation>
+				</xs:annotation>
+			</xs:enumeration>
+			<xs:enumeration value="2">
+				<xs:annotation>
+					<xs:documentation>Не определено</xs:documentation>
+				</xs:annotation>
+			</xs:enumeration>
+		</xs:restriction>
+	</xs:simpleType>
+	<xs:simpleType name="sName500">
+		<xs:annotation>
+			<xs:documentation>Строка с ограничениями для наименований: Буквы русского, латинского алфавита, цифры, указанные знаки препинания и символы. Не допускается несколько пробелов подряд. Исключено использование табуляции (Tab) и перехода на новую строку (Enter)</xs:documentation>
+		</xs:annotation>
+		<xs:restriction base="xs:string">
+			<xs:maxLength value="500"/>
+			<xs:pattern value="([0-я:/'_\-«»!№;%?()`.,+=*#&amp;@$|&quot;]+ ?)+"/>
+		</xs:restriction>
+	</xs:simpleType>
+	<xs:simpleType name="sRegNumberCulture">
+		<xs:annotation>
+			<xs:documentation>Регистрационные номера объектов культурного наследия, арабские цифры 15 знаков</xs:documentation>
+		</xs:annotation>
+		<xs:restriction base="xs:string">
+			<xs:pattern value="[0-9]{15}"/>
+		</xs:restriction>
+	</xs:simpleType>
+	<xs:simpleType name="sRegNumberCardCulture">
+		<xs:annotation>
+			<xs:documentation>Регистрационные номера учётной карты объектов культурного наследия, арабские цифры до 15 знаков</xs:documentation>
+		</xs:annotation>
+		<xs:restriction base="xs:string">
+			<xs:pattern value="[0-9]{1,15}"/>
+		</xs:restriction>
+	</xs:simpleType>
+	<xs:attributeGroup name="agSoftware">
+		<xs:annotation>
+			<xs:documentation>Сведения о программном продукте, с помощью которого создан документ</xs:documentation>
+		</xs:annotation>
+		<xs:attribute name="NameSoftware" type="sName500" use="required">
+			<xs:annotation>
+				<xs:documentation>Наименование программы</xs:documentation>
+			</xs:annotation>
+		</xs:attribute>
+		<xs:attribute name="VersionSoftware" type="s120" use="required">
+			<xs:annotation>
+				<xs:documentation>Версия программы</xs:documentation>
+			</xs:annotation>
+		</xs:attribute>
+	</xs:attributeGroup>
+	<xs:simpleType name="sName500JPG">
+		<xs:annotation>
+			<xs:documentation>Относительный путь к файлу с изображением\Имя файла с изображением (Файл с изображением долнен быть в формате JPEG)</xs:documentation>
+		</xs:annotation>
+		<xs:restriction base="xs:string">
+			<xs:maxLength value="500"/>
+			<xs:pattern value=".+\.[j|J][p|P][g|G]"/>
+		</xs:restriction>
+	</xs:simpleType>
+	<xs:simpleType name="sName500PDF">
+		<xs:annotation>
+			<xs:documentation>Относительный путь к файлу с изображением\Имя файла с изображением (Файл с изображением долнен быть в формате PDF)</xs:documentation>
+		</xs:annotation>
+		<xs:restriction base="xs:string">
+			<xs:maxLength value="500"/>
+			<xs:pattern value=".+\.[p|P][d|D][f|F]"/>
+		</xs:restriction>
+	</xs:simpleType>
+</xs:schema>

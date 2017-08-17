@@ -1,0 +1,44 @@
+<?xml version="1.0" encoding="utf-8"?>
+<xs:schema xmlns:xs="http://www.w3.org/2001/XMLSchema" elementFormDefault="qualified">
+	<xs:simpleType name="sNameNew">
+		<xs:annotation>
+			<xs:documentation>Строка с ограничениями для наименований: Буквы русского, латинского алфавита, цифры, указанные знаки препинания и символы. Не допускается несколько пробелов подряд. Исключено использование табуляции (Tab) и перехода на новую строку (Enter)</xs:documentation>
+		</xs:annotation>
+		<xs:restriction base="xs:string">
+			<xs:pattern value="( ?[0-9A-zА-яЁё&amp;&apos;&quot;!№;%:?*()+/,.~@#$=|«»{}-])+"/>
+		</xs:restriction>
+	</xs:simpleType>
+	<xs:simpleType name="sNameNew255">
+		<xs:annotation>
+			<xs:documentation>Строка с ограничениями для наименований: Буквы русского, латинского алфавита, цифры, указанные знаки препинания и символы. Не допускается несколько пробелов подряд. Исключено использование табуляции (Tab) и перехода на новую строку (Enter). Ограничнение на длину 255 символов.</xs:documentation>
+		</xs:annotation>
+		<xs:restriction base="sNameNew">
+			<xs:maxLength value="255"/>
+		</xs:restriction>
+	</xs:simpleType>
+	<xs:simpleType name="sNameNew500">
+		<xs:annotation>
+			<xs:documentation>Строка с ограничениями для наименований: Буквы русского, латинского алфавита, цифры, указанные знаки препинания и символы. Не допускается несколько пробелов подряд. Исключено использование табуляции (Tab) и перехода на новую строку (Enter). Ограничнение на длину 500 символов.</xs:documentation>
+		</xs:annotation>
+		<xs:restriction base="sNameNew">
+			<xs:maxLength value="500"/>
+		</xs:restriction>
+	</xs:simpleType>
+	<xs:simpleType name="sContour">
+		<xs:annotation>
+			<xs:documentation>Контур (0 - внутренний, 1 - внешний)</xs:documentation>
+		</xs:annotation>
+		<xs:restriction base="xs:string">
+			<xs:enumeration value="0">
+				<xs:annotation>
+					<xs:documentation>Внутренний контур</xs:documentation>
+				</xs:annotation>
+			</xs:enumeration>
+			<xs:enumeration value="1">
+				<xs:annotation>
+					<xs:documentation>Внешний контур</xs:documentation>
+				</xs:annotation>
+			</xs:enumeration>
+		</xs:restriction>
+	</xs:simpleType>
+</xs:schema>

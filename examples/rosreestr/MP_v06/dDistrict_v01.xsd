@@ -1,0 +1,35 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<xs:schema xmlns:xs="http://www.w3.org/2001/XMLSchema" elementFormDefault="qualified">
+	<xs:simpleType name="dDistrict">
+		<xs:annotation>
+			<xs:documentation>2-й уровень - районы (улусы) республик, краев, областей, автономной области, автономных округов, входящих в состав Российской Федерации</xs:documentation>
+		</xs:annotation>
+		<xs:restriction base="xs:string">
+			<xs:enumeration value="р-н">
+				<xs:annotation>
+					<xs:documentation>Район</xs:documentation>
+				</xs:annotation>
+			</xs:enumeration>
+			<xs:enumeration value="у">
+				<xs:annotation>
+					<xs:documentation>Улус</xs:documentation>
+				</xs:annotation>
+			</xs:enumeration>
+			<xs:enumeration value="тер">
+				<xs:annotation>
+					<xs:documentation>Территория</xs:documentation>
+				</xs:annotation>
+			</xs:enumeration>
+			<xs:enumeration value="АО">
+				<xs:annotation>
+					<xs:documentation>Автономный округ</xs:documentation>
+				</xs:annotation>
+			</xs:enumeration>
+			<xs:enumeration value="п">
+				<xs:annotation>
+					<xs:documentation>Поселение</xs:documentation>
+				</xs:annotation>
+			</xs:enumeration>
+		</xs:restriction>
+	</xs:simpleType>
+</xs:schema>

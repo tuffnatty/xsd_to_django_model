@@ -1,0 +1,331 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<xs:schema xmlns:xs="http://www.w3.org/2001/XMLSchema" elementFormDefault="qualified" attributeFormDefault="unqualified">
+	<!--Все простые типы данных-->
+	<xs:include schemaLocation="P_CommonSimpleType_v04.xsd"/>
+	<xs:include schemaLocation="P_CommonSimpleType_v02.xsd"/>
+	<xs:include schemaLocation="smev-supplementary-commons-1.0.1.xsd"/>
+	<!--Подключены справочники наименований адресных объектов по КЛАДР: dDistrict, dCity, dInhabitedLocalities, dStreets-->
+	<!--Справочник субъектов РФ-->
+	<xs:include schemaLocation="dRegionsRF_v01.xsd"/>
+	<!--Справочник "Типы адресных объектов Городской район"	-->
+	<xs:include schemaLocation="dUrbanDistrict_v01.xsd"/>
+	<!--Справочник "Типы адресных объектов Сельсовет	-->
+	<xs:include schemaLocation="dSovietVillage_v01.xsd"/>
+	<!--Справочник расширенных адресных элементов первого уровня-->
+	<xs:include schemaLocation="dLocationLevel1_v01.xsd"/>
+	<!--Справочник расширенных адресных элементов второго уровня-->
+	<xs:include schemaLocation="dLocationLevel2_v01.xsd"/>
+	<!--Справочник расширенных адресных элементов третьего уровня-->
+	<xs:include schemaLocation="dLocationLevel3_v01.xsd"/>
+	<!--Справочник расширенных адресных элементов уровня помещения-->
+	<xs:include schemaLocation="dApartment_v01.xsd"/>
+	<!--Адресный объект по КЛАДР: 2-й уровень - районы (улусы) республик, краев, областей, автономной области, автономных округов, входящих в состав Российской Федерации-->
+	<xs:include schemaLocation="dDistrict_v01.xsd"/>
+	<!--Адресный объект по КЛАДР: 3-й уровень - административно-территориальное образование (АТО) районного подчинения-->
+	<xs:include schemaLocation="dCity_v01.xsd"/>
+	<!--Адресный объект по КЛАДР: 4-й уровень - тип населенного пункта-->
+	<xs:include schemaLocation="dInhabitedLocalities_v01.xsd"/>
+	<!--Адресный объект по КЛАДР: 5-й уровень - геоним (улицы городов, поселков городского типа и сельских населенных пунктов)-->
+	<xs:include schemaLocation="dStreets_v01.xsd"/>
+	<!--ВЕРСИЯ 5:-->
+	<xs:complexType name="tAddressInp">
+		<xs:annotation>
+			<xs:documentation>Адрес (описание местоположения) до уровня населённого пункта</xs:documentation>
+		</xs:annotation>
+		<xs:sequence>
+			<xs:element name="OKATO" type="OKATOType" minOccurs="0">
+				<xs:annotation>
+					<xs:documentation>ОКАТО</xs:documentation>
+				</xs:annotation>
+			</xs:element>
+			<xs:element name="KLADR" type="sNe20">
+				<xs:annotation>
+					<xs:documentation>КЛАДР</xs:documentation>
+				</xs:annotation>
+			</xs:element>
+			<xs:element name="OKTMO" type="OKTMOType" minOccurs="0">
+				<xs:annotation>
+					<xs:documentation>ОКТМО</xs:documentation>
+				</xs:annotation>
+			</xs:element>
+			<xs:element name="PostalCode" type="PostalCodeRFType" minOccurs="0">
+				<xs:annotation>
+					<xs:documentation>Почтовый индекс</xs:documentation>
+				</xs:annotation>
+			</xs:element>
+			<xs:element name="Region" type="dRegionsRF">
+				<xs:annotation>
+					<xs:documentation>Код региона</xs:documentation>
+				</xs:annotation>
+			</xs:element>
+			<xs:element name="District" type="tDistrict" minOccurs="0">
+				<xs:annotation>
+					<xs:documentation>Район</xs:documentation>
+				</xs:annotation>
+			</xs:element>
+			<xs:element name="City" type="tCity" minOccurs="0">
+				<xs:annotation>
+					<xs:documentation>Муниципальное образование</xs:documentation>
+				</xs:annotation>
+			</xs:element>
+			<xs:element name="UrbanDistrict" type="tUrbanDistrict" minOccurs="0">
+				<xs:annotation>
+					<xs:documentation>Городской район</xs:documentation>
+				</xs:annotation>
+			</xs:element>
+			<xs:element name="SovietVillage" type="tSovietVillage" minOccurs="0">
+				<xs:annotation>
+					<xs:documentation>Сельсовет</xs:documentation>
+				</xs:annotation>
+			</xs:element>
+			<xs:element name="Locality" type="tLocality" minOccurs="0">
+				<xs:annotation>
+					<xs:documentation>Населённый пункт</xs:documentation>
+				</xs:annotation>
+			</xs:element>
+		</xs:sequence>
+	</xs:complexType>
+	<xs:complexType name="tAddressInpFull">
+		<xs:annotation>
+			<xs:documentation>Адрес (описание местоположения)</xs:documentation>
+		</xs:annotation>
+		<xs:complexContent>
+			<xs:extension base="tAddressInp">
+				<xs:sequence>
+					<xs:element name="Street" type="tStreet" minOccurs="0">
+						<xs:annotation>
+							<xs:documentation>Улица</xs:documentation>
+						</xs:annotation>
+					</xs:element>
+					<xs:element name="Level1" type="tLevel1" minOccurs="0">
+						<xs:annotation>
+							<xs:documentation>Дом</xs:documentation>
+						</xs:annotation>
+					</xs:element>
+					<xs:element name="Level2" type="tLevel2" minOccurs="0">
+						<xs:annotation>
+							<xs:documentation>Корпус</xs:documentation>
+						</xs:annotation>
+					</xs:element>
+					<xs:element name="Level3" type="tLevel3" minOccurs="0">
+						<xs:annotation>
+							<xs:documentation>Строение</xs:documentation>
+						</xs:annotation>
+					</xs:element>
+					<xs:element name="Apartment" type="tApartment" minOccurs="0">
+						<xs:annotation>
+							<xs:documentation>Квартира</xs:documentation>
+						</xs:annotation>
+					</xs:element>
+					<xs:element name="Other" type="s2500" minOccurs="0">
+						<xs:annotation>
+							<xs:documentation>Иное описание местоположения</xs:documentation>
+						</xs:annotation>
+					</xs:element>
+				</xs:sequence>
+			</xs:extension>
+		</xs:complexContent>
+	</xs:complexType>
+	<!--Адрес (описание местоположения) и признак, позволяющий отличить адрес и описание местоположения-->
+	<xs:complexType name="tAddressInpFullExt">
+		<xs:annotation>
+			<xs:documentation>Адрес (описание местоположения) и признак, позволяющий отличить адрес и описание местоположения</xs:documentation>
+		</xs:annotation>
+		<xs:complexContent>
+			<xs:extension base="tAddressInpFull">
+				<xs:attribute ref="AddressOrLocation" use="required"/>
+			</xs:extension>
+		</xs:complexContent>
+	</xs:complexType>
+	<!--Адрес (описание местоположения) объекта капитального строительства и признак, позволяющий отличить адрес и описание местоположения-->
+	<xs:complexType name="tAddressInpFullOKS">
+		<xs:annotation>
+			<xs:documentation>Адрес (описание местоположения)</xs:documentation>
+		</xs:annotation>
+		<xs:complexContent>
+			<xs:extension base="tAddressInpFullExt">
+				<xs:sequence>
+					<xs:element name="Note" type="s4000" minOccurs="0">
+						<xs:annotation>
+							<xs:documentation>Неформализованное описание</xs:documentation>
+						</xs:annotation>
+					</xs:element>
+				</xs:sequence>
+			</xs:extension>
+		</xs:complexContent>
+	</xs:complexType>
+	<!--Признак, позволяющий отличить адрес и описание местоположения объекта недвижимости:-->
+	<xs:attribute name="AddressOrLocation" type="sAddressOrLocation">
+		<xs:annotation>
+			<xs:documentation>Признак, позволяющий отличить присвоенный в установленном порядке адрес объекта недвижимости и описание местоположения объекта недвижимости (0-описание местоположения, 1-адрес)</xs:documentation>
+		</xs:annotation>
+	</xs:attribute>
+	<xs:simpleType name="sAddressOrLocation">
+		<xs:annotation>
+			<xs:documentation>Адрес или описание местоположения (0 - описание местоположения, 1 - адрес)</xs:documentation>
+		</xs:annotation>
+		<xs:restriction base="xs:string">
+			<xs:enumeration value="0">
+				<xs:annotation>
+					<xs:documentation>Описание местоположения объекта недвижимости</xs:documentation>
+				</xs:annotation>
+			</xs:enumeration>
+			<xs:enumeration value="1">
+				<xs:annotation>
+					<xs:documentation>Присвоенный в установленном порядке адрес объекта недвижимости</xs:documentation>
+				</xs:annotation>
+			</xs:enumeration>
+		</xs:restriction>
+	</xs:simpleType>
+	<!--Вспомогательные типы данных-->
+	<xs:complexType name="tDistrict">
+		<xs:annotation>
+			<xs:documentation>Район</xs:documentation>
+		</xs:annotation>
+		<xs:attribute name="Name" type="sNe255" use="required">
+			<xs:annotation>
+				<xs:documentation>Наименование</xs:documentation>
+			</xs:annotation>
+		</xs:attribute>
+		<xs:attribute name="Type" type="dDistrict" use="required">
+			<xs:annotation>
+				<xs:documentation>Тип</xs:documentation>
+			</xs:annotation>
+		</xs:attribute>
+	</xs:complexType>
+	<xs:complexType name="tCity">
+		<xs:annotation>
+			<xs:documentation>Муниципальное образование</xs:documentation>
+		</xs:annotation>
+		<xs:attribute name="Name" type="sNe255" use="required">
+			<xs:annotation>
+				<xs:documentation>Наименование</xs:documentation>
+			</xs:annotation>
+		</xs:attribute>
+		<xs:attribute name="Type" type="dCity" use="required">
+			<xs:annotation>
+				<xs:documentation>Тип</xs:documentation>
+			</xs:annotation>
+		</xs:attribute>
+	</xs:complexType>
+	<xs:complexType name="tUrbanDistrict">
+		<xs:annotation>
+			<xs:documentation>Городской район</xs:documentation>
+		</xs:annotation>
+		<xs:attribute name="Name" type="sNe255" use="required">
+			<xs:annotation>
+				<xs:documentation>Наименование</xs:documentation>
+			</xs:annotation>
+		</xs:attribute>
+		<xs:attribute name="Type" type="dUrbanDistrict" use="required">
+			<xs:annotation>
+				<xs:documentation>Тип</xs:documentation>
+			</xs:annotation>
+		</xs:attribute>
+	</xs:complexType>
+	<xs:complexType name="tSovietVillage">
+		<xs:annotation>
+			<xs:documentation>Сельсовет</xs:documentation>
+		</xs:annotation>
+		<xs:attribute name="Name" type="sNe255" use="required">
+			<xs:annotation>
+				<xs:documentation>Наименование</xs:documentation>
+			</xs:annotation>
+		</xs:attribute>
+		<xs:attribute name="Type" type="dSovietVillage" use="required">
+			<xs:annotation>
+				<xs:documentation>Тип</xs:documentation>
+			</xs:annotation>
+		</xs:attribute>
+	</xs:complexType>
+	<xs:complexType name="tLocality">
+		<xs:annotation>
+			<xs:documentation>Населённый пункт</xs:documentation>
+		</xs:annotation>
+		<xs:attribute name="Name" type="sNe255" use="required">
+			<xs:annotation>
+				<xs:documentation>Наименование</xs:documentation>
+			</xs:annotation>
+		</xs:attribute>
+		<xs:attribute name="Type" type="dInhabitedLocalities" use="required">
+			<xs:annotation>
+				<xs:documentation>Тип</xs:documentation>
+			</xs:annotation>
+		</xs:attribute>
+	</xs:complexType>
+	<xs:complexType name="tStreet">
+		<xs:annotation>
+			<xs:documentation>Улица</xs:documentation>
+		</xs:annotation>
+		<xs:attribute name="Name" type="sNe255" use="required">
+			<xs:annotation>
+				<xs:documentation>Наименование</xs:documentation>
+			</xs:annotation>
+		</xs:attribute>
+		<xs:attribute name="Type" type="dStreets" use="required">
+			<xs:annotation>
+				<xs:documentation>Тип</xs:documentation>
+			</xs:annotation>
+		</xs:attribute>
+	</xs:complexType>
+	<xs:complexType name="tLevel1">
+		<xs:annotation>
+			<xs:documentation>Дом</xs:documentation>
+		</xs:annotation>
+		<xs:attribute name="Type" type="dLocationLevel1Type" use="required">
+			<xs:annotation>
+				<xs:documentation>Тип</xs:documentation>
+			</xs:annotation>
+		</xs:attribute>
+		<xs:attribute name="Value" type="sNe255" use="required">
+			<xs:annotation>
+				<xs:documentation>Значение</xs:documentation>
+			</xs:annotation>
+		</xs:attribute>
+	</xs:complexType>
+	<xs:complexType name="tLevel2">
+		<xs:annotation>
+			<xs:documentation>Корпус</xs:documentation>
+		</xs:annotation>
+		<xs:attribute name="Type" type="dLocationLevel2Type" use="required">
+			<xs:annotation>
+				<xs:documentation>Тип</xs:documentation>
+			</xs:annotation>
+		</xs:attribute>
+		<xs:attribute name="Value" type="sNe255" use="required">
+			<xs:annotation>
+				<xs:documentation>Значение</xs:documentation>
+			</xs:annotation>
+		</xs:attribute>
+	</xs:complexType>
+	<xs:complexType name="tLevel3">
+		<xs:annotation>
+			<xs:documentation>Строение</xs:documentation>
+		</xs:annotation>
+		<xs:attribute name="Type" type="dLocationLevel3Type" use="required">
+			<xs:annotation>
+				<xs:documentation>Тип</xs:documentation>
+			</xs:annotation>
+		</xs:attribute>
+		<xs:attribute name="Value" type="sNe255" use="required">
+			<xs:annotation>
+				<xs:documentation>Значение</xs:documentation>
+			</xs:annotation>
+		</xs:attribute>
+	</xs:complexType>
+	<xs:complexType name="tApartment">
+		<xs:annotation>
+			<xs:documentation>Квартира</xs:documentation>
+		</xs:annotation>
+		<xs:attribute name="Type" type="dApartmentType" use="required">
+			<xs:annotation>
+				<xs:documentation>Тип</xs:documentation>
+			</xs:annotation>
+		</xs:attribute>
+		<xs:attribute name="Value" type="sNe255" use="required">
+			<xs:annotation>
+				<xs:documentation>Значение</xs:documentation>
+			</xs:annotation>
+		</xs:attribute>
+	</xs:complexType>
+</xs:schema>

@@ -1,0 +1,50 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<xs:schema xmlns:xs="http://www.w3.org/2001/XMLSchema" elementFormDefault="qualified">
+	<xs:simpleType name="dCategories">
+		<xs:annotation>
+			<xs:documentation>Категории земель</xs:documentation>
+		</xs:annotation>
+		<xs:restriction base="xs:string">
+			<xs:enumeration value="003001000000">
+				<xs:annotation>
+					<xs:documentation>Земли сельскохозяйственного назначения</xs:documentation>
+				</xs:annotation>
+			</xs:enumeration>
+			<xs:enumeration value="003002000000">
+				<xs:annotation>
+					<xs:documentation>Земли населенных пунктов</xs:documentation>
+				</xs:annotation>
+			</xs:enumeration>
+			<xs:enumeration value="003003000000">
+				<xs:annotation>
+					<xs:documentation>Земли промышленности, энергетики, транспорта, связи, радиовещания, телевидения, информатики, земли для обеспечения космической деятельности, земли обороны, безопасности и земли иного специального назначения</xs:documentation>
+				</xs:annotation>
+			</xs:enumeration>
+			<xs:enumeration value="003004000000">
+				<xs:annotation>
+					<xs:documentation>Земли особо охраняемых территорий и объектов</xs:documentation>
+				</xs:annotation>
+			</xs:enumeration>
+			<xs:enumeration value="003005000000">
+				<xs:annotation>
+					<xs:documentation>Земли лесного фонда</xs:documentation>
+				</xs:annotation>
+			</xs:enumeration>
+			<xs:enumeration value="003006000000">
+				<xs:annotation>
+					<xs:documentation>Земли водного фонда</xs:documentation>
+				</xs:annotation>
+			</xs:enumeration>
+			<xs:enumeration value="003007000000">
+				<xs:annotation>
+					<xs:documentation>Земли запаса</xs:documentation>
+				</xs:annotation>
+			</xs:enumeration>
+			<xs:enumeration value="003008000000">
+				<xs:annotation>
+					<xs:documentation>Категория не установлена</xs:documentation>
+				</xs:annotation>
+			</xs:enumeration>
+		</xs:restriction>
+	</xs:simpleType>
+</xs:schema>

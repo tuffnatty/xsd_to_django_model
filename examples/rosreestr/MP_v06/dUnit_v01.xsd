@@ -1,0 +1,190 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<xs:schema xmlns:xs="http://www.w3.org/2001/XMLSchema" elementFormDefault="qualified">
+	<xs:simpleType name="dUnit">
+		<xs:annotation>
+			<xs:documentation>Единицы измерений</xs:documentation>
+		</xs:annotation>
+		<xs:restriction base="xs:string">
+			<xs:enumeration value="003">
+				<xs:annotation>
+					<xs:documentation>Миллиметр</xs:documentation>
+				</xs:annotation>
+			</xs:enumeration>
+			<xs:enumeration value="004">
+				<xs:annotation>
+					<xs:documentation>Сантиметр</xs:documentation>
+				</xs:annotation>
+			</xs:enumeration>
+			<xs:enumeration value="005">
+				<xs:annotation>
+					<xs:documentation>Дециметр</xs:documentation>
+				</xs:annotation>
+			</xs:enumeration>
+			<xs:enumeration value="006">
+				<xs:annotation>
+					<xs:documentation>Метр</xs:documentation>
+				</xs:annotation>
+			</xs:enumeration>
+			<xs:enumeration value="008">
+				<xs:annotation>
+					<xs:documentation>Километр</xs:documentation>
+				</xs:annotation>
+			</xs:enumeration>
+			<xs:enumeration value="009">
+				<xs:annotation>
+					<xs:documentation>Мегаметр</xs:documentation>
+				</xs:annotation>
+			</xs:enumeration>
+			<xs:enumeration value="047">
+				<xs:annotation>
+					<xs:documentation>Морская миля</xs:documentation>
+				</xs:annotation>
+			</xs:enumeration>
+			<xs:enumeration value="050">
+				<xs:annotation>
+					<xs:documentation>Квадратный миллиметр</xs:documentation>
+				</xs:annotation>
+			</xs:enumeration>
+			<xs:enumeration value="051">
+				<xs:annotation>
+					<xs:documentation>Квадратный сантиметр</xs:documentation>
+				</xs:annotation>
+			</xs:enumeration>
+			<xs:enumeration value="053">
+				<xs:annotation>
+					<xs:documentation>Квадратный дециметр</xs:documentation>
+				</xs:annotation>
+			</xs:enumeration>
+			<xs:enumeration value="055">
+				<xs:annotation>
+					<xs:documentation>Квадратный метр</xs:documentation>
+				</xs:annotation>
+			</xs:enumeration>
+			<xs:enumeration value="058">
+				<xs:annotation>
+					<xs:documentation>Тысяча квадратных метров</xs:documentation>
+				</xs:annotation>
+			</xs:enumeration>
+			<xs:enumeration value="059">
+				<xs:annotation>
+					<xs:documentation>Гектар</xs:documentation>
+				</xs:annotation>
+			</xs:enumeration>
+			<xs:enumeration value="061">
+				<xs:annotation>
+					<xs:documentation>Квадратный километр</xs:documentation>
+				</xs:annotation>
+			</xs:enumeration>
+			<xs:enumeration value="109">
+				<xs:annotation>
+					<xs:documentation>Ар (100 м2)</xs:documentation>
+				</xs:annotation>
+			</xs:enumeration>
+			<xs:enumeration value="359">
+				<xs:annotation>
+					<xs:documentation>Сутки</xs:documentation>
+				</xs:annotation>
+			</xs:enumeration>
+			<xs:enumeration value="360">
+				<xs:annotation>
+					<xs:documentation>Неделя</xs:documentation>
+				</xs:annotation>
+			</xs:enumeration>
+			<xs:enumeration value="361">
+				<xs:annotation>
+					<xs:documentation>Декада</xs:documentation>
+				</xs:annotation>
+			</xs:enumeration>
+			<xs:enumeration value="362">
+				<xs:annotation>
+					<xs:documentation>Месяц</xs:documentation>
+				</xs:annotation>
+			</xs:enumeration>
+			<xs:enumeration value="364">
+				<xs:annotation>
+					<xs:documentation>Квартал</xs:documentation>
+				</xs:annotation>
+			</xs:enumeration>
+			<xs:enumeration value="365">
+				<xs:annotation>
+					<xs:documentation>Полугодие</xs:documentation>
+				</xs:annotation>
+			</xs:enumeration>
+			<xs:enumeration value="356">
+				<xs:annotation>
+					<xs:documentation>Час</xs:documentation>
+				</xs:annotation>
+			</xs:enumeration>
+			<xs:enumeration value="355">
+				<xs:annotation>
+					<xs:documentation>Минута </xs:documentation>
+				</xs:annotation>
+			</xs:enumeration>
+			<xs:enumeration value="366">
+				<xs:annotation>
+					<xs:documentation>Год</xs:documentation>
+				</xs:annotation>
+			</xs:enumeration>
+			<xs:enumeration value="383">
+				<xs:annotation>
+					<xs:documentation>Рубль</xs:documentation>
+				</xs:annotation>
+			</xs:enumeration>
+			<xs:enumeration value="384">
+				<xs:annotation>
+					<xs:documentation>Тысяча рублей</xs:documentation>
+				</xs:annotation>
+			</xs:enumeration>
+			<xs:enumeration value="385">
+				<xs:annotation>
+					<xs:documentation>Миллион рублей</xs:documentation>
+				</xs:annotation>
+			</xs:enumeration>
+			<xs:enumeration value="386">
+				<xs:annotation>
+					<xs:documentation>Миллиард рублей</xs:documentation>
+				</xs:annotation>
+			</xs:enumeration>
+			<xs:enumeration value="1000">
+				<xs:annotation>
+					<xs:documentation>Неопределено</xs:documentation>
+				</xs:annotation>
+			</xs:enumeration>
+			<xs:enumeration value="1001">
+				<xs:annotation>
+					<xs:documentation>Значение отсутствует</xs:documentation>
+				</xs:annotation>
+			</xs:enumeration>
+			<xs:enumeration value="1002">
+				<xs:annotation>
+					<xs:documentation>Рублей за кв. метр</xs:documentation>
+				</xs:annotation>
+			</xs:enumeration>
+			<xs:enumeration value="1003">
+				<xs:annotation>
+					<xs:documentation>Рублей за ар</xs:documentation>
+				</xs:annotation>
+			</xs:enumeration>
+			<xs:enumeration value="1004">
+				<xs:annotation>
+					<xs:documentation>Рублей  за гектар</xs:documentation>
+				</xs:annotation>
+			</xs:enumeration>
+			<xs:enumeration value="1005">
+				<xs:annotation>
+					<xs:documentation>Иные</xs:documentation>
+				</xs:annotation>
+			</xs:enumeration>
+			<xs:enumeration value="1006">
+				<xs:annotation>
+					<xs:documentation>Рублей за кв. км</xs:documentation>
+				</xs:annotation>
+			</xs:enumeration>
+			<xs:enumeration value="1007">
+				<xs:annotation>
+					<xs:documentation>Рабочий день</xs:documentation>
+				</xs:annotation>
+			</xs:enumeration>
+		</xs:restriction>
+	</xs:simpleType>
+</xs:schema>

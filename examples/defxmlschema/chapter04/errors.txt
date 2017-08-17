@@ -1,0 +1,8 @@
+Making model for type OrderType
+ Making model for type CustomerType
+ Done making model Customer (CustomerType)
+ Making model for type prod:ItemsType
+  Making model for type prod:ProductType
+  Done making model Product (prod:ProductType)
+ Done making model Items (prod:ItemsType)
+Done making model Order (OrderType)

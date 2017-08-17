@@ -1,0 +1,381 @@
+<?xml version="1.0" encoding="utf-8"?>
+<xs:schema xmlns:xs="http://www.w3.org/2001/XMLSchema" elementFormDefault="qualified">
+	<xs:include schemaLocation="P_CommonSimpleType_v01.xsd"/>
+	<xs:attributeGroup name="agNeSoftware">
+		<xs:annotation>
+			<xs:documentation>Сведения о программном продукте, с помощью которого создан документ</xs:documentation>
+		</xs:annotation>
+		<xs:attribute name="NameSoftware" type="sNe500" use="required">
+			<xs:annotation>
+				<xs:documentation>Наименование программы</xs:documentation>
+			</xs:annotation>
+		</xs:attribute>
+		<xs:attribute name="VersionSoftware" type="sNe120" use="required">
+			<xs:annotation>
+				<xs:documentation>Версия программы</xs:documentation>
+			</xs:annotation>
+		</xs:attribute>
+	</xs:attributeGroup>
+	<xs:attributeGroup name="agNeTitle">
+		<xs:annotation>
+			<xs:documentation>Сведения о программном продукте, с помощью которого создан документ, и идентификаторе пакета</xs:documentation>
+		</xs:annotation>
+		<xs:attribute name="NameSoftware" type="sNe500" use="required">
+			<xs:annotation>
+				<xs:documentation>Наименование программы</xs:documentation>
+			</xs:annotation>
+		</xs:attribute>
+		<xs:attribute name="VersionSoftware" type="sNe120" use="required">
+			<xs:annotation>
+				<xs:documentation>Версия программы</xs:documentation>
+			</xs:annotation>
+		</xs:attribute>
+		<xs:attribute name="GUID" type="sGUID" use="required">
+			<xs:annotation>
+				<xs:documentation>Глобальный уникальный идентификатор пакета</xs:documentation>
+			</xs:annotation>
+		</xs:attribute>
+	</xs:attributeGroup>
+	<xs:simpleType name="i3Min1">
+		<xs:annotation>
+			<xs:documentation>Целое число от 1 до 3</xs:documentation>
+		</xs:annotation>
+		<xs:restriction base="xs:int">
+			<xs:minExclusive value="1"/>
+			<xs:maxExclusive value="3"/>
+		</xs:restriction>
+	</xs:simpleType>
+	<xs:simpleType name="i92Min1">
+		<xs:annotation>
+			<xs:documentation>Целое число от 1 до 92</xs:documentation>
+		</xs:annotation>
+		<xs:restriction base="xs:int">
+			<xs:maxExclusive value="92"/>
+			<xs:minExclusive value="1"/>
+		</xs:restriction>
+	</xs:simpleType>
+	<xs:simpleType name="nonEmptyString">
+		<xs:annotation>
+			<xs:documentation>Не пустая строка</xs:documentation>
+		</xs:annotation>
+		<xs:restriction base="xs:string">
+			<xs:pattern value="(\s*[^\s]\s*)+"/>
+		</xs:restriction>
+	</xs:simpleType>
+	<xs:simpleType name="sCadastralNumberDistrict">
+		<xs:annotation>
+			<xs:documentation>Кадастровый номер кадастрового района</xs:documentation>
+		</xs:annotation>
+		<xs:restriction base="xs:string">
+			<xs:pattern value="\d{2}:\d{2}"/>
+		</xs:restriction>
+	</xs:simpleType>
+	<xs:simpleType name="sCadastralNumberLinear">
+		<xs:annotation>
+			<xs:documentation>Кадастровый номер линейного сооружения</xs:documentation>
+		</xs:annotation>
+		<xs:restriction base="xs:string">
+			<xs:maxLength value="40"/>
+			<xs:pattern value="0:0:0:\d+"/>
+		</xs:restriction>
+	</xs:simpleType>
+	<xs:simpleType name="sCadastralNumberZone">
+		<xs:annotation>
+			<xs:documentation>Кадастровый номер зоны. Формат значения: «Кадастровый номер КО».«Кадастровый номер КР».«Номер типа зоны».порядковый номер зоны в данном типе</xs:documentation>
+		</xs:annotation>
+		<xs:restriction base="xs:string">
+			<xs:maxLength value="40"/>
+			<xs:pattern value="\d{2}\.\d{2}\.[1-2]\.[0-9]+"/>
+		</xs:restriction>
+	</xs:simpleType>
+	<xs:simpleType name="sMapPlan500xml">
+		<xs:annotation>
+			<xs:documentation>шаблон имени файла карта-плана MapPlan_*.xml</xs:documentation>
+		</xs:annotation>
+		<xs:restriction base="xs:string">
+			<xs:maxLength value="500"/>
+			<xs:pattern value=".*[M|m][a|A][p|P][P|p][l|L][a|A][n|N]_.+\.[x|X][m|M][l|L]"/>
+		</xs:restriction>
+	</xs:simpleType>
+	<xs:simpleType name="sNe10">
+		<xs:annotation>
+			<xs:documentation>текст длиной до 10 символов, запрещена пустая строка</xs:documentation>
+		</xs:annotation>
+		<xs:restriction base="nonEmptyString">
+			<xs:maxLength value="10"/>
+		</xs:restriction>
+	</xs:simpleType>
+	<xs:simpleType name="sNe100">
+		<xs:annotation>
+			<xs:documentation>текст длиной до 100 символов, запрещена пустая строка</xs:documentation>
+		</xs:annotation>
+		<xs:restriction base="nonEmptyString">
+			<xs:maxLength value="100"/>
+		</xs:restriction>
+	</xs:simpleType>
+	<xs:simpleType name="sNe1000">
+		<xs:annotation>
+			<xs:documentation>текст длиной до 1000 символов, запрещена пустая строка</xs:documentation>
+		</xs:annotation>
+		<xs:restriction base="nonEmptyString">
+			<xs:maxLength value="1000"/>
+		</xs:restriction>
+	</xs:simpleType>
+	<xs:simpleType name="sNe11">
+		<xs:annotation>
+			<xs:documentation>текст длиной до 11 символов, запрещена пустая строка</xs:documentation>
+		</xs:annotation>
+		<xs:restriction base="nonEmptyString">
+			<xs:maxLength value="11"/>
+		</xs:restriction>
+	</xs:simpleType>
+	<xs:simpleType name="sNe12">
+		<xs:annotation>
+			<xs:documentation>текст длиной до 12 символов, запрещена пустая строка</xs:documentation>
+		</xs:annotation>
+		<xs:restriction base="nonEmptyString">
+			<xs:maxLength value="12"/>
+		</xs:restriction>
+	</xs:simpleType>
+	<xs:simpleType name="sNe15">
+		<xs:annotation>
+			<xs:documentation>текст длиной до 15 символов, запрещена пустая строка</xs:documentation>
+		</xs:annotation>
+		<xs:restriction base="nonEmptyString">
+			<xs:maxLength value="15"/>
+		</xs:restriction>
+	</xs:simpleType>
+	<xs:simpleType name="sNe120">
+		<xs:annotation>
+			<xs:documentation>текст длиной до 120 символов, запрещена пустая строка</xs:documentation>
+		</xs:annotation>
+		<xs:restriction base="nonEmptyString">
+			<xs:maxLength value="120"/>
+		</xs:restriction>
+	</xs:simpleType>
+	<xs:simpleType name="sNe13">
+		<xs:annotation>
+			<xs:documentation>текст длиной до 13 символов, запрещена пустая строка</xs:documentation>
+		</xs:annotation>
+		<xs:restriction base="nonEmptyString">
+			<xs:maxLength value="13"/>
+		</xs:restriction>
+	</xs:simpleType>
+	<xs:simpleType name="sNe150">
+		<xs:annotation>
+			<xs:documentation>текст длиной до 150 символов, запрещена пустая строка</xs:documentation>
+		</xs:annotation>
+		<xs:restriction base="nonEmptyString">
+			<xs:maxLength value="150"/>
+		</xs:restriction>
+	</xs:simpleType>
+	<xs:simpleType name="sNe1500">
+		<xs:annotation>
+			<xs:documentation>текст длиной до 1500 символов, запрещена пустая строка</xs:documentation>
+		</xs:annotation>
+		<xs:restriction base="nonEmptyString">
+			<xs:maxLength value="1500"/>
+		</xs:restriction>
+	</xs:simpleType>
+	<xs:simpleType name="sNe2">
+		<xs:annotation>
+			<xs:documentation>текст длиной до 2 символов, запрещена пустая строка</xs:documentation>
+		</xs:annotation>
+		<xs:restriction base="nonEmptyString">
+			<xs:maxLength value="2"/>
+		</xs:restriction>
+	</xs:simpleType>
+	<xs:simpleType name="sNe20">
+		<xs:annotation>
+			<xs:documentation>текст длиной до 20 символов, запрещена пустая строка</xs:documentation>
+		</xs:annotation>
+		<xs:restriction base="nonEmptyString">
+			<xs:maxLength value="20"/>
+		</xs:restriction>
+	</xs:simpleType>
+	<xs:simpleType name="sNe200">
+		<xs:annotation>
+			<xs:documentation>текст длиной до 200 символов, запрещена пустая строка</xs:documentation>
+		</xs:annotation>
+		<xs:restriction base="nonEmptyString">
+			<xs:maxLength value="200"/>
+		</xs:restriction>
+	</xs:simpleType>
+	<xs:simpleType name="sNe2000">
+		<xs:annotation>
+			<xs:documentation>текст длиной до 2000 символов, запрещена пустая строка</xs:documentation>
+		</xs:annotation>
+		<xs:restriction base="nonEmptyString">
+			<xs:maxLength value="2000"/>
+		</xs:restriction>
+	</xs:simpleType>
+	<xs:simpleType name="sNe2046">
+		<xs:annotation>
+			<xs:documentation>текст длиной до 2046 символов, запрещена пустая строка</xs:documentation>
+		</xs:annotation>
+		<xs:restriction base="nonEmptyString">
+			<xs:maxLength value="2046"/>
+		</xs:restriction>
+	</xs:simpleType>
+	<xs:simpleType name="sNe25">
+		<xs:annotation>
+			<xs:documentation>текст длиной до 25 символов, запрещена пустая строка</xs:documentation>
+		</xs:annotation>
+		<xs:restriction base="nonEmptyString">
+			<xs:maxLength value="25"/>
+		</xs:restriction>
+	</xs:simpleType>
+	<xs:simpleType name="sNe250">
+		<xs:annotation>
+			<xs:documentation>текст длиной до 250 символов, запрещена пустая строка</xs:documentation>
+		</xs:annotation>
+		<xs:restriction base="nonEmptyString">
+			<xs:maxLength value="250"/>
+		</xs:restriction>
+	</xs:simpleType>
+	<xs:simpleType name="sNe2500">
+		<xs:annotation>
+			<xs:documentation>текст длиной до 2500 символов, запрещена пустая строка</xs:documentation>
+		</xs:annotation>
+		<xs:restriction base="nonEmptyString">
+			<xs:maxLength value="2500"/>
+		</xs:restriction>
+	</xs:simpleType>
+	<xs:simpleType name="sNe255">
+		<xs:annotation>
+			<xs:documentation>текст длиной до 255 символов, запрещена пустая строка</xs:documentation>
+		</xs:annotation>
+		<xs:restriction base="nonEmptyString">
+			<xs:maxLength value="255"/>
+		</xs:restriction>
+	</xs:simpleType>
+	<xs:simpleType name="sNe3">
+		<xs:annotation>
+			<xs:documentation>текст длиной до 3 символов, запрещена пустая строка</xs:documentation>
+		</xs:annotation>
+		<xs:restriction base="nonEmptyString">
+			<xs:maxLength value="3"/>
+		</xs:restriction>
+	</xs:simpleType>
+	<xs:simpleType name="sNe30">
+		<xs:annotation>
+			<xs:documentation>текст длиной до 30 символов, запрещена пустая строка</xs:documentation>
+		</xs:annotation>
+		<xs:restriction base="nonEmptyString">
+			<xs:maxLength value="30"/>
+		</xs:restriction>
+	</xs:simpleType>
+	<xs:simpleType name="sNe4">
+		<xs:annotation>
+			<xs:documentation>текст длиной до 4 символов, запрещена пустая строка</xs:documentation>
+		</xs:annotation>
+		<xs:restriction base="nonEmptyString">
+			<xs:maxLength value="4"/>
+		</xs:restriction>
+	</xs:simpleType>
+	<xs:simpleType name="sNe40">
+		<xs:annotation>
+			<xs:documentation>текст длиной до 40 символов, запрещена пустая строка</xs:documentation>
+		</xs:annotation>
+		<xs:restriction base="nonEmptyString">
+			<xs:maxLength value="40"/>
+		</xs:restriction>
+	</xs:simpleType>
+	<xs:simpleType name="sNe4000">
+		<xs:annotation>
+			<xs:documentation>текст длиной до 4000 символов, запрещена пустая строка</xs:documentation>
+		</xs:annotation>
+		<xs:restriction base="nonEmptyString">
+			<xs:maxLength value="4000"/>
+		</xs:restriction>
+	</xs:simpleType>
+	<xs:simpleType name="sNe45">
+		<xs:annotation>
+			<xs:documentation>текст длиной до 45 символов, запрещена пустая строка</xs:documentation>
+		</xs:annotation>
+		<xs:restriction base="nonEmptyString">
+			<xs:maxLength value="45"/>
+		</xs:restriction>
+	</xs:simpleType>
+	<xs:simpleType name="sNe50">
+		<xs:annotation>
+			<xs:documentation>текст длиной до 50 символов, запрещена пустая строка</xs:documentation>
+		</xs:annotation>
+		<xs:restriction base="nonEmptyString">
+			<xs:maxLength value="50"/>
+		</xs:restriction>
+	</xs:simpleType>
+	<xs:simpleType name="sNe500">
+		<xs:annotation>
+			<xs:documentation>текст длиной до 500 символов, запрещена пустая строка</xs:documentation>
+		</xs:annotation>
+		<xs:restriction base="nonEmptyString">
+			<xs:maxLength value="500"/>
+		</xs:restriction>
+	</xs:simpleType>
+	<xs:simpleType name="sNe5000">
+		<xs:annotation>
+			<xs:documentation>текст длиной до 5000 символов, запрещена пустая строка</xs:documentation>
+		</xs:annotation>
+		<xs:restriction base="nonEmptyString">
+			<xs:maxLength value="5000"/>
+		</xs:restriction>
+	</xs:simpleType>
+	<xs:simpleType name="sNe512">
+		<xs:annotation>
+			<xs:documentation>текст длиной до 512 символов, запрещена пустая строка</xs:documentation>
+		</xs:annotation>
+		<xs:restriction base="nonEmptyString">
+			<xs:maxLength value="512"/>
+		</xs:restriction>
+	</xs:simpleType>
+	<xs:simpleType name="sNe6">
+		<xs:annotation>
+			<xs:documentation>текст длиной до 6 символов, запрещена пустая строка</xs:documentation>
+		</xs:annotation>
+		<xs:restriction base="nonEmptyString">
+			<xs:maxLength value="6"/>
+		</xs:restriction>
+	</xs:simpleType>
+	<xs:simpleType name="sNe60">
+		<xs:annotation>
+			<xs:documentation>текст длиной до 60 символов, запрещена пустая строка</xs:documentation>
+		</xs:annotation>
+		<xs:restriction base="nonEmptyString">
+			<xs:maxLength value="60"/>
+		</xs:restriction>
+	</xs:simpleType>
+	<xs:simpleType name="sNe8">
+		<xs:annotation>
+			<xs:documentation>текст длиной до 8 символов, запрещена пустая строка</xs:documentation>
+		</xs:annotation>
+		<xs:restriction base="nonEmptyString">
+			<xs:maxLength value="8"/>
+		</xs:restriction>
+	</xs:simpleType>
+	<xs:simpleType name="sNe9">
+		<xs:annotation>
+			<xs:documentation>текст длиной до 9 символов, запрещена пустая строка</xs:documentation>
+		</xs:annotation>
+		<xs:restriction base="nonEmptyString">
+			<xs:maxLength value="9"/>
+		</xs:restriction>
+	</xs:simpleType>
+	<xs:simpleType name="sRegNumberBound">
+		<xs:annotation>
+			<xs:documentation>Учётный номер границы, арабские цифры до 40 знаков</xs:documentation>
+		</xs:annotation>
+		<xs:restriction base="xs:string">
+			<xs:pattern value="[0-9]{1,40}"/>
+		</xs:restriction>
+	</xs:simpleType>
+	<xs:simpleType name="sName500XML">
+		<xs:annotation>
+			<xs:documentation>Относительный путь к файлу в формате XML\Имя файла в формате XML</xs:documentation>
+		</xs:annotation>
+		<xs:restriction base="xs:string">
+			<xs:maxLength value="500"/>
+			<xs:pattern value=".+\.[x|X][m|M][l|L]"/>
+		</xs:restriction>
+	</xs:simpleType>
+</xs:schema>

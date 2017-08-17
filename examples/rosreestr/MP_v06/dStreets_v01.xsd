@@ -1,0 +1,450 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<xs:schema xmlns:xs="http://www.w3.org/2001/XMLSchema" elementFormDefault="qualified">
+	<xs:simpleType name="dStreets">
+		<xs:annotation>
+			<xs:documentation>5-й уровень - геоним (улицы городов, поселков городского типа и сельских населенных пунктов)</xs:documentation>
+		</xs:annotation>
+		<xs:restriction base="xs:string">
+			<xs:enumeration value="аллея">
+				<xs:annotation>
+					<xs:documentation>Аллея</xs:documentation>
+				</xs:annotation>
+			</xs:enumeration>
+			<xs:enumeration value="б-р">
+				<xs:annotation>
+					<xs:documentation>Бульвар</xs:documentation>
+				</xs:annotation>
+			</xs:enumeration>
+			<xs:enumeration value="въезд">
+				<xs:annotation>
+					<xs:documentation>Въезд</xs:documentation>
+				</xs:annotation>
+			</xs:enumeration>
+			<xs:enumeration value="дор">
+				<xs:annotation>
+					<xs:documentation>Дорога</xs:documentation>
+				</xs:annotation>
+			</xs:enumeration>
+			<xs:enumeration value="жт">
+				<xs:annotation>
+					<xs:documentation>Животноводческая точка</xs:documentation>
+				</xs:annotation>
+			</xs:enumeration>
+			<xs:enumeration value="заезд">
+				<xs:annotation>
+					<xs:documentation>Заезд</xs:documentation>
+				</xs:annotation>
+			</xs:enumeration>
+			<xs:enumeration value="кв-л">
+				<xs:annotation>
+					<xs:documentation>Квартал</xs:documentation>
+				</xs:annotation>
+			</xs:enumeration>
+			<xs:enumeration value="км">
+				<xs:annotation>
+					<xs:documentation>Километр</xs:documentation>
+				</xs:annotation>
+			</xs:enumeration>
+			<xs:enumeration value="кольцо">
+				<xs:annotation>
+					<xs:documentation>Кольцо</xs:documentation>
+				</xs:annotation>
+			</xs:enumeration>
+			<xs:enumeration value="линия">
+				<xs:annotation>
+					<xs:documentation>Линия</xs:documentation>
+				</xs:annotation>
+			</xs:enumeration>
+			<xs:enumeration value="наб">
+				<xs:annotation>
+					<xs:documentation>Набережная</xs:documentation>
+				</xs:annotation>
+			</xs:enumeration>
+			<xs:enumeration value="остров">
+				<xs:annotation>
+					<xs:documentation>Остров</xs:documentation>
+				</xs:annotation>
+			</xs:enumeration>
+			<xs:enumeration value="парк">
+				<xs:annotation>
+					<xs:documentation>Парк</xs:documentation>
+				</xs:annotation>
+			</xs:enumeration>
+			<xs:enumeration value="пер">
+				<xs:annotation>
+					<xs:documentation>Переулок</xs:documentation>
+				</xs:annotation>
+			</xs:enumeration>
+			<xs:enumeration value="переезд">
+				<xs:annotation>
+					<xs:documentation>Переезд</xs:documentation>
+				</xs:annotation>
+			</xs:enumeration>
+			<xs:enumeration value="пл">
+				<xs:annotation>
+					<xs:documentation>Площадь</xs:documentation>
+				</xs:annotation>
+			</xs:enumeration>
+			<xs:enumeration value="пл-ка">
+				<xs:annotation>
+					<xs:documentation>Площадка</xs:documentation>
+				</xs:annotation>
+			</xs:enumeration>
+			<xs:enumeration value="проезд">
+				<xs:annotation>
+					<xs:documentation>Проезд</xs:documentation>
+				</xs:annotation>
+			</xs:enumeration>
+			<xs:enumeration value="пр-кт">
+				<xs:annotation>
+					<xs:documentation>Проспект</xs:documentation>
+				</xs:annotation>
+			</xs:enumeration>
+			<xs:enumeration value="просек">
+				<xs:annotation>
+					<xs:documentation>Просек</xs:documentation>
+				</xs:annotation>
+			</xs:enumeration>
+			<xs:enumeration value="просёлок">
+				<xs:annotation>
+					<xs:documentation>Просёлок</xs:documentation>
+				</xs:annotation>
+			</xs:enumeration>
+			<xs:enumeration value="проулок">
+				<xs:annotation>
+					<xs:documentation>Проулок</xs:documentation>
+				</xs:annotation>
+			</xs:enumeration>
+			<xs:enumeration value="сад">
+				<xs:annotation>
+					<xs:documentation>Сад</xs:documentation>
+				</xs:annotation>
+			</xs:enumeration>
+			<xs:enumeration value="сквер">
+				<xs:annotation>
+					<xs:documentation>Сквер</xs:documentation>
+				</xs:annotation>
+			</xs:enumeration>
+			<xs:enumeration value="стр">
+				<xs:annotation>
+					<xs:documentation>Строение</xs:documentation>
+				</xs:annotation>
+			</xs:enumeration>
+			<xs:enumeration value="тер">
+				<xs:annotation>
+					<xs:documentation>Территория</xs:documentation>
+				</xs:annotation>
+			</xs:enumeration>
+			<xs:enumeration value="тракт">
+				<xs:annotation>
+					<xs:documentation>Тракт</xs:documentation>
+				</xs:annotation>
+			</xs:enumeration>
+			<xs:enumeration value="туп">
+				<xs:annotation>
+					<xs:documentation>Тупик</xs:documentation>
+				</xs:annotation>
+			</xs:enumeration>
+			<xs:enumeration value="ул">
+				<xs:annotation>
+					<xs:documentation>Улица</xs:documentation>
+				</xs:annotation>
+			</xs:enumeration>
+			<xs:enumeration value="уч-к">
+				<xs:annotation>
+					<xs:documentation>Участок</xs:documentation>
+				</xs:annotation>
+			</xs:enumeration>
+			<xs:enumeration value="ш">
+				<xs:annotation>
+					<xs:documentation>Шоссе</xs:documentation>
+				</xs:annotation>
+			</xs:enumeration>
+			<xs:enumeration value="аал">
+				<xs:annotation>
+					<xs:documentation>Аал</xs:documentation>
+				</xs:annotation>
+			</xs:enumeration>
+			<xs:enumeration value="аул">
+				<xs:annotation>
+					<xs:documentation>Аул</xs:documentation>
+				</xs:annotation>
+			</xs:enumeration>
+			<xs:enumeration value="высел">
+				<xs:annotation>
+					<xs:documentation>Выселки(ок)</xs:documentation>
+				</xs:annotation>
+			</xs:enumeration>
+			<xs:enumeration value="городок">
+				<xs:annotation>
+					<xs:documentation>Городок</xs:documentation>
+				</xs:annotation>
+			</xs:enumeration>
+			<xs:enumeration value="д">
+				<xs:annotation>
+					<xs:documentation>Деревня</xs:documentation>
+				</xs:annotation>
+			</xs:enumeration>
+			<xs:enumeration value="ж/д_будка">
+				<xs:annotation>
+					<xs:documentation>Железнодорожная будка</xs:documentation>
+				</xs:annotation>
+			</xs:enumeration>
+			<xs:enumeration value="ж/д_казарм">
+				<xs:annotation>
+					<xs:documentation>Железнодорожная казарма</xs:documentation>
+				</xs:annotation>
+			</xs:enumeration>
+			<xs:enumeration value="ж/д_оп">
+				<xs:annotation>
+					<xs:documentation>Ж/д остановочный (обгонный) пункт</xs:documentation>
+				</xs:annotation>
+			</xs:enumeration>
+			<xs:enumeration value="ж/д_пост">
+				<xs:annotation>
+					<xs:documentation>Железнодорожный пост</xs:documentation>
+				</xs:annotation>
+			</xs:enumeration>
+			<xs:enumeration value="ж/д_рзд">
+				<xs:annotation>
+					<xs:documentation>Железнодорожный разъезд</xs:documentation>
+				</xs:annotation>
+			</xs:enumeration>
+			<xs:enumeration value="ж/д_ст">
+				<xs:annotation>
+					<xs:documentation>Железнодорожная станция</xs:documentation>
+				</xs:annotation>
+			</xs:enumeration>
+			<xs:enumeration value="казарма">
+				<xs:annotation>
+					<xs:documentation>Казарма</xs:documentation>
+				</xs:annotation>
+			</xs:enumeration>
+			<xs:enumeration value="м">
+				<xs:annotation>
+					<xs:documentation>Местечко</xs:documentation>
+				</xs:annotation>
+			</xs:enumeration>
+			<xs:enumeration value="мкр">
+				<xs:annotation>
+					<xs:documentation>Микрорайон</xs:documentation>
+				</xs:annotation>
+			</xs:enumeration>
+			<xs:enumeration value="нп">
+				<xs:annotation>
+					<xs:documentation>Населённый пункт</xs:documentation>
+				</xs:annotation>
+			</xs:enumeration>
+			<xs:enumeration value="платф">
+				<xs:annotation>
+					<xs:documentation>Платформа</xs:documentation>
+				</xs:annotation>
+			</xs:enumeration>
+			<xs:enumeration value="п">
+				<xs:annotation>
+					<xs:documentation>Посёлок</xs:documentation>
+				</xs:annotation>
+			</xs:enumeration>
+			<xs:enumeration value="п/о">
+				<xs:annotation>
+					<xs:documentation>Почтовое отделение</xs:documentation>
+				</xs:annotation>
+			</xs:enumeration>
+			<xs:enumeration value="п/р">
+				<xs:annotation>
+					<xs:documentation>Планировочный район</xs:documentation>
+				</xs:annotation>
+			</xs:enumeration>
+			<xs:enumeration value="п/ст">
+				<xs:annotation>
+					<xs:documentation>Посёлок и(при) станция(и)</xs:documentation>
+				</xs:annotation>
+			</xs:enumeration>
+			<xs:enumeration value="полустанок">
+				<xs:annotation>
+					<xs:documentation>Полустанок</xs:documentation>
+				</xs:annotation>
+			</xs:enumeration>
+			<xs:enumeration value="починок">
+				<xs:annotation>
+					<xs:documentation>Починок</xs:documentation>
+				</xs:annotation>
+			</xs:enumeration>
+			<xs:enumeration value="рзд">
+				<xs:annotation>
+					<xs:documentation>Разъезд</xs:documentation>
+				</xs:annotation>
+			</xs:enumeration>
+			<xs:enumeration value="с">
+				<xs:annotation>
+					<xs:documentation>Село</xs:documentation>
+				</xs:annotation>
+			</xs:enumeration>
+			<xs:enumeration value="сл">
+				<xs:annotation>
+					<xs:documentation>Слобода</xs:documentation>
+				</xs:annotation>
+			</xs:enumeration>
+			<xs:enumeration value="ст">
+				<xs:annotation>
+					<xs:documentation>Станция</xs:documentation>
+				</xs:annotation>
+			</xs:enumeration>
+			<xs:enumeration value="х">
+				<xs:annotation>
+					<xs:documentation>Хутор</xs:documentation>
+				</xs:annotation>
+			</xs:enumeration>
+			<xs:enumeration value="ж/д_платф">
+				<xs:annotation>
+					<xs:documentation>Железнодорожная платформа</xs:documentation>
+				</xs:annotation>
+			</xs:enumeration>
+			<xs:enumeration value="арбан">
+				<xs:annotation>
+					<xs:documentation>Арбан</xs:documentation>
+				</xs:annotation>
+			</xs:enumeration>
+			<xs:enumeration value="спуск">
+				<xs:annotation>
+					<xs:documentation>Спуск</xs:documentation>
+				</xs:annotation>
+			</xs:enumeration>
+			<xs:enumeration value="канал">
+				<xs:annotation>
+					<xs:documentation>Канал</xs:documentation>
+				</xs:annotation>
+			</xs:enumeration>
+			<xs:enumeration value="гск">
+				<xs:annotation>
+					<xs:documentation>Гаражно-строительный кооператив</xs:documentation>
+				</xs:annotation>
+			</xs:enumeration>
+			<xs:enumeration value="снт">
+				<xs:annotation>
+					<xs:documentation>Садовое некоммерческое товарищество</xs:documentation>
+				</xs:annotation>
+			</xs:enumeration>
+			<xs:enumeration value="лпх">
+				<xs:annotation>
+					<xs:documentation>Леспромхоз</xs:documentation>
+				</xs:annotation>
+			</xs:enumeration>
+			<xs:enumeration value="проток">
+				<xs:annotation>
+					<xs:documentation>Проток</xs:documentation>
+				</xs:annotation>
+			</xs:enumeration>
+			<xs:enumeration value="коса">
+				<xs:annotation>
+					<xs:documentation>Коса</xs:documentation>
+				</xs:annotation>
+			</xs:enumeration>
+			<xs:enumeration value="вал">
+				<xs:annotation>
+					<xs:documentation>Вал</xs:documentation>
+				</xs:annotation>
+			</xs:enumeration>
+			<xs:enumeration value="ферма">
+				<xs:annotation>
+					<xs:documentation>Ферма</xs:documentation>
+				</xs:annotation>
+			</xs:enumeration>
+			<xs:enumeration value="мост">
+				<xs:annotation>
+					<xs:documentation>Мост</xs:documentation>
+				</xs:annotation>
+			</xs:enumeration>
+			<xs:enumeration value="ряды">
+				<xs:annotation>
+					<xs:documentation>Ряды</xs:documentation>
+				</xs:annotation>
+			</xs:enumeration>
+			<xs:enumeration value="а/я">
+				<xs:annotation>
+					<xs:documentation>Абонентский ящик</xs:documentation>
+				</xs:annotation>
+			</xs:enumeration>
+			<xs:enumeration value="берег">
+				<xs:annotation>
+					<xs:documentation>Берег</xs:documentation>
+				</xs:annotation>
+			</xs:enumeration>
+			<xs:enumeration value="просека">
+				<xs:annotation>
+					<xs:documentation>Просека</xs:documentation>
+				</xs:annotation>
+			</xs:enumeration>
+			<xs:enumeration value="протока">
+				<xs:annotation>
+					<xs:documentation>Протока</xs:documentation>
+				</xs:annotation>
+			</xs:enumeration>
+			<xs:enumeration value="бугор">
+				<xs:annotation>
+					<xs:documentation>Бугор</xs:documentation>
+				</xs:annotation>
+			</xs:enumeration>
+			<xs:enumeration value="зона">
+				<xs:annotation>
+					<xs:documentation>Зона</xs:documentation>
+				</xs:annotation>
+			</xs:enumeration>
+			<xs:enumeration value="днп">
+				<xs:annotation>
+					<xs:documentation>Дачное некоммерческое партнёрство</xs:documentation>
+				</xs:annotation>
+			</xs:enumeration>
+			<xs:enumeration value="н/п">
+				<xs:annotation>
+					<xs:documentation>Некоммерческое партнёрство</xs:documentation>
+				</xs:annotation>
+			</xs:enumeration>
+			<xs:enumeration value="ф/х">
+				<xs:annotation>
+					<xs:documentation>Фермерское хозяйство</xs:documentation>
+				</xs:annotation>
+			</xs:enumeration>
+			<xs:enumeration value="местность">
+				<xs:annotation>
+					<xs:documentation>Местность</xs:documentation>
+				</xs:annotation>
+			</xs:enumeration>
+			<xs:enumeration value="балка">
+				<xs:annotation>
+					<xs:documentation>Балка</xs:documentation>
+				</xs:annotation>
+			</xs:enumeration>
+			<xs:enumeration value="бухта">
+				<xs:annotation>
+					<xs:documentation>Бухта</xs:documentation>
+				</xs:annotation>
+			</xs:enumeration>
+			<xs:enumeration value="причал">
+				<xs:annotation>
+					<xs:documentation>Причал</xs:documentation>
+				</xs:annotation>
+			</xs:enumeration>
+			<xs:enumeration value="мыс">
+				<xs:annotation>
+					<xs:documentation>Мыс</xs:documentation>
+				</xs:annotation>
+			</xs:enumeration>
+			<xs:enumeration value="маяк">
+				<xs:annotation>
+					<xs:documentation>Маяк</xs:documentation>
+				</xs:annotation>
+			</xs:enumeration>
+			<xs:enumeration value="горка">
+				<xs:annotation>
+					<xs:documentation>Горка</xs:documentation>
+				</xs:annotation>
+			</xs:enumeration>
+			<xs:enumeration value="тоннель">
+				<xs:annotation>
+					<xs:documentation>Тоннель</xs:documentation>
+				</xs:annotation>
+			</xs:enumeration>
+		</xs:restriction>
+	</xs:simpleType>
+</xs:schema>

@@ -1,0 +1,4 @@
+WARNING:__main__:Automatic model name: SizeType. Consider adding it to TYPE_MODEL_MAP
+
+Making model for type SizeType
+Done making model SizeType (SizeType)

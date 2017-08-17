@@ -1,0 +1,480 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<xs:schema xmlns:xs="http://www.w3.org/2001/XMLSchema" elementFormDefault="qualified">
+	<xs:simpleType name="dAllowedUse">
+		<xs:annotation>
+			<xs:documentation>Классификатор видов разрешенного использования земельных участков</xs:documentation>
+		</xs:annotation>
+		<xs:restriction base="xs:string">
+			<xs:enumeration value="214001000000">
+				<xs:annotation>
+					<xs:documentation>Сельскохозяйственное использование</xs:documentation>
+				</xs:annotation>
+			</xs:enumeration>
+			<xs:enumeration value="214001001000">
+				<xs:annotation>
+					<xs:documentation>Растениеводство</xs:documentation>
+				</xs:annotation>
+			</xs:enumeration>
+			<xs:enumeration value="214001001001">
+				<xs:annotation>
+					<xs:documentation>Выращивание зерновых и иных сельскохозяйственных культур</xs:documentation>
+				</xs:annotation>
+			</xs:enumeration>
+			<xs:enumeration value="214001001002">
+				<xs:annotation>
+					<xs:documentation>Овощеводство</xs:documentation>
+				</xs:annotation>
+			</xs:enumeration>
+			<xs:enumeration value="214001001003">
+				<xs:annotation>
+					<xs:documentation>Выращивание тонизирующих, лекарственных, цветочных культур</xs:documentation>
+				</xs:annotation>
+			</xs:enumeration>
+			<xs:enumeration value="214001001004">
+				<xs:annotation>
+					<xs:documentation>Садоводство</xs:documentation>
+				</xs:annotation>
+			</xs:enumeration>
+			<xs:enumeration value="214001001005">
+				<xs:annotation>
+					<xs:documentation>Выращивание льна и конопли</xs:documentation>
+				</xs:annotation>
+			</xs:enumeration>
+			<xs:enumeration value="214001002000">
+				<xs:annotation>
+					<xs:documentation>Животноводство</xs:documentation>
+				</xs:annotation>
+			</xs:enumeration>
+			<xs:enumeration value="214001002001">
+				<xs:annotation>
+					<xs:documentation>Скотоводство</xs:documentation>
+				</xs:annotation>
+			</xs:enumeration>
+			<xs:enumeration value="214001002002">
+				<xs:annotation>
+					<xs:documentation>Звероводство</xs:documentation>
+				</xs:annotation>
+			</xs:enumeration>
+			<xs:enumeration value="214001002003">
+				<xs:annotation>
+					<xs:documentation>Птицеводство</xs:documentation>
+				</xs:annotation>
+			</xs:enumeration>
+			<xs:enumeration value="214001002004">
+				<xs:annotation>
+					<xs:documentation>Свиноводство</xs:documentation>
+				</xs:annotation>
+			</xs:enumeration>
+			<xs:enumeration value="214001003000">
+				<xs:annotation>
+					<xs:documentation>Пчеловодство</xs:documentation>
+				</xs:annotation>
+			</xs:enumeration>
+			<xs:enumeration value="214001004000">
+				<xs:annotation>
+					<xs:documentation>Рыбоводство</xs:documentation>
+				</xs:annotation>
+			</xs:enumeration>
+			<xs:enumeration value="214001005000">
+				<xs:annotation>
+					<xs:documentation>Научное обеспечение сельского хозяйства</xs:documentation>
+				</xs:annotation>
+			</xs:enumeration>
+			<xs:enumeration value="214001006000">
+				<xs:annotation>
+					<xs:documentation>Хранение и переработка сельскохозяйственной продукции</xs:documentation>
+				</xs:annotation>
+			</xs:enumeration>
+			<xs:enumeration value="214001007000">
+				<xs:annotation>
+					<xs:documentation>Ведение личного подсобного хозяйства на полевых участках</xs:documentation>
+				</xs:annotation>
+			</xs:enumeration>
+			<xs:enumeration value="214001008000">
+				<xs:annotation>
+					<xs:documentation>Питомники</xs:documentation>
+				</xs:annotation>
+			</xs:enumeration>
+			<xs:enumeration value="214001009000">
+				<xs:annotation>
+					<xs:documentation>Обеспечение сельскохозяйственного производства</xs:documentation>
+				</xs:annotation>
+			</xs:enumeration>
+			<xs:enumeration value="214002000000">
+				<xs:annotation>
+					<xs:documentation>Жилая застройка</xs:documentation>
+				</xs:annotation>
+			</xs:enumeration>
+			<xs:enumeration value="214002001000">
+				<xs:annotation>
+					<xs:documentation>Малоэтажная жилая застройка (индивидуальное жилищное строительство; размещение дачных домов и садовых домов)</xs:documentation>
+				</xs:annotation>
+			</xs:enumeration>
+			<xs:enumeration value="214002002000">
+				<xs:annotation>
+					<xs:documentation>Приусадебный участок личного подсобного хозяйства</xs:documentation>
+				</xs:annotation>
+			</xs:enumeration>
+			<xs:enumeration value="214002003000">
+				<xs:annotation>
+					<xs:documentation>Блокированная жилая застройка</xs:documentation>
+				</xs:annotation>
+			</xs:enumeration>
+			<xs:enumeration value="214002004000">
+				<xs:annotation>
+					<xs:documentation>Передвижное жилье</xs:documentation>
+				</xs:annotation>
+			</xs:enumeration>
+			<xs:enumeration value="214002005000">
+				<xs:annotation>
+					<xs:documentation>Среднеэтажная жилая застройка</xs:documentation>
+				</xs:annotation>
+			</xs:enumeration>
+			<xs:enumeration value="214002006000">
+				<xs:annotation>
+					<xs:documentation>Многоэтажная жилая застройка (высотная застройка)</xs:documentation>
+				</xs:annotation>
+			</xs:enumeration>
+			<xs:enumeration value="214002007000">
+				<xs:annotation>
+					<xs:documentation>Обслуживание жилой застройки</xs:documentation>
+				</xs:annotation>
+			</xs:enumeration>
+			<xs:enumeration value="214003000000">
+				<xs:annotation>
+					<xs:documentation>Общественное использование объектов капитального строительства</xs:documentation>
+				</xs:annotation>
+			</xs:enumeration>
+			<xs:enumeration value="214003001000">
+				<xs:annotation>
+					<xs:documentation>Коммунальное обслуживание</xs:documentation>
+				</xs:annotation>
+			</xs:enumeration>
+			<xs:enumeration value="214003002000">
+				<xs:annotation>
+					<xs:documentation>Социальное обслуживание</xs:documentation>
+				</xs:annotation>
+			</xs:enumeration>
+			<xs:enumeration value="214003003000">
+				<xs:annotation>
+					<xs:documentation>Бытовое обслуживание</xs:documentation>
+				</xs:annotation>
+			</xs:enumeration>
+			<xs:enumeration value="214003004000">
+				<xs:annotation>
+					<xs:documentation>Здравоохранение</xs:documentation>
+				</xs:annotation>
+			</xs:enumeration>
+			<xs:enumeration value="214003005000">
+				<xs:annotation>
+					<xs:documentation>Образование и просвещение</xs:documentation>
+				</xs:annotation>
+			</xs:enumeration>
+			<xs:enumeration value="214003006000">
+				<xs:annotation>
+					<xs:documentation>Культурное развитие</xs:documentation>
+				</xs:annotation>
+			</xs:enumeration>
+			<xs:enumeration value="214003007000">
+				<xs:annotation>
+					<xs:documentation>Религиозное использование</xs:documentation>
+				</xs:annotation>
+			</xs:enumeration>
+			<xs:enumeration value="214003008000">
+				<xs:annotation>
+					<xs:documentation>Общественное управление</xs:documentation>
+				</xs:annotation>
+			</xs:enumeration>
+			<xs:enumeration value="214003009000">
+				<xs:annotation>
+					<xs:documentation>Обеспечение научной деятельности</xs:documentation>
+				</xs:annotation>
+			</xs:enumeration>
+			<xs:enumeration value="214003010000">
+				<xs:annotation>
+					<xs:documentation>Ветеринарное обслуживание</xs:documentation>
+				</xs:annotation>
+			</xs:enumeration>
+			<xs:enumeration value="214004000000">
+				<xs:annotation>
+					<xs:documentation>Предпринимательство</xs:documentation>
+				</xs:annotation>
+			</xs:enumeration>
+			<xs:enumeration value="214004001000">
+				<xs:annotation>
+					<xs:documentation>Деловое управление</xs:documentation>
+				</xs:annotation>
+			</xs:enumeration>
+			<xs:enumeration value="214004002000">
+				<xs:annotation>
+					<xs:documentation>Торговые центры (Торгово-развлекательные центры)</xs:documentation>
+				</xs:annotation>
+			</xs:enumeration>
+			<xs:enumeration value="214004003000">
+				<xs:annotation>
+					<xs:documentation>Рынки</xs:documentation>
+				</xs:annotation>
+			</xs:enumeration>
+			<xs:enumeration value="214004004000">
+				<xs:annotation>
+					<xs:documentation>Магазины</xs:documentation>
+				</xs:annotation>
+			</xs:enumeration>
+			<xs:enumeration value="214004005000">
+				<xs:annotation>
+					<xs:documentation>Банковская и страховая деятельность</xs:documentation>
+				</xs:annotation>
+			</xs:enumeration>
+			<xs:enumeration value="214004006000">
+				<xs:annotation>
+					<xs:documentation>Общественное питание</xs:documentation>
+				</xs:annotation>
+			</xs:enumeration>
+			<xs:enumeration value="214004007000">
+				<xs:annotation>
+					<xs:documentation>Гостиничное обслуживание</xs:documentation>
+				</xs:annotation>
+			</xs:enumeration>
+			<xs:enumeration value="214004008000">
+				<xs:annotation>
+					<xs:documentation>Развлечения</xs:documentation>
+				</xs:annotation>
+			</xs:enumeration>
+			<xs:enumeration value="214004009000">
+				<xs:annotation>
+					<xs:documentation>Обслуживание автотранспорта</xs:documentation>
+				</xs:annotation>
+			</xs:enumeration>
+			<xs:enumeration value="214005000000">
+				<xs:annotation>
+					<xs:documentation>Отдых (рекреация)</xs:documentation>
+				</xs:annotation>
+			</xs:enumeration>
+			<xs:enumeration value="214005001000">
+				<xs:annotation>
+					<xs:documentation>Спорт</xs:documentation>
+				</xs:annotation>
+			</xs:enumeration>
+			<xs:enumeration value="214005002000">
+				<xs:annotation>
+					<xs:documentation>Природно-познавательный туризм</xs:documentation>
+				</xs:annotation>
+			</xs:enumeration>
+			<xs:enumeration value="214005003000">
+				<xs:annotation>
+					<xs:documentation>Охота и рыбалка</xs:documentation>
+				</xs:annotation>
+			</xs:enumeration>
+			<xs:enumeration value="214005004000">
+				<xs:annotation>
+					<xs:documentation>Причалы для маломерных судов</xs:documentation>
+				</xs:annotation>
+			</xs:enumeration>
+			<xs:enumeration value="214005005000">
+				<xs:annotation>
+					<xs:documentation>Поля для гольфа или конных прогулок</xs:documentation>
+				</xs:annotation>
+			</xs:enumeration>
+			<xs:enumeration value="214006000000">
+				<xs:annotation>
+					<xs:documentation>Производственная деятельность</xs:documentation>
+				</xs:annotation>
+			</xs:enumeration>
+			<xs:enumeration value="214006001000">
+				<xs:annotation>
+					<xs:documentation>Недропользование</xs:documentation>
+				</xs:annotation>
+			</xs:enumeration>
+			<xs:enumeration value="214006002000">
+				<xs:annotation>
+					<xs:documentation>Тяжелая промышленность</xs:documentation>
+				</xs:annotation>
+			</xs:enumeration>
+			<xs:enumeration value="214006003000">
+				<xs:annotation>
+					<xs:documentation>Легкая промышленность</xs:documentation>
+				</xs:annotation>
+			</xs:enumeration>
+			<xs:enumeration value="214006004000">
+				<xs:annotation>
+					<xs:documentation>Пищевая промышленность</xs:documentation>
+				</xs:annotation>
+			</xs:enumeration>
+			<xs:enumeration value="214006005000">
+				<xs:annotation>
+					<xs:documentation>Нефтехимическая промышленность</xs:documentation>
+				</xs:annotation>
+			</xs:enumeration>
+			<xs:enumeration value="214006006000">
+				<xs:annotation>
+					<xs:documentation>Строительная промышленность</xs:documentation>
+				</xs:annotation>
+			</xs:enumeration>
+			<xs:enumeration value="214006007000">
+				<xs:annotation>
+					<xs:documentation>Энергетика</xs:documentation>
+				</xs:annotation>
+			</xs:enumeration>
+			<xs:enumeration value="214006008000">
+				<xs:annotation>
+					<xs:documentation>Связь</xs:documentation>
+				</xs:annotation>
+			</xs:enumeration>
+			<xs:enumeration value="214006009000">
+				<xs:annotation>
+					<xs:documentation>Склады</xs:documentation>
+				</xs:annotation>
+			</xs:enumeration>
+			<xs:enumeration value="214007000000">
+				<xs:annotation>
+					<xs:documentation>Обеспечение космической деятельности</xs:documentation>
+				</xs:annotation>
+			</xs:enumeration>
+			<xs:enumeration value="214008000000">
+				<xs:annotation>
+					<xs:documentation>Транспорт</xs:documentation>
+				</xs:annotation>
+			</xs:enumeration>
+			<xs:enumeration value="214008001000">
+				<xs:annotation>
+					<xs:documentation>Железнодорожный транспорт</xs:documentation>
+				</xs:annotation>
+			</xs:enumeration>
+			<xs:enumeration value="214008002000">
+				<xs:annotation>
+					<xs:documentation>Автомобильный транспорт</xs:documentation>
+				</xs:annotation>
+			</xs:enumeration>
+			<xs:enumeration value="214008003000">
+				<xs:annotation>
+					<xs:documentation>Водный транспорт</xs:documentation>
+				</xs:annotation>
+			</xs:enumeration>
+			<xs:enumeration value="214008004000">
+				<xs:annotation>
+					<xs:documentation>Воздушный транспорт</xs:documentation>
+				</xs:annotation>
+			</xs:enumeration>
+			<xs:enumeration value="214008005000">
+				<xs:annotation>
+					<xs:documentation>Трубопроводный транспорт</xs:documentation>
+				</xs:annotation>
+			</xs:enumeration>
+			<xs:enumeration value="214009000000">
+				<xs:annotation>
+					<xs:documentation>Обеспечение обороны и безопасности</xs:documentation>
+				</xs:annotation>
+			</xs:enumeration>
+			<xs:enumeration value="214010000000">
+				<xs:annotation>
+					<xs:documentation>Обеспечение вооруженных сил</xs:documentation>
+				</xs:annotation>
+			</xs:enumeration>
+			<xs:enumeration value="214011000000">
+				<xs:annotation>
+					<xs:documentation>Охрана Государственной границы Российской Федерации</xs:documentation>
+				</xs:annotation>
+			</xs:enumeration>
+			<xs:enumeration value="214012000000">
+				<xs:annotation>
+					<xs:documentation>Обеспечение внутреннего правопорядка</xs:documentation>
+				</xs:annotation>
+			</xs:enumeration>
+			<xs:enumeration value="214013000000">
+				<xs:annotation>
+					<xs:documentation>Обеспечение деятельности по исполнению наказаний</xs:documentation>
+				</xs:annotation>
+			</xs:enumeration>
+			<xs:enumeration value="214014000000">
+				<xs:annotation>
+					<xs:documentation>Деятельность по особой охране и изучению природы</xs:documentation>
+				</xs:annotation>
+			</xs:enumeration>
+			<xs:enumeration value="214015000000">
+				<xs:annotation>
+					<xs:documentation>Охрана природных территорий</xs:documentation>
+				</xs:annotation>
+			</xs:enumeration>
+			<xs:enumeration value="214016000000">
+				<xs:annotation>
+					<xs:documentation>Курортная деятельность</xs:documentation>
+				</xs:annotation>
+			</xs:enumeration>
+			<xs:enumeration value="214017000000">
+				<xs:annotation>
+					<xs:documentation>Историческая</xs:documentation>
+				</xs:annotation>
+			</xs:enumeration>
+			<xs:enumeration value="214018000000">
+				<xs:annotation>
+					<xs:documentation>Лесная</xs:documentation>
+				</xs:annotation>
+			</xs:enumeration>
+			<xs:enumeration value="214018001000">
+				<xs:annotation>
+					<xs:documentation>Заготовка древесины</xs:documentation>
+				</xs:annotation>
+			</xs:enumeration>
+			<xs:enumeration value="214018002000">
+				<xs:annotation>
+					<xs:documentation>Лесные плантации</xs:documentation>
+				</xs:annotation>
+			</xs:enumeration>
+			<xs:enumeration value="214018003000">
+				<xs:annotation>
+					<xs:documentation>Заготовка лесных ресурсов</xs:documentation>
+				</xs:annotation>
+			</xs:enumeration>
+			<xs:enumeration value="214018004000">
+				<xs:annotation>
+					<xs:documentation>Резервные леса</xs:documentation>
+				</xs:annotation>
+			</xs:enumeration>
+			<xs:enumeration value="214019000000">
+				<xs:annotation>
+					<xs:documentation>Водные объекты</xs:documentation>
+				</xs:annotation>
+			</xs:enumeration>
+			<xs:enumeration value="214020000000">
+				<xs:annotation>
+					<xs:documentation>Общее пользование водными объектами</xs:documentation>
+				</xs:annotation>
+			</xs:enumeration>
+			<xs:enumeration value="214021000000">
+				<xs:annotation>
+					<xs:documentation>Специальное пользование водными объектами</xs:documentation>
+				</xs:annotation>
+			</xs:enumeration>
+			<xs:enumeration value="214022000000">
+				<xs:annotation>
+					<xs:documentation>Гидротехнические сооружения</xs:documentation>
+				</xs:annotation>
+			</xs:enumeration>
+			<xs:enumeration value="214023000000">
+				<xs:annotation>
+					<xs:documentation>Общее пользование территории</xs:documentation>
+				</xs:annotation>
+			</xs:enumeration>
+			<xs:enumeration value="214024000000">
+				<xs:annotation>
+					<xs:documentation>Ритуальная деятельность</xs:documentation>
+				</xs:annotation>
+			</xs:enumeration>
+			<xs:enumeration value="214025000000">
+				<xs:annotation>
+					<xs:documentation>Специальная</xs:documentation>
+				</xs:annotation>
+			</xs:enumeration>
+			<xs:enumeration value="214026000000">
+				<xs:annotation>
+					<xs:documentation>Запас</xs:documentation>
+				</xs:annotation>
+			</xs:enumeration>
+						<xs:enumeration value="214099000000">
+				<xs:annotation>
+					<xs:documentation>Сведения отсутствуют</xs:documentation>
+				</xs:annotation>
+			</xs:enumeration>
+		</xs:restriction>
+	</xs:simpleType>
+</xs:schema>

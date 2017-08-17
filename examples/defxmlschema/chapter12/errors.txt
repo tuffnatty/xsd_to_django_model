@@ -1,0 +1,34 @@
+Making model for type ItemsType
+ Making model for type ProductType
+WARNING:__main__:xs:complexType[name="ProductType"]/xs:anyAttribute is not supported yet
+ERROR:__main__:EXCEPTION: list index out of range
+Traceback (most recent call last):
+  File "../../../xsd_to_django_model/xsd_to_django_model.py", line 1729, in <module>
+    builder.make_models([a.decode('UTF-8') for a in args['<xsd_type>']])
+  File "../../../xsd_to_django_model/xsd_to_django_model.py", line 1416, in make_models
+    self.make_model(typename)
+  File "../../../xsd_to_django_model/xsd_to_django_model.py", line 1377, in make_model
+    attrs=attrs, is_root=True)
+  File "../../../xsd_to_django_model/xsd_to_django_model.py", line 872, in write_seq_or_choice
+    is_root=is_root)
+  File "../../../xsd_to_django_model/xsd_to_django_model.py", line 1230, in make_fields
+    null=null or get_null(el_def))
+  File "../../../xsd_to_django_model/xsd_to_django_model.py", line 1115, in make_a_field
+    '%s.%s' % (typename, name))
+  File "../../../xsd_to_django_model/xsd_to_django_model.py", line 779, in get_field
+    self.make_model(typename)
+  File "../../../xsd_to_django_model/xsd_to_django_model.py", line 1377, in make_model
+    attrs=attrs, is_root=True)
+  File "../../../xsd_to_django_model/xsd_to_django_model.py", line 883, in write_seq_or_choice
+    is_root=is_root)
+  File "../../../xsd_to_django_model/xsd_to_django_model.py", line 1218, in make_fields
+    null=null)
+  File "../../../xsd_to_django_model/xsd_to_django_model.py", line 872, in write_seq_or_choice
+    is_root=is_root)
+  File "../../../xsd_to_django_model/xsd_to_django_model.py", line 1230, in make_fields
+    null=null or get_null(el_def))
+  File "../../../xsd_to_django_model/xsd_to_django_model.py", line 1115, in make_a_field
+    '%s.%s' % (typename, name))
+  File "../../../xsd_to_django_model/xsd_to_django_model.py", line 792, in get_field
+    st_def = xpath(self.tree, "//xs:simpleType[@name=$n]", n=typename)[0]
+IndexError: list index out of range

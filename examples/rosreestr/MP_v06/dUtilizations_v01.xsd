@@ -1,0 +1,955 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<xs:schema xmlns:xs="http://www.w3.org/2001/XMLSchema" elementFormDefault="qualified">
+	<xs:simpleType name="dUtilizations">
+		<xs:annotation>
+			<xs:documentation>Классификатор видов использования земель</xs:documentation>
+		</xs:annotation>
+		<xs:restriction base="xs:string">
+			<xs:enumeration value="141000000000">
+				<xs:annotation>
+					<xs:documentation>Для размещения объектов сельскохозяйственного назначения и сельскохозяйственных угодий</xs:documentation>
+				</xs:annotation>
+			</xs:enumeration>
+			<xs:enumeration value="141001000000">
+				<xs:annotation>
+					<xs:documentation>Для сельскохозяйственного производства</xs:documentation>
+				</xs:annotation>
+			</xs:enumeration>
+			<xs:enumeration value="141001010000">
+				<xs:annotation>
+					<xs:documentation>Для использования в качестве сельскохозяйственных угодий</xs:documentation>
+				</xs:annotation>
+			</xs:enumeration>
+			<xs:enumeration value="141001020000">
+				<xs:annotation>
+					<xs:documentation>Для размещения зданий, строений, сооружений, используемых для производства, хранения и первичной переработки сельскохозяйственной продукции</xs:documentation>
+				</xs:annotation>
+			</xs:enumeration>
+			<xs:enumeration value="141001030000">
+				<xs:annotation>
+					<xs:documentation>Для размещения внутрихозяйственных дорог и коммуникаций</xs:documentation>
+				</xs:annotation>
+			</xs:enumeration>
+			<xs:enumeration value="141001040000">
+				<xs:annotation>
+					<xs:documentation>Для размещения водных объектов</xs:documentation>
+				</xs:annotation>
+			</xs:enumeration>
+			<xs:enumeration value="141002000000">
+				<xs:annotation>
+					<xs:documentation>Для ведения крестьянского (фермерского) хозяйства</xs:documentation>
+				</xs:annotation>
+			</xs:enumeration>
+			<xs:enumeration value="141003000000">
+				<xs:annotation>
+					<xs:documentation>Для ведения личного подсобного хозяйства</xs:documentation>
+				</xs:annotation>
+			</xs:enumeration>
+			<xs:enumeration value="141004000000">
+				<xs:annotation>
+					<xs:documentation>Для ведения гражданами садоводства и огородничества</xs:documentation>
+				</xs:annotation>
+			</xs:enumeration>
+			<xs:enumeration value="141005000000">
+				<xs:annotation>
+					<xs:documentation>Для ведения гражданами животноводства</xs:documentation>
+				</xs:annotation>
+			</xs:enumeration>
+			<xs:enumeration value="141006000000">
+				<xs:annotation>
+					<xs:documentation>Для дачного строительства</xs:documentation>
+				</xs:annotation>
+			</xs:enumeration>
+			<xs:enumeration value="141007000000">
+				<xs:annotation>
+					<xs:documentation>Для размещения древесно-кустарниковой растительности, предназначенной для защиты земель от воздействия негативных (вредных) природных, антропогенных и техногенных явлений</xs:documentation>
+				</xs:annotation>
+			</xs:enumeration>
+			<xs:enumeration value="141008000000">
+				<xs:annotation>
+					<xs:documentation>Для научно-исследовательских целей</xs:documentation>
+				</xs:annotation>
+			</xs:enumeration>
+			<xs:enumeration value="141009000000">
+				<xs:annotation>
+					<xs:documentation>Для учебных целей</xs:documentation>
+				</xs:annotation>
+			</xs:enumeration>
+			<xs:enumeration value="141010000000">
+				<xs:annotation>
+					<xs:documentation>Для сенокошения и выпаса скота гражданами</xs:documentation>
+				</xs:annotation>
+			</xs:enumeration>
+			<xs:enumeration value="141011000000">
+				<xs:annotation>
+					<xs:documentation>Фонд перераспределения</xs:documentation>
+				</xs:annotation>
+			</xs:enumeration>
+			<xs:enumeration value="141012000000">
+				<xs:annotation>
+					<xs:documentation>Для размещения объектов охотничьего хозяйства</xs:documentation>
+				</xs:annotation>
+			</xs:enumeration>
+			<xs:enumeration value="141013000000">
+				<xs:annotation>
+					<xs:documentation>Для размещения объектов рыбного хозяйства</xs:documentation>
+				</xs:annotation>
+			</xs:enumeration>
+			<xs:enumeration value="141014000000">
+				<xs:annotation>
+					<xs:documentation>Для иных видов сельскохозяйственного использования</xs:documentation>
+				</xs:annotation>
+			</xs:enumeration>
+			<xs:enumeration value="142000000000">
+				<xs:annotation>
+					<xs:documentation>Для размещения объектов, характерных для населенных пунктов</xs:documentation>
+				</xs:annotation>
+			</xs:enumeration>
+			<xs:enumeration value="142001000000">
+				<xs:annotation>
+					<xs:documentation>Для объектов жилой застройки</xs:documentation>
+				</xs:annotation>
+			</xs:enumeration>
+			<xs:enumeration value="142001010000">
+				<xs:annotation>
+					<xs:documentation>Для индивидуальной жилой застройки</xs:documentation>
+				</xs:annotation>
+			</xs:enumeration>
+			<xs:enumeration value="142001020000">
+				<xs:annotation>
+					<xs:documentation>Для многоквартирной застройки</xs:documentation>
+				</xs:annotation>
+			</xs:enumeration>
+			<xs:enumeration value="142001020100">
+				<xs:annotation>
+					<xs:documentation>Для малоэтажной застройки</xs:documentation>
+				</xs:annotation>
+			</xs:enumeration>
+			<xs:enumeration value="142001020200">
+				<xs:annotation>
+					<xs:documentation>Для среднеэтажной застройки</xs:documentation>
+				</xs:annotation>
+			</xs:enumeration>
+			<xs:enumeration value="142001020300">
+				<xs:annotation>
+					<xs:documentation>Для многоэтажной застройки</xs:documentation>
+				</xs:annotation>
+			</xs:enumeration>
+			<xs:enumeration value="142001020400">
+				<xs:annotation>
+					<xs:documentation>Для иных видов жилой застройки</xs:documentation>
+				</xs:annotation>
+			</xs:enumeration>
+			<xs:enumeration value="142001030000">
+				<xs:annotation>
+					<xs:documentation>Для размещения объектов дошкольного, начального, общего и среднего (полного) общего образования</xs:documentation>
+				</xs:annotation>
+			</xs:enumeration>
+			<xs:enumeration value="142001040000">
+				<xs:annotation>
+					<xs:documentation>Для размещения иных объектов, допустимых в жилых зонах и не перечисленных в классификаторе</xs:documentation>
+				</xs:annotation>
+			</xs:enumeration>
+			<xs:enumeration value="142002000000">
+				<xs:annotation>
+					<xs:documentation>Для объектов общественно-делового значения</xs:documentation>
+				</xs:annotation>
+			</xs:enumeration>
+			<xs:enumeration value="142002010000">
+				<xs:annotation>
+					<xs:documentation>Для размещения объектов социального и коммунально-бытового назначения</xs:documentation>
+				</xs:annotation>
+			</xs:enumeration>
+			<xs:enumeration value="142002020000">
+				<xs:annotation>
+					<xs:documentation>Для размещения объектов здравоохранения</xs:documentation>
+				</xs:annotation>
+			</xs:enumeration>
+			<xs:enumeration value="142002030000">
+				<xs:annotation>
+					<xs:documentation>Для размещения объектов культуры</xs:documentation>
+				</xs:annotation>
+			</xs:enumeration>
+			<xs:enumeration value="142002040000">
+				<xs:annotation>
+					<xs:documentation>Для размещения объектов торговли</xs:documentation>
+				</xs:annotation>
+			</xs:enumeration>
+			<xs:enumeration value="142002040100">
+				<xs:annotation>
+					<xs:documentation>Для размещения объектов розничной торговли</xs:documentation>
+				</xs:annotation>
+			</xs:enumeration>
+			<xs:enumeration value="142002040200">
+				<xs:annotation>
+					<xs:documentation>Для размещения объектов оптовой торговли</xs:documentation>
+				</xs:annotation>
+			</xs:enumeration>
+			<xs:enumeration value="142002050000">
+				<xs:annotation>
+					<xs:documentation>Для размещения объектов общественного питания</xs:documentation>
+				</xs:annotation>
+			</xs:enumeration>
+			<xs:enumeration value="142002060000">
+				<xs:annotation>
+					<xs:documentation>Для размещения объектов предпринимательской деятельности</xs:documentation>
+				</xs:annotation>
+			</xs:enumeration>
+			<xs:enumeration value="142002070000">
+				<xs:annotation>
+					<xs:documentation>Для размещения объектов среднего профессионального и высшего профессионального образования</xs:documentation>
+				</xs:annotation>
+			</xs:enumeration>
+			<xs:enumeration value="142002080000">
+				<xs:annotation>
+					<xs:documentation>Для размещения административных зданий</xs:documentation>
+				</xs:annotation>
+			</xs:enumeration>
+			<xs:enumeration value="142002090000">
+				<xs:annotation>
+					<xs:documentation>Для размещения научно-исследовательских учреждений</xs:documentation>
+				</xs:annotation>
+			</xs:enumeration>
+			<xs:enumeration value="142002100000">
+				<xs:annotation>
+					<xs:documentation>Для размещения культовых зданий</xs:documentation>
+				</xs:annotation>
+			</xs:enumeration>
+			<xs:enumeration value="142002110000">
+				<xs:annotation>
+					<xs:documentation>Для стоянок автомобильного транспорта</xs:documentation>
+				</xs:annotation>
+			</xs:enumeration>
+			<xs:enumeration value="142002120000">
+				<xs:annotation>
+					<xs:documentation>Для размещения объектов делового назначения, в том числе офисных центров</xs:documentation>
+				</xs:annotation>
+			</xs:enumeration>
+			<xs:enumeration value="142002130000">
+				<xs:annotation>
+					<xs:documentation>Для размещения объектов финансового назначения</xs:documentation>
+				</xs:annotation>
+			</xs:enumeration>
+			<xs:enumeration value="142002140000">
+				<xs:annotation>
+					<xs:documentation>Для размещения гостиниц</xs:documentation>
+				</xs:annotation>
+			</xs:enumeration>
+			<xs:enumeration value="142002150000">
+				<xs:annotation>
+					<xs:documentation>Для размещения подземных или многоэтажных гаражей</xs:documentation>
+				</xs:annotation>
+			</xs:enumeration>
+			<xs:enumeration value="142002160000">
+				<xs:annotation>
+					<xs:documentation>Для размещения индивидуальных гаражей</xs:documentation>
+				</xs:annotation>
+			</xs:enumeration>
+			<xs:enumeration value="142002170000">
+				<xs:annotation>
+					<xs:documentation>Для размещения иных объектов общественно-делового значения, обеспечивающих жизнь граждан</xs:documentation>
+				</xs:annotation>
+			</xs:enumeration>
+			<xs:enumeration value="142003000000">
+				<xs:annotation>
+					<xs:documentation>Для общего пользования (уличная сеть)</xs:documentation>
+				</xs:annotation>
+			</xs:enumeration>
+			<xs:enumeration value="142004000000">
+				<xs:annotation>
+					<xs:documentation>Для размещения объектов специального назначения</xs:documentation>
+				</xs:annotation>
+			</xs:enumeration>
+			<xs:enumeration value="142004010000">
+				<xs:annotation>
+					<xs:documentation>Для размещения кладбищ</xs:documentation>
+				</xs:annotation>
+			</xs:enumeration>
+			<xs:enumeration value="142004020000">
+				<xs:annotation>
+					<xs:documentation>Для размещения крематориев</xs:documentation>
+				</xs:annotation>
+			</xs:enumeration>
+			<xs:enumeration value="142004030000">
+				<xs:annotation>
+					<xs:documentation>Для размещения скотомогильников</xs:documentation>
+				</xs:annotation>
+			</xs:enumeration>
+			<xs:enumeration value="142004040000">
+				<xs:annotation>
+					<xs:documentation>Под объектами размещения отходов потребления</xs:documentation>
+				</xs:annotation>
+			</xs:enumeration>
+			<xs:enumeration value="142004050000">
+				<xs:annotation>
+					<xs:documentation>Под иными объектами специального назначения</xs:documentation>
+				</xs:annotation>
+			</xs:enumeration>
+			<xs:enumeration value="142005000000">
+				<xs:annotation>
+					<xs:documentation>Для размещения коммунальных, складских объектов</xs:documentation>
+				</xs:annotation>
+			</xs:enumeration>
+			<xs:enumeration value="142006000000">
+				<xs:annotation>
+					<xs:documentation>Для размещения объектов жилищно-коммунального хозяйства</xs:documentation>
+				</xs:annotation>
+			</xs:enumeration>
+			<xs:enumeration value="142007000000">
+				<xs:annotation>
+					<xs:documentation>Для иных видов использования, характерных для населенных пунктов</xs:documentation>
+				</xs:annotation>
+			</xs:enumeration>
+			<xs:enumeration value="143000000000">
+				<xs:annotation>
+					<xs:documentation>Для размещения объектов промышленности, энергетики, транспорта, связи, радиовещания, телевидения, информатики, обеспечения космической деятельности, обороны, безопасности и иного специального назначения</xs:documentation>
+				</xs:annotation>
+			</xs:enumeration>
+			<xs:enumeration value="143001000000">
+				<xs:annotation>
+					<xs:documentation>Для размещения промышленных объектов</xs:documentation>
+				</xs:annotation>
+			</xs:enumeration>
+			<xs:enumeration value="143001010000">
+				<xs:annotation>
+					<xs:documentation>Для размещения производственных и административных зданий, строений, сооружений и обслуживающих их объектов</xs:documentation>
+				</xs:annotation>
+			</xs:enumeration>
+			<xs:enumeration value="143001010100">
+				<xs:annotation>
+					<xs:documentation>Для размещения производственных зданий</xs:documentation>
+				</xs:annotation>
+			</xs:enumeration>
+			<xs:enumeration value="143001010200">
+				<xs:annotation>
+					<xs:documentation>Для размещения коммуникаций</xs:documentation>
+				</xs:annotation>
+			</xs:enumeration>
+			<xs:enumeration value="143001010300">
+				<xs:annotation>
+					<xs:documentation>Для размещения подъездных путей</xs:documentation>
+				</xs:annotation>
+			</xs:enumeration>
+			<xs:enumeration value="143001010400">
+				<xs:annotation>
+					<xs:documentation>Для размещения складских помещений</xs:documentation>
+				</xs:annotation>
+			</xs:enumeration>
+			<xs:enumeration value="143001010500">
+				<xs:annotation>
+					<xs:documentation>Для размещения административных зданий</xs:documentation>
+				</xs:annotation>
+			</xs:enumeration>
+			<xs:enumeration value="143001010600">
+				<xs:annotation>
+					<xs:documentation>Для размещения культурно-бытовых зданий</xs:documentation>
+				</xs:annotation>
+			</xs:enumeration>
+			<xs:enumeration value="143001010700">
+				<xs:annotation>
+					<xs:documentation>Для размещения иных сооружений промышленности</xs:documentation>
+				</xs:annotation>
+			</xs:enumeration>
+			<xs:enumeration value="143001020000">
+				<xs:annotation>
+					<xs:documentation>Для добычи и разработки полезных ископаемых</xs:documentation>
+				</xs:annotation>
+			</xs:enumeration>
+			<xs:enumeration value="143001030000">
+				<xs:annotation>
+					<xs:documentation>Для размещения иных объектов промышленности</xs:documentation>
+				</xs:annotation>
+			</xs:enumeration>
+			<xs:enumeration value="143002000000">
+				<xs:annotation>
+					<xs:documentation>Для размещения объектов энергетики</xs:documentation>
+				</xs:annotation>
+			</xs:enumeration>
+			<xs:enumeration value="143002010000">
+				<xs:annotation>
+					<xs:documentation>Для размещения электростанций и обслуживающих сооружений и объектов</xs:documentation>
+				</xs:annotation>
+			</xs:enumeration>
+			<xs:enumeration value="143002010100">
+				<xs:annotation>
+					<xs:documentation>Для размещения гидроэлектростанций</xs:documentation>
+				</xs:annotation>
+			</xs:enumeration>
+			<xs:enumeration value="143002010200">
+				<xs:annotation>
+					<xs:documentation>Для размещения атомных станций</xs:documentation>
+				</xs:annotation>
+			</xs:enumeration>
+			<xs:enumeration value="143002010300">
+				<xs:annotation>
+					<xs:documentation>Для размещения ядерных установок</xs:documentation>
+				</xs:annotation>
+			</xs:enumeration>
+			<xs:enumeration value="143002010400">
+				<xs:annotation>
+					<xs:documentation>Для размещения пунктов хранения ядерных материалов и радиоактивных веществ энергетики</xs:documentation>
+				</xs:annotation>
+			</xs:enumeration>
+			<xs:enumeration value="143002010500">
+				<xs:annotation>
+					<xs:documentation>Для размещения хранилищ радиоактивных отходов</xs:documentation>
+				</xs:annotation>
+			</xs:enumeration>
+			<xs:enumeration value="143002010600">
+				<xs:annotation>
+					<xs:documentation>Для размещения тепловых станций</xs:documentation>
+				</xs:annotation>
+			</xs:enumeration>
+			<xs:enumeration value="143002010700">
+				<xs:annotation>
+					<xs:documentation>Для размещения иных типов электростанций</xs:documentation>
+				</xs:annotation>
+			</xs:enumeration>
+			<xs:enumeration value="143002010800">
+				<xs:annotation>
+					<xs:documentation>Для размещения иных обслуживающих сооружений и объектов</xs:documentation>
+				</xs:annotation>
+			</xs:enumeration>
+			<xs:enumeration value="143002020000">
+				<xs:annotation>
+					<xs:documentation>Для размещения объектов электросетевого хозяйства</xs:documentation>
+				</xs:annotation>
+			</xs:enumeration>
+			<xs:enumeration value="143002020100">
+				<xs:annotation>
+					<xs:documentation>Для размещения воздушных линий электропередачи</xs:documentation>
+				</xs:annotation>
+			</xs:enumeration>
+			<xs:enumeration value="143002020200">
+				<xs:annotation>
+					<xs:documentation>Для размещения наземных сооружений кабельных линий электропередачи</xs:documentation>
+				</xs:annotation>
+			</xs:enumeration>
+			<xs:enumeration value="143002020300">
+				<xs:annotation>
+					<xs:documentation>Для размещения подстанций</xs:documentation>
+				</xs:annotation>
+			</xs:enumeration>
+			<xs:enumeration value="143002020400">
+				<xs:annotation>
+					<xs:documentation>Для размещения распределительных пунктов</xs:documentation>
+				</xs:annotation>
+			</xs:enumeration>
+			<xs:enumeration value="143002020500">
+				<xs:annotation>
+					<xs:documentation>Для размещения других сооружений и объектов электросетевого хозяйства</xs:documentation>
+				</xs:annotation>
+			</xs:enumeration>
+			<xs:enumeration value="143002030000">
+				<xs:annotation>
+					<xs:documentation>Для размещения иных объектов энергетики</xs:documentation>
+				</xs:annotation>
+			</xs:enumeration>
+			<xs:enumeration value="143003000000">
+				<xs:annotation>
+					<xs:documentation>Для размещения объектов транспорта</xs:documentation>
+				</xs:annotation>
+			</xs:enumeration>
+			<xs:enumeration value="143003010000">
+				<xs:annotation>
+					<xs:documentation>Для размещения и эксплуатации объектов железнодорожного транспорта</xs:documentation>
+				</xs:annotation>
+			</xs:enumeration>
+			<xs:enumeration value="143003010100">
+				<xs:annotation>
+					<xs:documentation>Для размещения железнодорожных путей и их конструктивных элементов</xs:documentation>
+				</xs:annotation>
+			</xs:enumeration>
+			<xs:enumeration value="143003010200">
+				<xs:annotation>
+					<xs:documentation>Для размещения полос отвода железнодорожных путей</xs:documentation>
+				</xs:annotation>
+			</xs:enumeration>
+			<xs:enumeration value="143003010300">
+				<xs:annotation>
+					<xs:documentation>Для размещения, эксплуатации, расширения и реконструкции строений, зданий, сооружений, в том числе железнодорожных вокзалов, железнодорожных станций, а также устройств и других объектов, необходимых для эксплуатации, содержания, строительства, реконструкции, ремонта, развития наземных и подземных зданий, строений, сооружений, устройств и других объектов железнодорожного транспорта</xs:documentation>
+				</xs:annotation>
+			</xs:enumeration>
+			<xs:enumeration value="143003010301">
+				<xs:annotation>
+					<xs:documentation>Для размещения железнодорожных вокзалов</xs:documentation>
+				</xs:annotation>
+			</xs:enumeration>
+			<xs:enumeration value="143003010302">
+				<xs:annotation>
+					<xs:documentation>Для размещения железнодорожных станций</xs:documentation>
+				</xs:annotation>
+			</xs:enumeration>
+			<xs:enumeration value="143003010303">
+				<xs:annotation>
+					<xs:documentation>Для размещения устройств и других объектов, необходимых для эксплуатации, содержания, строительства, реконструкции, ремонта, развития наземных и подземных зданий, строений, сооружений, устройств и других объектов железнодорожного транспорта</xs:documentation>
+				</xs:annotation>
+			</xs:enumeration>
+			<xs:enumeration value="143003020000">
+				<xs:annotation>
+					<xs:documentation>Для размещения и эксплуатации объектов автомобильного транспорта и объектов дорожного хозяйства</xs:documentation>
+				</xs:annotation>
+			</xs:enumeration>
+			<xs:enumeration value="143003020100">
+				<xs:annotation>
+					<xs:documentation>Для размещения автомобильных дорог и их конструктивных элементов</xs:documentation>
+				</xs:annotation>
+			</xs:enumeration>
+			<xs:enumeration value="143003020200">
+				<xs:annotation>
+					<xs:documentation>Для размещения полос отвода</xs:documentation>
+				</xs:annotation>
+			</xs:enumeration>
+			<xs:enumeration value="143003020300">
+				<xs:annotation>
+					<xs:documentation>Для размещения объектов дорожного сервиса в полосах отвода автомобильных дорог</xs:documentation>
+				</xs:annotation>
+			</xs:enumeration>
+			<xs:enumeration value="143003020400">
+				<xs:annotation>
+					<xs:documentation>Для размещения дорожных сооружений</xs:documentation>
+				</xs:annotation>
+			</xs:enumeration>
+			<xs:enumeration value="143003020500">
+				<xs:annotation>
+					<xs:documentation>Для размещения автовокзалов и автостанций</xs:documentation>
+				</xs:annotation>
+			</xs:enumeration>
+			<xs:enumeration value="143003020600">
+				<xs:annotation>
+					<xs:documentation>Для размещения иных объектов автомобильного транспорта и дорожного хозяйства</xs:documentation>
+				</xs:annotation>
+			</xs:enumeration>
+			<xs:enumeration value="143003030000">
+				<xs:annotation>
+					<xs:documentation>Для размещения и эксплуатации объектов морского, внутреннего водного транспорта</xs:documentation>
+				</xs:annotation>
+			</xs:enumeration>
+			<xs:enumeration value="143003030100">
+				<xs:annotation>
+					<xs:documentation>Для размещения искусственно созданных внутренних водных путей</xs:documentation>
+				</xs:annotation>
+			</xs:enumeration>
+			<xs:enumeration value="143003030200">
+				<xs:annotation>
+					<xs:documentation>Для размещения морских и речных портов, причалов, пристаней</xs:documentation>
+				</xs:annotation>
+			</xs:enumeration>
+			<xs:enumeration value="143003030300">
+				<xs:annotation>
+					<xs:documentation>Для размещения иных объектов морского, внутреннего водного транспорта</xs:documentation>
+				</xs:annotation>
+			</xs:enumeration>
+			<xs:enumeration value="143003030400">
+				<xs:annotation>
+					<xs:documentation>Для выделения береговой полосы</xs:documentation>
+				</xs:annotation>
+			</xs:enumeration>
+			<xs:enumeration value="143003040000">
+				<xs:annotation>
+					<xs:documentation>Для размещения и эксплуатации объектов воздушного транспорта</xs:documentation>
+				</xs:annotation>
+			</xs:enumeration>
+			<xs:enumeration value="143003040100">
+				<xs:annotation>
+					<xs:documentation>Для размещения аэропортов и аэродромов</xs:documentation>
+				</xs:annotation>
+			</xs:enumeration>
+			<xs:enumeration value="143003040200">
+				<xs:annotation>
+					<xs:documentation>Для размещения аэровокзалов</xs:documentation>
+				</xs:annotation>
+			</xs:enumeration>
+			<xs:enumeration value="143003040300">
+				<xs:annotation>
+					<xs:documentation>Для размещения взлетно-посадочных полос</xs:documentation>
+				</xs:annotation>
+			</xs:enumeration>
+			<xs:enumeration value="143003040400">
+				<xs:annotation>
+					<xs:documentation>Для размещения иных наземных объектов воздушного транспорта</xs:documentation>
+				</xs:annotation>
+			</xs:enumeration>
+			<xs:enumeration value="143003050000">
+				<xs:annotation>
+					<xs:documentation>Для размещения и эксплуатации объектов трубопроводного транспорта</xs:documentation>
+				</xs:annotation>
+			</xs:enumeration>
+			<xs:enumeration value="143003050100">
+				<xs:annotation>
+					<xs:documentation>Для размещения нефтепроводов</xs:documentation>
+				</xs:annotation>
+			</xs:enumeration>
+			<xs:enumeration value="143003050200">
+				<xs:annotation>
+					<xs:documentation>Для размещения газопроводов</xs:documentation>
+				</xs:annotation>
+			</xs:enumeration>
+			<xs:enumeration value="143003050300">
+				<xs:annotation>
+					<xs:documentation>Для размещения иных трубопроводов</xs:documentation>
+				</xs:annotation>
+			</xs:enumeration>
+			<xs:enumeration value="143003050400">
+				<xs:annotation>
+					<xs:documentation>Для размещения иных объектов трубопроводного транспорта</xs:documentation>
+				</xs:annotation>
+			</xs:enumeration>
+			<xs:enumeration value="143003060000">
+				<xs:annotation>
+					<xs:documentation>Для размещения и эксплуатации иных объектов транспорта</xs:documentation>
+				</xs:annotation>
+			</xs:enumeration>
+			<xs:enumeration value="143004000000">
+				<xs:annotation>
+					<xs:documentation>Для размещения объектов связи, радиовещания, телевидения, информатики</xs:documentation>
+				</xs:annotation>
+			</xs:enumeration>
+			<xs:enumeration value="143004010000">
+				<xs:annotation>
+					<xs:documentation>Для размещения эксплуатационных предприятий связи и обслуживания линий связи</xs:documentation>
+				</xs:annotation>
+			</xs:enumeration>
+			<xs:enumeration value="143004020000">
+				<xs:annotation>
+					<xs:documentation>Для размещения кабельных, радиорелейных и воздушных линий связи и линий радиофикации на трассах кабельных и воздушных линий связи и радиофикации и их охранные зоны</xs:documentation>
+				</xs:annotation>
+			</xs:enumeration>
+			<xs:enumeration value="143004030000">
+				<xs:annotation>
+					<xs:documentation>Для размещения подземных кабельных и воздушных линий связи и радиофикации и их охранные зоны</xs:documentation>
+				</xs:annotation>
+			</xs:enumeration>
+			<xs:enumeration value="143004040000">
+				<xs:annotation>
+					<xs:documentation>Для размещения наземных и подземных необслуживаемых усилительных пунктов на кабельных линиях связи и их охранные зоны</xs:documentation>
+				</xs:annotation>
+			</xs:enumeration>
+			<xs:enumeration value="143004050000">
+				<xs:annotation>
+					<xs:documentation>Для размещения наземных сооружений и инфраструктур спутниковой связи</xs:documentation>
+				</xs:annotation>
+			</xs:enumeration>
+			<xs:enumeration value="143004060000">
+				<xs:annotation>
+					<xs:documentation>Для размещения иных объектов связи, радиовещания, телевидения, информатики</xs:documentation>
+				</xs:annotation>
+			</xs:enumeration>
+			<xs:enumeration value="143005000000">
+				<xs:annotation>
+					<xs:documentation>Для размещения объектов, предназначенных для обеспечения космической деятельности</xs:documentation>
+				</xs:annotation>
+			</xs:enumeration>
+			<xs:enumeration value="143005010000">
+				<xs:annotation>
+					<xs:documentation>Для размещения космодромов, стартовых комплексов и пусковых установок</xs:documentation>
+				</xs:annotation>
+			</xs:enumeration>
+			<xs:enumeration value="143005020000">
+				<xs:annotation>
+					<xs:documentation>Для размещения командно-измерительных комплексов, центров и пунктов управления полетами космических объектов, приема, хранения и переработки информации</xs:documentation>
+				</xs:annotation>
+			</xs:enumeration>
+			<xs:enumeration value="143005030000">
+				<xs:annotation>
+					<xs:documentation>Для размещения баз хранения космической техники</xs:documentation>
+				</xs:annotation>
+			</xs:enumeration>
+			<xs:enumeration value="143005040000">
+				<xs:annotation>
+					<xs:documentation>Для размещения полигонов приземления космических объектов и взлетно-посадочных полос</xs:documentation>
+				</xs:annotation>
+			</xs:enumeration>
+			<xs:enumeration value="143005050000">
+				<xs:annotation>
+					<xs:documentation>Для размещения объектов экспериментальной базы для отработки космической техники</xs:documentation>
+				</xs:annotation>
+			</xs:enumeration>
+			<xs:enumeration value="143005060000">
+				<xs:annotation>
+					<xs:documentation>Для размещения центров и оборудования для подготовки космонавтов</xs:documentation>
+				</xs:annotation>
+			</xs:enumeration>
+			<xs:enumeration value="143005070000">
+				<xs:annotation>
+					<xs:documentation>Для размещения других наземных сооружений и техники, используемых при осуществлении космической деятельности</xs:documentation>
+				</xs:annotation>
+			</xs:enumeration>
+			<xs:enumeration value="143006000000">
+				<xs:annotation>
+					<xs:documentation>Для размещения объектов, предназначенных для обеспечения обороны и безопасности</xs:documentation>
+				</xs:annotation>
+			</xs:enumeration>
+			<xs:enumeration value="143006010000">
+				<xs:annotation>
+					<xs:documentation>Для обеспечения задач обороны</xs:documentation>
+				</xs:annotation>
+			</xs:enumeration>
+			<xs:enumeration value="143006010100">
+				<xs:annotation>
+					<xs:documentation>Для размещения военных организаций, учреждений и других объектов</xs:documentation>
+				</xs:annotation>
+			</xs:enumeration>
+			<xs:enumeration value="143006010200">
+				<xs:annotation>
+					<xs:documentation>Для дислокации войск и сил флота</xs:documentation>
+				</xs:annotation>
+			</xs:enumeration>
+			<xs:enumeration value="143006010300">
+				<xs:annotation>
+					<xs:documentation>Для проведения учений и иных мероприятий</xs:documentation>
+				</xs:annotation>
+			</xs:enumeration>
+			<xs:enumeration value="143006010400">
+				<xs:annotation>
+					<xs:documentation>Для испытательных полигонов</xs:documentation>
+				</xs:annotation>
+			</xs:enumeration>
+			<xs:enumeration value="143006010500">
+				<xs:annotation>
+					<xs:documentation>Для мест уничтожения оружия и захоронения отходов</xs:documentation>
+				</xs:annotation>
+			</xs:enumeration>
+			<xs:enumeration value="143006010600">
+				<xs:annotation>
+					<xs:documentation>Для создания запасов материальных ценностей в государственном и мобилизационном резервах (хранилища, склады и другие)</xs:documentation>
+				</xs:annotation>
+			</xs:enumeration>
+			<xs:enumeration value="143006010700">
+				<xs:annotation>
+					<xs:documentation>Для размещения иных объектов обороны</xs:documentation>
+				</xs:annotation>
+			</xs:enumeration>
+			<xs:enumeration value="143006020000">
+				<xs:annotation>
+					<xs:documentation>Для размещения объектов (территорий), обеспечивающих защиту и охрану Государственной границы Российской Федерации</xs:documentation>
+				</xs:annotation>
+			</xs:enumeration>
+			<xs:enumeration value="143006020100">
+				<xs:annotation>
+					<xs:documentation>Для обустройства и содержания инженерно-технических сооружений и заграждений</xs:documentation>
+				</xs:annotation>
+			</xs:enumeration>
+			<xs:enumeration value="143006020200">
+				<xs:annotation>
+					<xs:documentation>Для обустройства и содержания пограничных знаков</xs:documentation>
+				</xs:annotation>
+			</xs:enumeration>
+			<xs:enumeration value="143006020300">
+				<xs:annotation>
+					<xs:documentation>Для обустройства и содержания пограничных просек</xs:documentation>
+				</xs:annotation>
+			</xs:enumeration>
+			<xs:enumeration value="143006020400">
+				<xs:annotation>
+					<xs:documentation>Для обустройства и содержания коммуникаций</xs:documentation>
+				</xs:annotation>
+			</xs:enumeration>
+			<xs:enumeration value="143006020500">
+				<xs:annotation>
+					<xs:documentation>Для обустройства и содержания пунктов пропуска через Государственную границу Российской Федерации</xs:documentation>
+				</xs:annotation>
+			</xs:enumeration>
+			<xs:enumeration value="143006020600">
+				<xs:annotation>
+					<xs:documentation>Для размещения иных объектов для защиты и охраны Государственной границы Российской Федерации</xs:documentation>
+				</xs:annotation>
+			</xs:enumeration>
+			<xs:enumeration value="143006030000">
+				<xs:annotation>
+					<xs:documentation>Для размещения иных объектов обороны и безопасности</xs:documentation>
+				</xs:annotation>
+			</xs:enumeration>
+			<xs:enumeration value="143007000000">
+				<xs:annotation>
+					<xs:documentation>Для размещения иных объектов промышленности, энергетики, транспорта, связи, радиовещания, телевидения, информатики, обеспечения космической деятельности, обороны, безопасности и иного специального назначения</xs:documentation>
+				</xs:annotation>
+			</xs:enumeration>
+			<xs:enumeration value="144000000000">
+				<xs:annotation>
+					<xs:documentation>Для размещения особо охраняемых историко-культурных и природных объектов (территорий)</xs:documentation>
+				</xs:annotation>
+			</xs:enumeration>
+			<xs:enumeration value="144001000000">
+				<xs:annotation>
+					<xs:documentation>Для размещения особо охраняемых природных объектов (территорий)</xs:documentation>
+				</xs:annotation>
+			</xs:enumeration>
+			<xs:enumeration value="144001010000">
+				<xs:annotation>
+					<xs:documentation>Для размещения государственных природных заповедников (в том числе биосферных)</xs:documentation>
+				</xs:annotation>
+			</xs:enumeration>
+			<xs:enumeration value="144001020000">
+				<xs:annotation>
+					<xs:documentation>Для размещения государственных природных заказников</xs:documentation>
+				</xs:annotation>
+			</xs:enumeration>
+			<xs:enumeration value="144001030000">
+				<xs:annotation>
+					<xs:documentation>Для размещения национальных парков</xs:documentation>
+				</xs:annotation>
+			</xs:enumeration>
+			<xs:enumeration value="144001040000">
+				<xs:annotation>
+					<xs:documentation>Для размещения природных парков</xs:documentation>
+				</xs:annotation>
+			</xs:enumeration>
+			<xs:enumeration value="144001050000">
+				<xs:annotation>
+					<xs:documentation>Для размещения дендрологических парков</xs:documentation>
+				</xs:annotation>
+			</xs:enumeration>
+			<xs:enumeration value="144001060000">
+				<xs:annotation>
+					<xs:documentation>Для размещения ботанических садов</xs:documentation>
+				</xs:annotation>
+			</xs:enumeration>
+			<xs:enumeration value="144001070000">
+				<xs:annotation>
+					<xs:documentation>Для размещения объектов санаторного и курортного назначения</xs:documentation>
+				</xs:annotation>
+			</xs:enumeration>
+			<xs:enumeration value="144001080000">
+				<xs:annotation>
+					<xs:documentation>Территории месторождений минеральных вод, лечебных грязей, рапы лиманов и озер</xs:documentation>
+				</xs:annotation>
+			</xs:enumeration>
+			<xs:enumeration value="144001090000">
+				<xs:annotation>
+					<xs:documentation>Для традиционного природопользования</xs:documentation>
+				</xs:annotation>
+			</xs:enumeration>
+			<xs:enumeration value="144001100000">
+				<xs:annotation>
+					<xs:documentation>Для размещения иных особо охраняемых природных территорий (объектов)</xs:documentation>
+				</xs:annotation>
+			</xs:enumeration>
+			<xs:enumeration value="144002000000">
+				<xs:annotation>
+					<xs:documentation>Для размещения объектов (территорий) природоохранного назначения</xs:documentation>
+				</xs:annotation>
+			</xs:enumeration>
+			<xs:enumeration value="144003000000">
+				<xs:annotation>
+					<xs:documentation>Для размещения объектов (территорий) рекреационного назначения</xs:documentation>
+				</xs:annotation>
+			</xs:enumeration>
+			<xs:enumeration value="144003010000">
+				<xs:annotation>
+					<xs:documentation>Для размещения домов отдыха, пансионатов, кемпингов</xs:documentation>
+				</xs:annotation>
+			</xs:enumeration>
+			<xs:enumeration value="144003020000">
+				<xs:annotation>
+					<xs:documentation>Для размещения объектов физической культуры и спорта</xs:documentation>
+				</xs:annotation>
+			</xs:enumeration>
+			<xs:enumeration value="144003030000">
+				<xs:annotation>
+					<xs:documentation>Для размещения туристических баз, стационарных и палаточных туристско-оздоровительных лагерей, домов рыболова и охотника, детских туристических станций</xs:documentation>
+				</xs:annotation>
+			</xs:enumeration>
+			<xs:enumeration value="144003040000">
+				<xs:annotation>
+					<xs:documentation>Для размещения туристических парков</xs:documentation>
+				</xs:annotation>
+			</xs:enumeration>
+			<xs:enumeration value="144003050000">
+				<xs:annotation>
+					<xs:documentation>Для размещения лесопарков</xs:documentation>
+				</xs:annotation>
+			</xs:enumeration>
+			<xs:enumeration value="144003060000">
+				<xs:annotation>
+					<xs:documentation>Для размещения учебно-туристических троп и трасс</xs:documentation>
+				</xs:annotation>
+			</xs:enumeration>
+			<xs:enumeration value="144003070000">
+				<xs:annotation>
+					<xs:documentation>Для размещения детских и спортивных лагерей</xs:documentation>
+				</xs:annotation>
+			</xs:enumeration>
+			<xs:enumeration value="144003080000">
+				<xs:annotation>
+					<xs:documentation>Для размещения скверов, парков, городских садов</xs:documentation>
+				</xs:annotation>
+			</xs:enumeration>
+			<xs:enumeration value="144003090000">
+				<xs:annotation>
+					<xs:documentation>Для размещения пляжей</xs:documentation>
+				</xs:annotation>
+			</xs:enumeration>
+			<xs:enumeration value="144003100000">
+				<xs:annotation>
+					<xs:documentation>Для размещения иных объектов (территорий) рекреационного назначения</xs:documentation>
+				</xs:annotation>
+			</xs:enumeration>
+			<xs:enumeration value="144004000000">
+				<xs:annotation>
+					<xs:documentation>Для размещения объектов историко-культурного назначения</xs:documentation>
+				</xs:annotation>
+			</xs:enumeration>
+			<xs:enumeration value="144004010000">
+				<xs:annotation>
+					<xs:documentation>Для размещения объектов культурного наследия народов Российской Федерации (памятников истории и культуры), в том числе объектов археологического наследия</xs:documentation>
+				</xs:annotation>
+			</xs:enumeration>
+			<xs:enumeration value="144004020000">
+				<xs:annotation>
+					<xs:documentation>Для размещения военных и гражданских захоронений</xs:documentation>
+				</xs:annotation>
+			</xs:enumeration>
+			<xs:enumeration value="144005000000">
+				<xs:annotation>
+					<xs:documentation>Для размещения иных особо охраняемых историко-культурных и природных объектов (территорий)</xs:documentation>
+				</xs:annotation>
+			</xs:enumeration>
+			<xs:enumeration value="145000000000">
+				<xs:annotation>
+					<xs:documentation>Для размещения объектов лесного фонда</xs:documentation>
+				</xs:annotation>
+			</xs:enumeration>
+			<xs:enumeration value="145001000000">
+				<xs:annotation>
+					<xs:documentation>Для размещения лесной растительности</xs:documentation>
+				</xs:annotation>
+			</xs:enumeration>
+			<xs:enumeration value="145002000000">
+				<xs:annotation>
+					<xs:documentation>Для восстановления лесной растительности</xs:documentation>
+				</xs:annotation>
+			</xs:enumeration>
+			<xs:enumeration value="145003000000">
+				<xs:annotation>
+					<xs:documentation>Для прочих объектов лесного хозяйства</xs:documentation>
+				</xs:annotation>
+			</xs:enumeration>
+			<xs:enumeration value="146000000000">
+				<xs:annotation>
+					<xs:documentation>Для размещения объектов водного фонда</xs:documentation>
+				</xs:annotation>
+			</xs:enumeration>
+			<xs:enumeration value="146001000000">
+				<xs:annotation>
+					<xs:documentation>Под водными объектами</xs:documentation>
+				</xs:annotation>
+			</xs:enumeration>
+			<xs:enumeration value="146002000000">
+				<xs:annotation>
+					<xs:documentation>Для размещения гидротехнических сооружений</xs:documentation>
+				</xs:annotation>
+			</xs:enumeration>
+			<xs:enumeration value="146003000000">
+				<xs:annotation>
+					<xs:documentation>Для размещения иных сооружений, расположенных на водных объектах</xs:documentation>
+				</xs:annotation>
+			</xs:enumeration>
+			<xs:enumeration value="147000000000">
+				<xs:annotation>
+					<xs:documentation>Земли запаса (неиспользуемые)</xs:documentation>
+				</xs:annotation>
+			</xs:enumeration>
+		</xs:restriction>
+	</xs:simpleType>
+</xs:schema>

@@ -1,0 +1,66 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<xs:schema xmlns:xs="http://www.w3.org/2001/XMLSchema" elementFormDefault="qualified" attributeFormDefault="unqualified">
+	<!--Общие простые типы данных-->
+	<xs:include schemaLocation="P_CommonSimpleType_v04.xsd"/>
+	<!--Классификатор "Типы ранее присвоенного номера"-->
+	<xs:include schemaLocation="dOldNumber_v01.xsd"/>
+	<!--Повторно используемая подсхема "Ранее присвоенные номера"-->
+	<xs:complexType name="tOldNumber">
+		<xs:annotation>
+			<xs:documentation>Ранее присвоенный номер</xs:documentation>
+		</xs:annotation>
+		<xs:attribute name="Type" type="dOldNumber" use="required">
+			<xs:annotation>
+				<xs:documentation>Тип (кадастровый, условный, инвентарный, иной)</xs:documentation>
+			</xs:annotation>
+		</xs:attribute>
+		<xs:attribute name="Number" type="sNe500" use="required">
+			<xs:annotation>
+				<xs:documentation>Номер</xs:documentation>
+			</xs:annotation>
+		</xs:attribute>
+	</xs:complexType>
+	<xs:complexType name="tOldNumbers">
+		<xs:annotation>
+			<xs:documentation>Ранее присвоенные государственные учетные номера</xs:documentation>
+		</xs:annotation>
+		<xs:sequence>
+			<xs:element name="OldNumber" type="tOldNumber" maxOccurs="unbounded">
+				<xs:annotation>
+					<xs:documentation>Ранее присвоенный государственный учетный номер</xs:documentation>
+				</xs:annotation>
+			</xs:element>
+		</xs:sequence>
+	</xs:complexType>
+	<xs:complexType name="tOldNumberExt">
+		<xs:annotation>
+			<xs:documentation>Ранее присвоенный номер, расширение базового типа полями Дата и Орган (организация) присвоивший номер</xs:documentation>
+		</xs:annotation>
+		<xs:complexContent>
+			<xs:extension base="tOldNumber">
+				<xs:attribute name="Date" type="xs:date">
+					<xs:annotation>
+						<xs:documentation>Дата</xs:documentation>
+					</xs:annotation>
+				</xs:attribute>
+				<xs:attribute name="Organ" type="s255">
+					<xs:annotation>
+						<xs:documentation>Орган (организация) присвоивший номер</xs:documentation>
+					</xs:annotation>
+				</xs:attribute>
+			</xs:extension>
+		</xs:complexContent>
+	</xs:complexType>
+	<xs:complexType name="tOldNumbersExt">
+		<xs:annotation>
+			<xs:documentation>Ранее присвоенные государственные учетные номера расширенная версия</xs:documentation>
+		</xs:annotation>
+		<xs:sequence>
+			<xs:element name="OldNumber" type="tOldNumberExt" maxOccurs="unbounded">
+				<xs:annotation>
+					<xs:documentation>Ранее присвоенный государственный учетный номер</xs:documentation>
+				</xs:annotation>
+			</xs:element>
+		</xs:sequence>
+	</xs:complexType>
+</xs:schema>

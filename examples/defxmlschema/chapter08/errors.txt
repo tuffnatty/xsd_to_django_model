@@ -1,0 +1,5 @@
+WARNING:__main__:Automatic model name: SizesType. Consider adding it to TYPE_MODEL_MAP
+
+Making model for type SizesType
+WARNING:__main__:xs:simpleType[name=XSMLXSizeType]/xs:union is not supported yet
+Done making model SizesType (SizesType)

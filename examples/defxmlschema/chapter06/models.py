@@ -13,6 +13,6 @@ from django.db import models
 # Corresponds to XSD type[s]: ProductType
 class ProductType(models.Model):
     name = models.TextField("name", blank=False, default='N/A')
-    size = models.IntegerField("size", default=10, null=True)
+    size = models.IntegerField("size", null=True)
 
 

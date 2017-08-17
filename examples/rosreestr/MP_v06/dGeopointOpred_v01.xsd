@@ -1,0 +1,40 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<xs:schema xmlns:xs="http://www.w3.org/2001/XMLSchema" elementFormDefault="qualified">
+	<xs:simpleType name="dGeopointOpred">
+		<xs:annotation>
+			<xs:documentation>Методы определения координат характерных точек</xs:documentation>
+		</xs:annotation>
+		<xs:restriction base="xs:string">
+			<xs:enumeration value="692001000000">
+				<xs:annotation>
+					<xs:documentation>Геодезический метод</xs:documentation>
+				</xs:annotation>
+			</xs:enumeration>
+			<xs:enumeration value="692002000000">
+				<xs:annotation>
+					<xs:documentation>Фотограмметрический метод</xs:documentation>
+				</xs:annotation>
+			</xs:enumeration>
+			<xs:enumeration value="692003000000">
+				<xs:annotation>
+					<xs:documentation>Картометрический метод</xs:documentation>
+				</xs:annotation>
+			</xs:enumeration>
+			<xs:enumeration value="692004000000">
+				<xs:annotation>
+					<xs:documentation>Иное описание</xs:documentation>
+				</xs:annotation>
+			</xs:enumeration>
+			<xs:enumeration value="692005000000">
+				<xs:annotation>
+					<xs:documentation>Метод спутниковых геодезических измерений (определений)</xs:documentation>
+				</xs:annotation>
+			</xs:enumeration>
+			<xs:enumeration value="692006000000">
+				<xs:annotation>
+					<xs:documentation>Аналитический метод</xs:documentation>
+				</xs:annotation>
+			</xs:enumeration>
+		</xs:restriction>
+	</xs:simpleType>
+</xs:schema>

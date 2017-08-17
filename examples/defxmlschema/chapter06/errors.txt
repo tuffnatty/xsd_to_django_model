@@ -1,0 +1,4 @@
+WARNING:__main__:Automatic model name: ProductType. Consider adding it to TYPE_MODEL_MAP
+
+Making model for type ProductType
+Done making model ProductType (ProductType)

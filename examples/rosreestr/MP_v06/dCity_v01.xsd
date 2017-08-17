@@ -1,0 +1,90 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<xs:schema xmlns:xs="http://www.w3.org/2001/XMLSchema" elementFormDefault="qualified">
+	<xs:simpleType name="dCity">
+		<xs:annotation>
+			<xs:documentation>3-й уровень - административно-территориальное образование (АТО) районного подчинения</xs:documentation>
+		</xs:annotation>
+		<xs:restriction base="xs:string">
+			<xs:enumeration value="г">
+				<xs:annotation>
+					<xs:documentation>Город</xs:documentation>
+				</xs:annotation>
+			</xs:enumeration>
+			<xs:enumeration value="пгт">
+				<xs:annotation>
+					<xs:documentation>Посёлок городского типа</xs:documentation>
+				</xs:annotation>
+			</xs:enumeration>
+			<xs:enumeration value="рп">
+				<xs:annotation>
+					<xs:documentation>Рабочий посёлок</xs:documentation>
+				</xs:annotation>
+			</xs:enumeration>
+			<xs:enumeration value="кп">
+				<xs:annotation>
+					<xs:documentation>Курортный посёлок</xs:documentation>
+				</xs:annotation>
+			</xs:enumeration>
+			<xs:enumeration value="дп">
+				<xs:annotation>
+					<xs:documentation>Дачный посёлок</xs:documentation>
+				</xs:annotation>
+			</xs:enumeration>
+			<xs:enumeration value="с/с">
+				<xs:annotation>
+					<xs:documentation>Сельсовет</xs:documentation>
+				</xs:annotation>
+			</xs:enumeration>
+			<xs:enumeration value="с/а">
+				<xs:annotation>
+					<xs:documentation>Сельская администрация</xs:documentation>
+				</xs:annotation>
+			</xs:enumeration>
+			<xs:enumeration value="с/о">
+				<xs:annotation>
+					<xs:documentation>Сельский округ</xs:documentation>
+				</xs:annotation>
+			</xs:enumeration>
+			<xs:enumeration value="волость">
+				<xs:annotation>
+					<xs:documentation>Волость</xs:documentation>
+				</xs:annotation>
+			</xs:enumeration>
+			<xs:enumeration value="п/о">
+				<xs:annotation>
+					<xs:documentation>Почтовое отделение</xs:documentation>
+				</xs:annotation>
+			</xs:enumeration>
+			<xs:enumeration value="тер">
+				<xs:annotation>
+					<xs:documentation>Территория</xs:documentation>
+				</xs:annotation>
+			</xs:enumeration>
+			<xs:enumeration value="с/п">
+				<xs:annotation>
+					<xs:documentation>Сельское поселение</xs:documentation>
+				</xs:annotation>
+			</xs:enumeration>
+			<xs:enumeration value="с/мо">
+				<xs:annotation>
+					<xs:documentation>Сельское муниципальное образование</xs:documentation>
+				</xs:annotation>
+			</xs:enumeration>
+			<xs:enumeration value="массив">
+				<xs:annotation>
+					<xs:documentation>Массив</xs:documentation>
+				</xs:annotation>
+			</xs:enumeration>
+			<xs:enumeration value="п">
+				<xs:annotation>
+					<xs:documentation>Посёлок</xs:documentation>
+				</xs:annotation>
+			</xs:enumeration>
+			<xs:enumeration value="местность">
+				<xs:annotation>
+					<xs:documentation>Местность</xs:documentation>
+				</xs:annotation>
+			</xs:enumeration>
+		</xs:restriction>
+	</xs:simpleType>
+</xs:schema>
