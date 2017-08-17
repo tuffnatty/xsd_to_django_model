@@ -184,12 +184,12 @@ def get_doc(el_def, name, model_name, doc_prefix=None):
             pass
     doc = chain(xpath(el_def, "xs:annotation/xs:documentation"),
                 xpath(el_def, "xs:complexType/xs:annotation/xs:documentation"))
-    doc = [RE_SPACES.sub(' ', d.text.strip())
-           .rstrip('.').replace(' )', ')').replace('\n\n', '\n')
-           for d in doc if d.text]
-    if doc:
-        return (doc_prefix or '') + '\n'.join(doc)
-    return None
+    doc = '\n'.join([RE_SPACES.sub(' ', d.text.strip())
+                     .rstrip('.').replace(' )', ')').replace('\n\n', '\n')
+                     for d in doc if d.text])
+    if doc_prefix:
+        return doc_prefix + (doc or name)
+    return doc or None
 
 
 def stringify(s):
@@ -344,13 +344,9 @@ class Model:
         if 'drop' in kwargs:
             return []
         options = kwargs.get('options', [])
-        try:
-            doc = kwargs['doc']
-        except KeyError:
-            doc = kwargs['name']
-        else:
-            if type(doc) is not list:
-                kwargs['doc'] = [doc]
+        doc = kwargs.get('doc', None) or [kwargs['name']]
+        if type(doc) is not list:
+            kwargs['doc'] = [doc]
         doc = stringify(doc)
         if options and not RE_KWARG.match(options[0]):
             if options[0][0] == '"':
@@ -528,9 +524,10 @@ class Model:
                 rel, ct2_def = (one_to_many, None)
             kwargs = {'one_to_many': True}
         self.builder.make_model(rel, ct2_def, add_fields=[fk])
+        doc = get_doc(el_def, name, self.model_name)
         self.add_field(dotted_name=dotted_name,
                        name=name,
-                       doc=[get_doc(el_def, name, self.model_name)],
+                       doc=[doc] if doc else [],
                        options=[get_model_for_type(rel)],
                        reverse_id_name=reverse_name + "_id",
                        **kwargs)
@@ -1015,7 +1012,7 @@ class XSDModelBuilder:
             this_model.add_field(dotted_name=dotted_name,
                                  name=name,
                                  django_field='models.ManyToManyField',
-                                 doc=[doc],
+                                 doc=[doc] if doc else [],
                                  options=options)
             return
 
@@ -1050,7 +1047,7 @@ class XSDModelBuilder:
             if (ct2_def is not None and flatten_prefix) or flatten:
                 o = {
                     'prefix': '%s.' % dotted_name,
-                    'doc_prefix': '%s::' % doc,
+                    'doc_prefix': '%s::' % (doc or name),
                     'attrs': attrs,
                 }
                 if ct2_def is not None:
@@ -1124,11 +1121,11 @@ class XSDModelBuilder:
             }
 
         choices = field.get('choices', [])
-        if any(c[0] not in doc for c in choices):
-            doc += '\n' + '\n'.join(
+        if any(c[0] not in (doc or '') for c in choices):
+            doc = (doc + '\n' if doc else '') + '\n'.join(
                 '%s%s' % (c[0], ' - %s' % c[1] if c[1] != c[0] else '')
                 for c in choices
-                if '\n%s - ' % c[0] not in doc
+                if '\n%s - ' % c[0] not in (doc or '')
             )
 
         over_class = override_field_class(model_name, typename, name)
@@ -1172,11 +1169,14 @@ class XSDModelBuilder:
             options.append('unique=True')
         elif match(name, model, 'index_fields'):
             options.append('db_index=True')
+        elif (match(name, model, 'gin_index_fields') or
+              match(name, model, 'plain_index_fields')):
+            options.append('db_index=INDEX_IN_META')
         override_field_options(name, options, model)
 
         this_model.add_field(dotted_name=dotted_name,
                              name=name,
-                             doc=[doc],
+                             doc=[doc] if doc else [],
                              django_field=field['name'],
                              options=options,
                              coalesce=coalesce_target,
