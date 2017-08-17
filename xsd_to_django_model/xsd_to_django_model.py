@@ -425,6 +425,13 @@ class Model:
         if self.abstract and not any(option for option in meta
                                      if option.startswith('abstract = ')):
             meta.append('abstract = True')
+        indexes = \
+            ['GinIndex(["%s"])' % f
+             for f in model_options.get('gin_index_fields', [])] + \
+            ['models.Index(["%s"])' % f
+             for f in model_options.get('plain_index_fields', [])]
+        if indexes:
+            meta.append('indexes = [%s]' % ', '.join(indexes))
 
         if len(meta):
             meta = '\n\n    class Meta:\n%s' % '\n'.join('        %s' % x
@@ -1692,6 +1699,10 @@ class XSDModelBuilder:
         if self.have_json:
             models_file.write('from django.contrib.postgres.fields import'
                               ' ArrayField, JSONField\n')
+        if any('gin_index_fields' in o for o in MODEL_OPTIONS.values()):
+            models_file.write('from django.contrib.postgres.indexes import'
+                              ' GinIndex\n')
+
         models_file.write('\n')
         if len(self.fields):
             models_file.write(
@@ -1700,6 +1711,9 @@ class XSDModelBuilder:
                                                for f in self.fields.values()))
             )
         models_file.write(IMPORTS + '\n\n\n')
+        if any('gin_index_fields' in o or 'plain_index_fields' in o
+               for o in MODEL_OPTIONS.values()):
+            models_file.write('INDEX_IN_META = False  # A handy marker\n\n\n')
         for model_name in sorted(self.models.keys()):
             self.write_model(self.models[model_name], models_file)
 
