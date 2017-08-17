@@ -1090,7 +1090,8 @@ class XSDModelBuilder:
         if match(name, model, 'array_fields'):
             if ct2_def is not None:
                 final_el_attr_def = xpath(ct2_def,
-                                          "(xs:sequence|xs:all)/xs:element")[0]
+                                          "(xs:sequence|xs:all)/xs:element|"
+                                          "xs:attribute")[0]
                 final_type = self.get_element_type(final_el_attr_def)
             else:
                 assert el_def.get('maxOccurs', '1') == 'unbounded', (
