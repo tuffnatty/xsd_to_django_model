@@ -4,6 +4,7 @@ Generate Django models from an XSD schema description (and a bunch of hints)
 ## TODO
 * More examples.
 * More heuristics.
+* Python 3 support.
 * `xs:complexType/(xs:simpleContent|xs:complexContent)/xs:restriction` support.
 * `xs:simpleType/xs:union` support.
 * ...?
