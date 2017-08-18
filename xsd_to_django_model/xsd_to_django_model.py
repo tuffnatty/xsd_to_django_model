@@ -407,10 +407,13 @@ class Model:
                                  if '%(serialized_options)' in r), None)
                 if tmpl_row and len(tmpl_row % tmpl_ctx) > 80:
                     cmt = '# ' if tmpl_row[4] == '#' else ''
-                    joiner = ',\n    %s    ' % cmt
+                    indent = '    %s    ' % cmt
+                    joiner = ',\n%s' % indent
                     tmpl_ctx['serialized_options'] = \
                         '\n    %s    %s\n    %s' \
-                        % (cmt, joiner.join(options), cmt)
+                        % (cmt, joiner.join(o.replace('\n', '\n%s' % indent)
+                                            for o in options),
+                           cmt)
                 kwargs['code'] += FIELD_TMPL[tmpl_key] % tmpl_ctx
 
     def build_code(self):
