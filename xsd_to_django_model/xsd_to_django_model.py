@@ -431,11 +431,12 @@ class Model:
             ['models.Index(["%s"])' % f
              for f in model_options.get('plain_index_fields', [])]
         if indexes:
-            meta.append('indexes = [%s]' % ', '.join(indexes))
+            meta.append('indexes = [\n            %s\n        ]'
+                        % ',\n            '.join(sorted(indexes)))
 
         if len(meta):
             meta = '\n\n    class Meta:\n%s' % '\n'.join('        %s' % x
-                                                         for x in meta)
+                                                         for x in sorted(meta))
         else:
             meta = ''
 
