@@ -68,6 +68,7 @@ It may define the following module-level variables:
         },
     ],
     ```
+  * `add_json_attrs` - a mapping of extra JSON attributes to their documentation.
   * `array_fields` - a `list` of XSD fields for which `django.contrip.postgres.fields.ArrayField`s should be generated. The corresponding `xs:element` should either have `maxOccurs="unbounded"` or contain an `xs:complexType` whose only member has `maxOccurs="unbounded"`.
   * `coalesce_fields` - a `dict` mapping generated field names to actual field names in Django models, using regular expressions, e.g.:
     ```python

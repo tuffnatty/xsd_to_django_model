@@ -27,6 +27,7 @@ import codecs
 from copy import deepcopy
 import datetime
 import decimal
+from functools import wraps
 from itertools import chain
 import json
 import logging
@@ -115,6 +116,19 @@ logger = logging.getLogger(__name__)
 depth = -1
 
 
+def memoize(function):
+    memo = {}
+    @wraps(function)
+    def wrapper(*args):
+        if args in memo:
+            return memo[args]
+        else:
+            rv = function(*args)
+            if rv:
+                memo[args] = rv
+            return rv
+    return wrapper
+
 def cat(seq):
     return tuple(chain.from_iterable(seq))
 
@@ -131,6 +145,7 @@ def xpath_one(root, path, **kwargs):
     return next(iter(xpath(root, path, **kwargs)), None)
 
 
+@memoize
 def get_model_for_type(name):
     for expr, sub in TYPE_MODEL_MAP.iteritems():
         if re.match(expr + '$', name):
@@ -138,6 +153,7 @@ def get_model_for_type(name):
     return None
 
 
+@memoize
 def get_a_type_for_model(name):
     plus_name = '+%s' % name
     for expr, sub in TYPE_MODEL_MAP.iteritems():
@@ -146,6 +162,7 @@ def get_a_type_for_model(name):
     return None
 
 
+@memoize
 def get_merge_for_type(name):
     for expr, sub in TYPE_MODEL_MAP.iteritems():
         if re.match(expr + '$', name):
@@ -153,6 +170,7 @@ def get_merge_for_type(name):
     return False
 
 
+@memoize
 def get_opt(model_name, typename=None):
     opt = MODEL_OPTIONS.get(model_name, {})
     if not typename:
@@ -224,9 +242,8 @@ def camelcase_to_underscore(name):
 
 
 def coalesce(name, model):
-    fulldict = dict(GLOBAL_MODEL_OPTIONS.get('coalesce_fields', {}),
-                    **model.get('coalesce_fields', {}))
-    for expr, sub in fulldict.iteritems():
+    for expr, sub in chain(GLOBAL_MODEL_OPTIONS.get('coalesce_fields', {}).iteritems(),
+                           model.get('coalesce_fields', {}).iteritems()):
         match = re.match(expr + '$', name)
         if match:
             return re.sub(expr, sub, name)
@@ -244,22 +261,27 @@ def match(name, model, kind):
 def override_field_options(field_name, options, model_options):
     add_field_options = dict(GLOBAL_MODEL_OPTIONS.get('field_options', {}),
                              **model_options.get('field_options', {}))
-    if field_name in add_field_options:
-        for option in add_field_options[field_name]:
+    for add_field_options in (GLOBAL_MODEL_OPTIONS.get('field_options', {}),
+                              model_options.get('field_options', {})):
+        this_field_add_options = add_field_options.get(field_name, [])
+        for option in this_field_add_options:
             option_key, _ = option.split('=', 1)
             for n, old_option in enumerate(options):
                 if old_option.split('=', 1)[0] == option_key:
                     del options[n]
                     break
-        options += add_field_options[field_name]
+        options += [o for o in this_field_add_options
+                    if o.split('=', 1)[1] != 'None']
 
 
+@memoize
 def override_field_class(model_name, typename, name):
     return get_opt(model_name, typename) \
         .get('override_field_class', {}) \
         .get(name)
 
 
+@memoize
 def parse_default(basetype, default):
     if basetype == "xs:boolean":
         assert default in ("true", "false"), (
@@ -372,6 +394,7 @@ class Model:
 
             final_django_field = kwargs.get('django_field')
             options = self.normalize_field_options(kwargs)
+            kwargs['options'] = options
             kwargs['wrap_options'] = 'null=True' if 'wrap' in kwargs else ''
             if final_django_field == 'models.CharField' and \
                     not any(o.startswith('max_length=') for o in options):
@@ -383,7 +406,6 @@ class Model:
                 if final_django_field == 'models.BooleanField':
                     final_django_field = 'models.NullBooleanField'
                 options = [o for o in options if o != 'null=True']
-            kwargs['options'] = options
 
             if kwargs.get('coalesce'):
                 kwargs['code'] = FIELD_TMPL['_coalesce'] % kwargs
@@ -418,10 +440,10 @@ class Model:
 
     def build_code(self):
         model_options = get_opt(self.model_name)
-
-        meta = [template % {'model_lower': self.model_name.lower()}
-                for template in (model_options.get('meta', []) +
-                                 GLOBAL_MODEL_OPTIONS.get('meta', []))]
+        meta_ctx = {'model_lower': self.model_name.lower()}
+        meta = [template % meta_ctx
+                for template in chain(model_options.get('meta', []),
+                                      GLOBAL_MODEL_OPTIONS.get('meta', []))]
         if self.doc and not any(option for option in meta
                                 if option.startswith('verbose_name = ')):
             meta.append('verbose_name = %s' % stringify(self.doc))
@@ -497,6 +519,10 @@ class Model:
                 if f['name'] == django_field:
                     kwargs['django_basefield'] = f['parent']
                     break
+            else:
+                def set_base(f):
+                    kwargs['django_basefield'] = f['parent']
+                self.builder.on_field_class(django_field, set_base)
 
         self.build_field_code(kwargs)
 
@@ -577,6 +603,7 @@ class XSDModelBuilder:
         self.models = {}
         self.fields = {}
         self.have_json = False
+        self.on_field_class_cb = {}
         ns_map = []
         self.tree = parse_xmlns(infile, ns_map)
         root = self.tree.getroot()
@@ -591,7 +618,8 @@ class XSDModelBuilder:
                 ns = None
                 for k, v in ns_map:
                     if v == ns_uri:
-                        ns = k + ':'
+                        if k:
+                            ns = k + ':'
                         break
                 if not ns or ns not in ns_list:
                     loc = imp.get('schemaLocation')
@@ -718,8 +746,9 @@ class XSDModelBuilder:
                                    for c in choices)
         parent = self.get_digits_options(restrict_def, options, parent)
         if len(validators):
-            options['validators'] = '[%s]' % ', '.join('validators.%s' % x
-                                                       for x in validators)
+            options['validators'] = \
+                '[%s]' % ', '.join('validators.%s' % x
+                                   for x in sorted(validators))
         if parent == 'CharField' and int(options.get('max_length', 1000)) > 500:
             # Some data does not fit, even if XSD says it should
             parent = 'TextField'
@@ -793,13 +822,13 @@ class XSDModelBuilder:
                     choices = self.get_field_choices_from_simpletype(st_def)
                 else:
                     choices = None
-                self.make_field(typename, doc, parent, options, choices)
+                self.make_field_class(typename, doc, parent, options, choices)
         st_def = xpath_one(self.tree, "//xs:simpleType[@name=$n]", n=typename)
         orig_typename = ("xs:string" if st_def is None
                          else self.get_simpletype_primitive(st_def))
         return orig_typename, self.fields[typename]
 
-    def make_field(self, typename, doc, parent, options, choices):
+    def make_field_class(self, typename, doc, parent, options, choices):
         name = '%sField' \
             % typename.replace(':', '_').replace('.', '_').replace('-', '_')
         code = 'class %(name)s(models.%(parent)s):\n' % {
@@ -817,7 +846,7 @@ class XSDModelBuilder:
             code += '    def __init__(self, *args, **kwargs):\n' + \
                 ''.join('        if "%s" not in kwargs:'
                         ' kwargs["%s"] = %s\n' % (k, k, v)
-                        for k, v in options.items()) + \
+                        for k, v in sorted(options.items())) + \
                 '        super(%s, self).__init__(*args, **kwargs)\n\n' % name
         if not doc and not len(options):
             if parent is None:
@@ -835,6 +864,11 @@ class XSDModelBuilder:
         }
         if choices:
             self.fields[typename]['choices'] = choices
+        for cb in self.on_field_class_cb.get(name, []):
+            cb(self.fields[typename])
+
+    def on_field_class(self, name, func):
+        self.on_field_class_cb.setdefault(name, []).append(func)
 
     def simplify_ns(self, typename):
         ns = get_ns(typename)
@@ -864,8 +898,7 @@ class XSDModelBuilder:
                             prefix='',
                             doc_prefix='',
                             attrs=None,
-                            null=False,
-                            is_root=False):
+                            null=False):
         seq_def, choice_def = seq_or_choice
         if choice_def is not None:
             fields = self.models[typename].fields
@@ -874,8 +907,7 @@ class XSDModelBuilder:
                              prefix=prefix,
                              doc_prefix=doc_prefix,
                              attrs=attrs,
-                             null=True,
-                             is_root=is_root)
+                             null=True)
             if len(fields) > n_start:
                 fields[n_start]['code'] = ('    # xs:choice start\n' +
                                            fields[n_start]['code'])
@@ -885,8 +917,7 @@ class XSDModelBuilder:
                              prefix=prefix,
                              doc_prefix=doc_prefix,
                              attrs=attrs,
-                             null=null,
-                             is_root=is_root)
+                             null=null)
         return ''
 
     def write_attributes(self, ct_def, typename,
@@ -998,11 +1029,14 @@ class XSDModelBuilder:
             this_model.add_field(dotted_name=dotted_name, parent_field=True)
             return
 
-        coalesce_target = coalesce(name, model)
-        if coalesce_target:
-            if name == dotted_name:
-                coalesced_dotted_name = coalesce_target
-            name = coalesce_target
+        if match(name, model, 'drop_after_processing_fields'):
+            coalesce_target = None
+        else:
+            coalesce_target = coalesce(name, model)
+            if coalesce_target:
+                if name == dotted_name:
+                    coalesced_dotted_name = coalesce_target
+                name = coalesce_target
 
         doc = get_doc(el_attr_def, name, model_name, doc_prefix=doc_prefix)
 
@@ -1068,7 +1102,8 @@ class XSDModelBuilder:
                                    ' while flattening prefix %s',
                                    o['prefix'])
 
-        assert len(name) <= 63, \
+        assert (len(name) <= 63 or
+                match(name, model, 'drop_after_processing_fields')), \
             "%s hits PostgreSQL column name 63 char limit!" % name
 
         basetype = None
@@ -1201,8 +1236,7 @@ class XSDModelBuilder:
                     prefix='',
                     doc_prefix='',
                     attrs=None,
-                    null=False,
-                    is_root=False):
+                    null=False):
         this_model = self.models[typename]
         null = (null or get_null(seq_def))
         seqs = []
@@ -1235,12 +1269,6 @@ class XSDModelBuilder:
 
         if len(xpath(seq_def, "xs:any")):
             attrs[''] = "Any additional elements"
-
-        if len(attrs) and is_root:
-            this_model.add_field(name='attrs',
-                                 django_field='JSONField',
-                                 attrs=attrs)
-            self.have_json = True
 
     def make_model(self, typename, ct_def=None, add_fields=None):
         global depth
@@ -1378,15 +1406,25 @@ class XSDModelBuilder:
 
         if not model.get('custom', False):
             self.write_seq_or_choice((seq_def, choice_def), typename,
-                                     attrs=attrs, is_root=True)
+                                     attrs=attrs)
 
-        for f in model.get('add_fields', []) + (add_fields or []):
-            if f['django_field'] in ('models.ForeignKey',
-                                     'models.ManyToManyField'):
+        for f in chain(model.get('add_fields', []),
+                       add_fields or []):
+            if f.get('django_field') in ('models.ForeignKey',
+                                         'models.ManyToManyField'):
                 dep_name = get_a_type_for_model(f['options'][0])
                 if dep_name:
                     self.make_model(dep_name)
             this_model.add_field(**f)
+
+        for attr_name, attr_doc in model.get('add_json_attrs', {}).iteritems():
+            attrs[attr_name] = attr_doc
+
+        if len(attrs):
+            this_model.add_field(name='attrs',
+                                 django_field='JSONField',
+                                 attrs=attrs)
+            self.have_json = True
 
         for f in this_model.fields:
             if f.get('django_field') in ('models.ForeignKey',
@@ -1441,7 +1479,7 @@ class XSDModelBuilder:
             attrs1 = f1['attrs']
             attrs2 = f2['attrs']
             attrs = {}
-            for key in sorted(set(attrs1.keys() + attrs2.keys())):
+            for key in set(chain(attrs1.iterkeys(), attrs2.iterkeys())):
                 if key in attrs1 and key in attrs2:
                     attrs[key] = '|'.join(squeeze_docs(cat(a[key].split('|')
                                                            for a in (attrs1,
@@ -1456,11 +1494,11 @@ class XSDModelBuilder:
         def merge_field_docs(model1, field1, model2, field2):
             if 'doc' not in field1 and 'doc' not in field2:
                 return
-            merged = squeeze_docs(field1['doc'] + field2['doc'])
-            if field1['doc'] != merged:
+            merged = squeeze_docs(field1.get('doc', []) + field2.get('doc', []))
+            if field1.get('doc', []) != merged:
                 field1['doc'] = merged
                 model1.build_field_code(field1, force=True)
-            if field2['doc'] != merged:
+            if field2.get('doc', []) != merged:
                 field2['doc'] = merged
                 if model2:
                     model2.build_field_code(field2, force=True)
@@ -1579,12 +1617,13 @@ class XSDModelBuilder:
 
         def normalize_code(s):
             s = s.replace('..', '.')
-            s = re.sub(r'\n?    # xs:choice (start|end)\n?', '', s)
-            s = re.sub(r'\n?    # (NULL|Only) in [^\n]+\n', '', s)
-            s = re.sub(r'\n?    # [^\n]+ field coalesces to [^\n]+\n', '', s)
-            s = re.sub(r'\n?    # The original [^\n]+\n', '', s)
-            s = re.sub(r',\s+(#\s+)?related_name="[^"]+"', '', s)
-            s = re.sub(r',\s+[a-z_]+=None\b', '', s)
+            s = re.sub(r'(\n?    # xs:choice (start|end)\n?'
+                       r'|\n?    # (NULL|Only) in [^\n]+\n'
+                       r'|\n?    # [^\n]+ field coalesces to [^\n]+\n'
+                       r'|\n?    # The original [^\n]+\n'
+                       r'|,\s+(#\s+)?related_name="[^"]+"'
+                       r'|,\s+[a-z_]+=None\b)',
+                       '', s)
             return s
 
         def unify_special_cases(field1, field2):
