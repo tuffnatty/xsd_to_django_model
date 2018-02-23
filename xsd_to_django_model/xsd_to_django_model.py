@@ -107,6 +107,7 @@ RE_SPACES = re.compile(r'  +')
 RE_KWARG = re.compile(r'^[a-zi0-9_]+=')
 RE_CAMELCASE_TO_UNDERSCORE_1 = re.compile(r'(.)([A-Z][a-z]+)')
 RE_CAMELCASE_TO_UNDERSCORE_2 = re.compile(r'([a-z0-9])([A-Z])')
+RE_RELATED_FIELD = re.compile(r'^models\.(ForeignKey|ManyToManyField)$')
 
 
 logging.basicConfig(level=logging.INFO)
@@ -488,12 +489,12 @@ class Model:
 
     def add_field(self, **kwargs):
         def fix_related_name(m, django_field, kwargs):
-            if django_field in ('models.ManyToManyField', 'models.ForeignKey') \
+            if RE_RELATED_FIELD.match(django_field) \
                     and not any(o.startswith('related_name=')
                                 for o in kwargs['options']):
                 while m:
                     for f in m.fields:
-                        if f.get('django_field') == django_field and \
+                        if RE_RELATED_FIELD.match(f.get('django_field')) and \
                                f['options'][0] == kwargs['options'][0] and \
                                f['name'] != kwargs['name']:
                             kwargs['options'].append(
