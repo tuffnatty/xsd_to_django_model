@@ -494,7 +494,7 @@ class Model:
                                 for o in kwargs['options']):
                 while m:
                     for f in m.fields:
-                        if RE_RELATED_FIELD.match(f.get('django_field')) and \
+                        if RE_RELATED_FIELD.match(f.get('django_field', '')) and \
                                f['options'][0] == kwargs['options'][0] and \
                                f['name'] != kwargs['name']:
                             kwargs['options'].append(
