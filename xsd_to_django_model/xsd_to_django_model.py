@@ -461,8 +461,9 @@ class Model:
                         % ',\n            '.join(sorted(indexes)))
 
         if len(meta):
-            meta = '\n\n    class Meta:\n%s' % '\n'.join('        %s' % x
-                                                         for x in sorted(meta))
+            meta = ('\n\n    class Meta%s:\n%s' %
+                    (('(%s.Meta)' % self.parent) if self.parent else '',
+                     '\n'.join('        %s' % x for x in sorted(meta))))
         else:
             meta = ''
 
