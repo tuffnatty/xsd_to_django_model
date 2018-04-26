@@ -509,10 +509,18 @@ class Model:
                             return
                     m = m.parent_model
 
+        if not kwargs:
+            return
+
         if 'name' in kwargs and match(kwargs['name'],
                                       get_opt(self.model_name, self.type_name),
                                       'drop_after_processing_fields'):
             return
+
+        if kwargs.get('one_to_one') or kwargs.get('one_to_many'):
+            reverse_name = camelcase_to_underscore(self.model_name)
+            kwargs = dict(kwargs,
+                          reverse_id_name=reverse_name + "_id")
 
         if 'django_field' in kwargs:
             django_field = kwargs['django_field']
@@ -532,46 +540,23 @@ class Model:
 
         self.fields.append(kwargs)
 
-    def add_reverse_field(self,
-                          dotted_name=None,
-                          one_to_one=False,
-                          one_to_many=False,
-                          typename=None,
-                          name=None,
-                          el_def=None):
-        assert one_to_one or one_to_many, \
-            "add_reverse_field called without one_to_one or one_to_many"
-
-        reverse_name = camelcase_to_underscore(self.model_name)
-        fk = {
-            'name': reverse_name,
-            'options': [
-                "'%s'" % self.model_name,
-                'on_delete=models.CASCADE',
-                'related_name="%s"' % name,
-            ],
-        }
-        if one_to_one:
-            fk['django_field'] = 'models.OneToOneField'
-            rel, ct2_def = self.builder.get_n_to_one_relation(typename,
-                                                              name, el_def)
-            kwargs = {'one_to_one': True}
-        elif one_to_many:
-            fk['django_field'] = 'models.ForeignKey'
-            if type(one_to_many) == bool:
-                rel, ct2_def = self.builder.get_n_to_many_relation(typename,
-                                                                   name, el_def)
-            else:
-                rel, ct2_def = (one_to_many, None)
-            kwargs = {'one_to_many': True}
-        self.builder.make_model(rel, ct2_def, add_fields=[fk])
-        doc = get_doc(el_def, name, self.model_name)
-        self.add_field(dotted_name=dotted_name,
-                       name=name,
-                       doc=[doc] if doc else [],
-                       options=[get_model_for_type(rel)],
-                       reverse_id_name=reverse_name + "_id",
-                       **kwargs)
+    def make_related_model(self,
+                           name=None,
+                           one_to_one=False,
+                           one_to_many=False,
+                           rel=None,
+                           **kwargs):
+        related_typename, ct_def = rel
+        fk = dict(name=camelcase_to_underscore(self.model_name),
+                  options=[
+                      "'%s'" % self.model_name,
+                      'on_delete=models.CASCADE',
+                      'related_name="%s"' % name,
+                  ],
+                  django_field=('models.OneToOneField' if one_to_one
+                                else 'models.ForeignKey'))
+        self.builder.make_model(related_typename, ct_def, add_fields=[fk])
+        return get_model_for_type(related_typename)
 
     def get(self, dotted_name=None, name=None, **kwargs):
         if dotted_name and name:
@@ -931,6 +916,7 @@ class XSDModelBuilder:
                          null=False):
         if ct_def is None:
             return
+        this_model = self.models[typename]
         attr_defs = []
         for group_def in xpath(ct_def, "xs:attributeGroup"):
             group_def = resolve_attr_group_ref(self.tree, group_def)
@@ -940,12 +926,12 @@ class XSDModelBuilder:
             dotted_name = '%s@%s' % (prefix, attr_name)
             name = '%s%s' % (prefix.replace('.', '_'), attr_name)
             use_required = (attr_def.get("use") == "required")
-            self.make_a_field(typename, name, dotted_name,
-                              attr_def=attr_def,
-                              prefix=prefix,
-                              doc_prefix=doc_prefix,
-                              attrs=attrs,
-                              null=null or not use_required)
+            this_model.add_field(**self.make_a_field(typename, name, dotted_name,
+                                                     attr_def=attr_def,
+                                                     prefix=prefix,
+                                                     doc_prefix=doc_prefix,
+                                                     attrs=attrs,
+                                                     null=null or not use_required))
         if len(xpath(ct_def, "xs:anyAttribute")):
             attrs[''] = "Any additional attributes"
 
@@ -954,18 +940,25 @@ class XSDModelBuilder:
             el2_def = el_def
             el2_name = name
         else:
-            el2_def = xpath_one(self.get_element_complex_type(el_def),
+            ct_def = self.get_element_complex_type(el_def)
+            el2_def = xpath_one(ct_def,
                                 "(xs:sequence|xs:all)/xs:element[@maxOccurs=$n]",
                                 n='unbounded')
             if el2_def is not None:
                 el2_def = resolve_el_ref(self.tree, el2_def)
                 el2_name = '%s_%s' % (name, el2_def.get("name"))
             else:
+                el2_def = xpath_one(ct_def, "(xs:sequence|xs:all)/xs:element")
+                if el2_def is not None and \
+                        name == el2_def.get("name") + 's' and \
+                        not len(xpath(el2_def, "./following-sibling::xs:element")):
+                    el2_def = resolve_el_ref(self.tree, el2_def)
+                    el2_name = '%s_%s' % (name, el2_def.get("name"))
+                else:
+                    el2_name = name
                 logger.warning("no maxOccurs=unbounded in %s,"
                                " pretending it's unbounded",
-                               el_def.get("name"))
-                el2_def = el_def
-                el2_name = name
+                               el2_name)
 
         ct2_def = self.get_element_complex_type(el2_def)
         assert ct2_def is not None, \
@@ -1027,11 +1020,9 @@ class XSDModelBuilder:
         coalesced_dotted_name = dotted_name
 
         if match(name, model, 'drop_fields'):
-            this_model.add_field(dotted_name=dotted_name, drop=True)
-            return
+            return dict(dotted_name=dotted_name, drop=True)
         elif model.get('parent_field') == name:
-            this_model.add_field(dotted_name=dotted_name, parent_field=True)
-            return
+            return dict(dotted_name=dotted_name, parent_field=True)
 
         if match(name, model, 'drop_after_processing_fields'):
             coalesce_target = None
@@ -1054,34 +1045,44 @@ class XSDModelBuilder:
             self.make_model(rel, ct2_def)
             options = [get_model_for_type(rel)]
             override_field_options(name, options, model)
-            this_model.add_field(dotted_name=dotted_name,
-                                 name=name,
-                                 django_field='models.ManyToManyField',
-                                 doc=[doc] if doc else [],
-                                 options=options)
-            return
+            return dict(dotted_name=dotted_name,
+                        name=name,
+                        django_field='models.ManyToManyField',
+                        doc=[doc] if doc else [],
+                        options=options)
 
         elif match(name, model, 'one_to_many_fields'):
             overrides = model.get('one_to_many_field_overrides', {})
-            this_model.add_reverse_field(dotted_name=dotted_name,
-                                         one_to_many=overrides.get(name, True),
-                                         typename=typename,
-                                         name=name,
-                                         el_def=el_def)
-            return
+            one_to_many = overrides.get(name, True)
+            field = dict(dotted_name=dotted_name,
+                         one_to_many=one_to_many,
+                         typename=typename,
+                         name=name,
+                         doc=[doc] if doc else [])
+            rel = (
+                self.get_n_to_many_relation(typename, name, el_def)
+                if type(one_to_many) is bool
+                else (one_to_many, None)
+            )
+            field['options'] = \
+                [this_model.make_related_model(rel=rel, **field)]
+            return field
 
         elif match(name, model, 'one_to_one_fields'):
-            this_model.add_reverse_field(dotted_name=dotted_name,
-                                         one_to_one=True,
-                                         typename=typename,
-                                         name=name,
-                                         el_def=el_def)
-            return
+            field = dict(dotted_name=dotted_name,
+                         one_to_one=True,
+                         typename=typename,
+                         name=name,
+                         doc=[doc] if doc else [])
+            rel = self.get_n_to_one_relation(typename, name, el_def)
+            field['options'] = \
+                [this_model.make_related_model(rel=rel, **field)]
+            return field
 
         elif match(name, model, 'json_fields'):
             if not match(name, model, 'drop_after_processing_fields'):
                 attrs[coalesced_dotted_name] = doc
-            return
+            return {}
 
         if el_def is not None:
             ct2_def = self.get_element_complex_type(el_def)
@@ -1208,6 +1209,7 @@ class XSDModelBuilder:
                     " array_fields, or json_fields" % (max_occurs, typename,
                                                        name, el_type)
                 )
+
         if name == model.get('primary_key', None):
             options.append('primary_key=True')
             this_model.number_field = name
@@ -1220,14 +1222,6 @@ class XSDModelBuilder:
             options.append('db_index=INDEX_IN_META')
         override_field_options(name, options, model)
 
-        this_model.add_field(dotted_name=dotted_name,
-                             name=name,
-                             doc=[doc] if doc else [],
-                             django_field=field['name'],
-                             options=options,
-                             coalesce=coalesce_target,
-                             **({'wrap': field['wrap']} if field.get('wrap', 0)
-                                else {}))
         if reference_extension:
             seq_or_choice2_def = self.get_seq_or_choice(ext2_def)
             self.write_seq_or_choice(seq_or_choice2_def, typename,
@@ -1235,6 +1229,14 @@ class XSDModelBuilder:
                                      doc_prefix=doc_prefix,
                                      attrs=attrs,
                                      null=null)
+
+        return dict({'wrap': field['wrap']} if field.get('wrap', 0) else {},
+                    dotted_name=dotted_name,
+                    name=name,
+                    doc=[doc] if doc else [],
+                    django_field=field['name'],
+                    options=options,
+                    coalesce=coalesce_target)
 
     def make_fields(self, typename, seq_def,
                     prefix='',
@@ -1264,12 +1266,12 @@ class XSDModelBuilder:
             dotted_name = prefix + el_name
             name = prefix.replace('.', '_') + el_name
 
-            self.make_a_field(typename, name, dotted_name,
-                              el_def=el_def,
-                              prefix=prefix,
-                              doc_prefix=doc_prefix,
-                              attrs=attrs,
-                              null=null or get_null(el_def))
+            this_model.add_field(**self.make_a_field(typename, name, dotted_name,
+                                                     el_def=el_def,
+                                                     prefix=prefix,
+                                                     doc_prefix=doc_prefix,
+                                                     attrs=attrs,
+                                                     null=null or get_null(el_def)))
 
         if len(xpath(seq_def, "xs:any")):
             attrs[''] = "Any additional elements"
@@ -1414,8 +1416,14 @@ class XSDModelBuilder:
 
         for f in chain(model.get('add_fields', []),
                        add_fields or []):
-            if f.get('django_field') in ('models.ForeignKey',
-                                         'models.ManyToManyField'):
+            related_typename = f.get('one_to_many') or f.get('one_to_one')
+            if related_typename:
+                assert type(related_typename) is not bool, \
+                    "one_to_many or one_to_one within add_fields should be a typename not bool"
+                f['options'] = \
+                    [this_model.make_related_model(rel=(related_typename, None), **f)]
+            elif f.get('django_field') in ('models.ForeignKey',
+                                           'models.ManyToManyField'):
                 dep_name = get_a_type_for_model(f['options'][0])
                 if dep_name:
                     self.make_model(dep_name)
