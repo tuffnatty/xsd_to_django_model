@@ -189,6 +189,8 @@ def get_opt(model_name, typename=None):
                     opt[k] = dict(v1, **v)
                 elif isinstance(v1, basestring) and isinstance(v, basestring):
                     opt[k] = v
+                elif k == 'add_fields':
+                    opt[k] = list(chain(v1, v))
                 else:
                     opt[k] = list(set(chain(v1, v)))
     return opt
