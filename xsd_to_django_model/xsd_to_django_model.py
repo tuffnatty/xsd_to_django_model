@@ -457,7 +457,9 @@ class Model:
             ['GinIndex(["%s"])' % f
              for f in model_options.get('gin_index_fields', [])] + \
             ['models.Index(["%s"])' % f
-             for f in model_options.get('plain_index_fields', [])]
+             for f in list(set(model_options.get('plain_index_fields', [])) -
+                           set(model_options.get('unique_fields', [])))
+             if f != model_options.get('primary_key')]
         if indexes:
             meta.append('indexes = [\n            %s\n        ]'
                         % ',\n            '.join(sorted(indexes)))
@@ -1100,7 +1102,7 @@ class XSDModelBuilder:
                     o['null'] = null or get_null(el_def)
                     simpletype_base = self.flatten_ct(ct2_def, typename, **o)
                     if not simpletype_base:
-                        return
+                        return {}
                     el_type = simpletype_base
                 else:
                     logger.warning('complexType not found'
@@ -1215,7 +1217,7 @@ class XSDModelBuilder:
             this_model.number_field = name
         elif match(name, model, 'unique_fields'):
             options.append('unique=True')
-        elif match(name, model, 'index_fields'):
+        if match(name, model, 'index_fields'):
             options.append('db_index=True')
         elif (match(name, model, 'gin_index_fields') or
               match(name, model, 'plain_index_fields')):
