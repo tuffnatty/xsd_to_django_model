@@ -1768,7 +1768,8 @@ class XSDModelBuilder:
                for o in MODEL_OPTIONS.values()):
             models_file.write('INDEX_IN_META = False  # A handy marker\n\n\n')
         for model_name in sorted(self.models.keys()):
-            self.write_model(self.models[model_name], models_file)
+            if not get_opt(model_name).get('skip_code'):
+                self.write_model(self.models[model_name], models_file)
 
         mapping = {}
         for m in self.models.values():
