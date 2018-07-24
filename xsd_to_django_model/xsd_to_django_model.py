@@ -1748,7 +1748,7 @@ class XSDModelBuilder:
         if model.written:
             return
         for dep in sorted(model.deps):
-            if dep != model.model_name:
+            if dep != model.model_name and not get_opt(dep).get('skip_code'):
                 self.write_model(self.models[dep], outfile)
         outfile.write(model.code.encode('utf-8'))
         model.written = True
