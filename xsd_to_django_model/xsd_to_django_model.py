@@ -471,9 +471,9 @@ class Model:
                                      if option.startswith('abstract = ')):
             meta.append('abstract = True')
         indexes = \
-            ['GinIndex(["%s"])' % f
+            ['GinIndex(fields=["%s"])' % f
              for f in model_options.get('gin_index_fields', [])] + \
-            ['models.Index(["%s"])' % f
+            ['models.Index(fields=["%s"])' % f
              for f in list(set(model_options.get('plain_index_fields', [])) -
                            set(model_options.get('unique_fields', [])))
              if f != model_options.get('primary_key')]
