@@ -58,6 +58,11 @@ try:
     from xsd_to_django_model_settings import IMPORTS
 except ImportError:
     IMPORTS = ''
+try:
+    from xsd_to_django_model_settings import DOC_PREPROCESSOR
+except ImportError:
+    DOC_PREPROCESSOR = ''
+
 
 BASETYPE_FIELD_MAP = {
     'xs:base64Binary': 'BinaryField',
@@ -208,6 +213,8 @@ def get_doc(el_def, name, model_name, doc_prefix=None):
     doc = '\n'.join([RE_SPACES.sub(' ', d.text.strip())
                      .rstrip('.').replace(' )', ')').replace('\n\n', '\n')
                      for d in doc if d.text])
+    if DOC_PREPROCESSOR:
+        doc = DOC_PREPROCESSOR(doc)
     if doc_prefix:
         return doc_prefix + (doc or name)
     return doc or None

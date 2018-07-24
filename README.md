@@ -160,7 +160,15 @@ It may define the following module-level variables:
   }
   ```
 
-* `IMPORTS` is a string inserted after the automatically generated `import`s in the output models file, e.g .:
+* `IMPORTS` is a string inserted after the automatically generated `import`s in the output models file, e.g.:
    ```python
    IMPORTS = "from mycooldjangofields import StarTopologyField"
+   ```
+
+* `DOC_PREPROCESSOR` is a function to preprocess documentation strings, e.g.:
+   ```python
+   def doc_preprocessor(s):
+       return s.replace('\n', ' ')
+
+   DOC_PREPROCESSOR = doc_preprocessor
    ```
