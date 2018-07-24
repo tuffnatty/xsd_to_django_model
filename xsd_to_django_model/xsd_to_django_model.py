@@ -366,8 +366,14 @@ class Model:
 
     def build_attrs_options(self, kwargs):
         if kwargs.get('name') == 'attrs':
+            # Include parent attrs in child model definition, pseudo-inheritance
+            attrs = next((f['attrs'] for f in (self.parent_model.fields
+                                               if self.parent_model else [])
+                          if 'attrs' in f),
+                         {})
+            attrs.update(kwargs['attrs'])
             attrs_str = '\n'.join('%s [%s]\n' % x
-                                  for x in sorted(kwargs['attrs'].items()))
+                                  for x in sorted(attrs.items()))
             kwargs['doc'] = ['JSON attributes:\n%s' % attrs_str]
             kwargs['options'] = [
                 'null=True'
