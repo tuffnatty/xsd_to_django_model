@@ -717,8 +717,7 @@ class XSDModelBuilder:
                                     BASETYPE_FIELD_MAP[basetype],
                                     {})
         except KeyError:
-            if ':' not in basetype:
-                basetype = self.get_parent_ns(st_def) + basetype
+            basetype = self.nsify(basetype, st_def)
             doc, parent, options = self.get_field_data_from_type(basetype)
         assert type(options) is dict, \
             "options is not a dict while processing type %s" % basetype
@@ -801,8 +800,7 @@ class XSDModelBuilder:
                     'options': ['%s=%s' % (k, v) for k, v in options.items()],
                 }
             else:
-                if ':' not in typename:
-                    typename = self.get_parent_ns(el_def) + typename
+                typename = self.nsify(typename, el_def)
                 doc, parent, options = self.get_field_data_from_type(typename)
                 if parent is None:
                     if typename in BASETYPE_FIELD_MAP:
@@ -885,7 +883,7 @@ class XSDModelBuilder:
     def get_element_complex_type(self, el_def):
         el_type = self.get_element_type(el_def)
         if el_type:
-            el_type = self.get_parent_ns(el_def) + el_type
+            el_type = self.nsify(el_type, el_def)
             return xpath_one(self.tree, "//xs:complexType[@name=$n]", n=el_type)
         return xpath_one(el_def, "xs:complexType")
 
@@ -985,6 +983,10 @@ class XSDModelBuilder:
         rel = ct2_def.get("name") or ('%s.%s' % (typename, name))
         return rel, ct2_def
 
+    def nsify(self, typename, context_def):
+        return (typename if ':' in typename
+                else (self.get_parent_ns(context_def) + typename))
+
     def flatten_ct(self, ct_def, typename, **kwargs):
         if len(xpath(ct_def, "xs:simpleContent/xs:restriction")):
             logger.warning("xs:complexType[name=%s]/xs:simpleContent"
@@ -1001,7 +1003,7 @@ class XSDModelBuilder:
 
         if cext_def is not None:
             ct2_def = xpath(self.tree, "//xs:complexType[@name=$n]",
-                            n=cext_def.get("base"))[0]
+                            n=self.nsify(cext_def.get("base"), ct_def))[0]
             self.flatten_ct(ct2_def, typename, **kwargs)
 
         if ext_def is not None:
@@ -1385,8 +1387,7 @@ class XSDModelBuilder:
                         "no base attribute in extension in %s complexType"
                         % typename
                     )
-                    if ':' not in parent:
-                        parent = self.get_parent_ns(ext_def) + parent
+                    parent = self.nsify(parent, ext_def)
 
             if not parent:
                 parent_field = model.get('parent_field')
@@ -1765,11 +1766,11 @@ class XSDModelBuilder:
                               ' GinIndex\n')
 
         models_file.write('\n')
-        if len(self.fields):
+        fields = sorted(f['name'] for f in self.fields.values())
+        if len(fields):
             models_file.write(
                 'from .fields import \\\n        %s\n'
-                % ', \\\n        '.join(sorted(f['name']
-                                               for f in self.fields.values()))
+                % ', \\\n        '.join(fields)
             )
         models_file.write(IMPORTS + '\n\n\n')
         if any('gin_index_fields' in o or 'plain_index_fields' in o
