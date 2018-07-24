@@ -160,13 +160,16 @@ def get_model_for_type(name):
     return None
 
 
-@memoize
-def get_a_type_for_model(name):
-    plus_name = '+%s' % name
-    for expr, sub in TYPE_MODEL_MAP.iteritems():
-        if '(' not in expr and '\\' not in expr and sub in (name, plus_name):
-            return expr
-    return None
+def get_a_type_for_model(name, tree):
+    names = (name, '+%s' % name)
+    exprs = (expr for expr, sub in TYPE_MODEL_MAP.iteritems()
+             if ('(' not in expr and '\\' not in expr and sub in names))
+    typename = None
+    for expr in exprs:
+        typename = expr
+        if len(xpath(tree, "//xs:complexType[@name=$n]", n=typename)):
+            break
+    return typename
 
 
 @memoize
@@ -257,7 +260,7 @@ def coalesce(name, model):
                            model.get('coalesce_fields', {}).iteritems()):
         match = re.match(expr + '$', name)
         if match:
-            return re.sub(expr, sub, name)
+            return re.sub(expr + '$', sub, name)
     return None
 
 
@@ -456,7 +459,7 @@ class Model:
                 kwargs['code'] += FIELD_TMPL[tmpl_key] % tmpl_ctx
 
     def build_code(self):
-        model_options = get_opt(self.model_name)
+        model_options = get_opt(self.model_name, self.type_name)
         meta_ctx = {'model_lower': self.model_name.lower()}
         meta = [template % meta_ctx
                 for template in chain(model_options.get('meta', []),
@@ -1441,7 +1444,7 @@ class XSDModelBuilder:
                     [this_model.make_related_model(rel=(related_typename, None), **f)]
             elif f.get('django_field') in ('models.ForeignKey',
                                            'models.ManyToManyField'):
-                dep_name = get_a_type_for_model(f['options'][0])
+                dep_name = get_a_type_for_model(f['options'][0], self.tree)
                 if dep_name:
                     self.make_model(dep_name)
             this_model.add_field(**f)
