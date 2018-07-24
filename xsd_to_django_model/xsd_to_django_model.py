@@ -1119,9 +1119,9 @@ class XSDModelBuilder:
                                    ' while flattening prefix %s',
                                    o['prefix'])
 
-        assert (len(name) <= 63 or
-                match(name, model, 'drop_after_processing_fields')), \
-            "%s hits PostgreSQL column name 63 char limit!" % name
+        if not (len(name) <= 63 or
+                match(name, model, 'drop_after_processing_fields')):
+            logger.warning("%s hits PostgreSQL column name 63 char limit!" % name)
 
         basetype = None
         reference_extension = match(name, model, 'reference_extension_fields')
