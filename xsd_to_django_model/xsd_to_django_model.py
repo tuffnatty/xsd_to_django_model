@@ -81,6 +81,7 @@ BASETYPE_FIELD_MAP = {
     'xs:short': 'SmallIntegerField',
     'xs:string': 'CharField',
     'xs:token': 'CharField',
+    'xs:unsignedInt': 'BigIntegerField',
 }
 NS = {'xs': "http://www.w3.org/2001/XMLSchema"}
 
