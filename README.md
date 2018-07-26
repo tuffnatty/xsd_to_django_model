@@ -160,12 +160,12 @@ It may define the following module-level variables:
   }
   ```
 
-* `BASETYPE_OVERRIDES` is a `dict` mapping XSD type names to Django field to override default ones e.g.:
-```python
-BASETYPE_OVERRIDES = {
-    'xs:hexBinary': 'CharField',
-}
-```
+* `BASETYPE_OVERRIDES` is a `dict` mapping XSD base type names to Django field to override default ones, e.g.:
+  ```python
+  BASETYPE_OVERRIDES = {
+      'xs:hexBinary': 'CharField',
+  }
+  ```
 
 * `IMPORTS` is a string inserted after the automatically generated `import`s in the output models file, e.g.:
    ```python
