@@ -55,6 +55,10 @@ try:
 except ImportError:
     TYPE_OVERRIDES = {}
 try:
+    from xsd_to_django_model_settings import BASETYPE_OVERRIDES
+except ImportError:
+    BASETYPE_OVERRIDES = {}
+try:
     from xsd_to_django_model_settings import IMPORTS
 except ImportError:
     IMPORTS = ''
@@ -84,6 +88,9 @@ BASETYPE_FIELD_MAP = {
     'xs:token': 'CharField',
     'xs:unsignedInt': 'BigIntegerField',
 }
+
+BASETYPE_FIELD_MAP.update(BASETYPE_OVERRIDES)
+
 NS = {'xs': "http://www.w3.org/2001/XMLSchema"}
 
 FIELD_TMPL = {

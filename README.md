@@ -125,7 +125,7 @@ It may define the following module-level variables:
   * `methods` - a list of strings that are included as methods in the generated model class, e.g.:
     ```python
     'methods': [
-        '    def __unicode__(self): return "%s: %s" % (self.code, self.amount)', 
+        '    def __unicode__(self): return "%s: %s" % (self.code, self.amount)',
     ],
     ```
   * `null_fields` - a `list` of field names for which `null=True` Django model field option should be enforced.
@@ -159,6 +159,13 @@ It may define the following module-level variables:
       'xs:IDREF': ('A reference to xs:ID', 'CharField', {'max_length': 64}),
   }
   ```
+
+* `BASETYPE_OVERRIDES` is a `dict` mapping XSD type names to Django field to override default ones e.g.:
+```python
+BASETYPE_OVERRIDES = {
+    'xs:hexBinary': 'CharField',
+}
+```
 
 * `IMPORTS` is a string inserted after the automatically generated `import`s in the output models file, e.g.:
    ```python
