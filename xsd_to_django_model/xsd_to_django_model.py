@@ -73,6 +73,7 @@ BASETYPE_FIELD_MAP = {
     'xs:decimal': 'DecimalField',
     'xs:double': 'FloatField',
     'xs:gYearMonth': 'DateField',  # Really YYYY-MM
+    'xs:hexBinary': 'BinaryField',
     'xs:int': 'IntegerField',
     'xs:integer': 'IntegerField',
     'xs:long': 'BigIntegerField',
