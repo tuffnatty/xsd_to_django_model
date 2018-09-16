@@ -122,7 +122,8 @@ RE_KWARG = re.compile(r'^[a-zi0-9_]+=')
 RE_CAMELCASE_TO_UNDERSCORE_1 = re.compile(r'(.)([A-Z][a-z]+)')
 RE_CAMELCASE_TO_UNDERSCORE_2 = re.compile(r'([a-z0-9])([A-Z])')
 RE_RELATED_FIELD = re.compile(r'^models\.(ForeignKey|ManyToManyField)$')
-
+RE_RE_DECIMAL = re.compile(r'\\d\{(|(\d+),)(\d+)\}'
+                           r'\(?\\\.\\d\{(|(\d+),)(\d+)\}(\)\?)?')
 
 logging.basicConfig(level=logging.INFO)
 logger = logging.getLogger(__name__)
@@ -693,17 +694,26 @@ class XSDModelBuilder:
             match = re.match(r'\\d\{(\d+,)?(\d+)\}$', pattern)
             if match:
                 l = match.group(2)
+            else:
+                match = re.match(r'(\\d\{\d+\}\|)+\\d\{\d+\}$', pattern)
+                if match:
+                    l = max(int(match)
+                            for match in re.findall(r'\\d\{(\d+)\}', pattern))
         if l:
             options['max_length'] = int(l) * \
                     GLOBAL_MODEL_OPTIONS.get('charfield_max_length_factor', 1)
         elif enums:
             options['max_length'] = max([len(x) for x in enums])
 
-    def get_digits_options(self, restrict_def, options, parent):
+    def get_digits_options(self, restrict_def, options, parent, pattern):
         fraction_digits = xpath(restrict_def, "xs:fractionDigits/@value")
         total_digits = xpath(restrict_def, "xs:totalDigits/@value")
         if fraction_digits:
             options['decimal_places'] = fraction_digits[0]
+        elif pattern and parent == 'DecimalField':
+            match = RE_RE_DECIMAL.match(pattern)
+            if match:
+                options['decimal_places'] = match.group(6)
         if total_digits:
             if parent == 'DecimalField':
                 options['max_digits'] = total_digits[0]
@@ -713,12 +723,9 @@ class XSDModelBuilder:
 
     def get_field_choices_from_simpletype(self, st_def):
         enumerations = xpath(st_def, "xs:restriction/xs:enumeration")
-        choices = []
-        for enumeration in enumerations:
-            choices.append((enumeration.get('value'),
-                            (get_doc(enumeration, None, None) or
-                             enumeration.get('value'))))
-        return choices
+        return [(enumeration.get('value'),
+                 get_doc(enumeration, None, None) or enumeration.get('value'))
+                for enumeration in enumerations]
 
     def get_field_data_from_simpletype(self, st_def, el_def=None):
         if len(xpath(st_def, "xs:union")):
@@ -759,7 +766,7 @@ class XSDModelBuilder:
             options['choices'] = \
                 '[%s]' % ', '.join('("%s", %s)' % (c[0], stringify(c[1]))
                                    for c in choices)
-        parent = self.get_digits_options(restrict_def, options, parent)
+        parent = self.get_digits_options(restrict_def, options, parent, pattern)
         if len(validators):
             options['validators'] = \
                 '[%s]' % ', '.join('validators.%s' % x
