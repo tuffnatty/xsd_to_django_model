@@ -981,12 +981,16 @@ class XSDModelBuilder:
                 el2_name = '%s_%s' % (name, el2_def.get("name"))
             else:
                 el2_def = xpath_one(ct_def, "(xs:sequence|xs:all)/xs:element")
-                if el2_def is not None and \
-                        name == el2_def.get("name") + 's' and \
-                        not len(xpath(el2_def, "./following-sibling::xs:element")):
+                if (
+                    el2_def is not None and
+                    name == el2_def.get("name") + 's' and
+                    (len(xpath(el2_def, "./following-sibling::xs:element")) +
+                     len(xpath(el2_def, "./following-sibling::xs:attribute")) == 0)
+                ):
                     el2_def = resolve_el_ref(self.tree, el2_def)
                     el2_name = '%s_%s' % (name, el2_def.get("name"))
                 else:
+                    el2_def = el_def
                     el2_name = name
                 logger.warning("no maxOccurs=unbounded in %s,"
                                " pretending it's unbounded",
