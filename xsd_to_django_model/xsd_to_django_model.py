@@ -1212,8 +1212,11 @@ class XSDModelBuilder:
                                                '%s.%s' % (typename, name))
         else:
             if rel != '%s.%s' % (typename, name):
-                ct2_def = xpath(self.tree, "//xs:complexType[@name=$n]",
-                                n=rel)[0]
+                ct2_defs = xpath(self.tree, "//xs:complexType[@name=$n]", n=rel)
+                if len(ct2_defs):
+                    ct2_def = ct2_defs[0]
+                else:
+                    ct2_def = self.get_n_to_one_relation(typename, name, el_def)[1]
             else:
                 rel, ct2_def = self.get_n_to_one_relation(typename, name,
                                                           el_def)
