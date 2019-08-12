@@ -13,7 +13,7 @@ setup(
     description='Generate Django models from an XSD schema description (and a bunch of hints)',
     packages=['xsd_to_django_model'],
     platforms='any',
-    install_requires=['docopt', 'lxml'],
+    install_requires=['docopt', 'lxml', 'six'],
     classifiers=[
         'Programming Language :: Python',
         'Development Status :: 4 - Beta',
