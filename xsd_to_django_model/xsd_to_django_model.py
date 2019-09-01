@@ -1808,7 +1808,8 @@ class XSDModelBuilder:
         for dep in sorted(model.deps):
             if dep != model.model_name and not get_opt(dep).get('skip_code'):
                 self.write_model(self.models[dep], outfile)
-        outfile.write(model.code.encode('utf-8'))
+        code = model.code.encode('utf-8') if six.PY2 else model.code
+        outfile.write(code)
         model.written = True
 
     def write(self, models_file, fields_file, map_file):
@@ -1819,7 +1820,8 @@ class XSDModelBuilder:
         for key in sorted(self.fields):
             field = self.fields[key]
             if 'code' in field:
-                fields_file.write(field['code'].encode('utf-8'))
+                code = field['code'].encode('utf-8') if six.PY2 else field['code']
+                fields_file.write(code)
 
         models_file.write(HEADER)
         models_file.write('import datetime\n')
@@ -1867,7 +1869,10 @@ if __name__ == '__main__':
         args = docopt(__doc__)
 
         builder = XSDModelBuilder(args['<xsd_filename>'])
-        builder.make_models([a.decode('UTF-8') for a in args['<xsd_type>']])
+        builder.make_models([
+            a.decode('UTF-8') if six.PY2 else a
+            for a in args['<xsd_type>']
+        ])
         builder.merge_models()
         builder.write(open(args['-m'], "w"),
                       open(args['-f'], "w"),
