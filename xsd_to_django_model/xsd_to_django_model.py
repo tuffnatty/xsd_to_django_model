@@ -286,19 +286,21 @@ def match(name, model, kind):
     return False
 
 
-def override_field_options(field_name, options, model_options):
-    add_field_options = dict(GLOBAL_MODEL_OPTIONS.get('field_options', {}),
-                             **model_options.get('field_options', {}))
-    for add_field_options in (GLOBAL_MODEL_OPTIONS.get('field_options', {}),
-                              model_options.get('field_options', {})):
-        this_field_add_options = add_field_options.get(field_name, [])
-        for option in this_field_add_options:
+def override_field_options(field_name, field, model_options):
+    options = field.get('options')
+    field_option_override_sets = [
+        GLOBAL_MODEL_OPTIONS.get('field_options', {}).get(field_name, []),
+        model_options.get('field_type_options', {}).get(field['name'], []),
+        model_options.get('field_options', {}).get(field_name, []),
+    ]
+    for add_field_options in field_option_override_sets:
+        for option in add_field_options:
             option_key, _ = option.split('=', 1)
             for n, old_option in enumerate(options):
                 if old_option.split('=', 1)[0] == option_key:
                     del options[n]
                     break
-        options += [o for o in this_field_add_options
+        options += [o for o in add_field_options
                     if o.split('=', 1)[1] != 'None']
 
 
@@ -1280,7 +1282,7 @@ class XSDModelBuilder:
         elif (match(name, model, 'gin_index_fields') or
               match(name, model, 'plain_index_fields')):
             options.append('db_index=INDEX_IN_META')
-        override_field_options(name, options, model)
+        override_field_options(name, field, model)
 
         if reference_extension:
             seq_or_choice2_def = self.get_seq_or_choice(ext2_def)
