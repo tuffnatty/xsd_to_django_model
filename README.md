@@ -21,7 +21,7 @@ Options:
     -f <fields_filename>   Output fields filename [default: fields.py].
     -j <mapping_filename>  Output JSON mapping filename [default: mapping.json].
     <xsd_filename>         Input XSD schema filename.
-    <xsd_type>             XSD type (or an XPath query for XSD type) for which a Django model should be generated.
+    <xsd_type>             XSD type (or, if starting with `/`, the name of the toplevel element of the type) for which a Django model should be generated.
 
 If you have xsd_to_django_model_settings.py in your PYTHONPATH or in the current directory, it will be imported.
 ```
@@ -141,6 +141,7 @@ It may define the following module-level variables:
   * `primary_key` specifies a single field name for which `primary_key=True` Django model field option is to be generated.
   * `reference_extension_fields` - a `list` of field names which use `xs:complexType/xs:complexContent/xs:extension' inheritance schema but extend the base type with extra members; these fields will be mapped to a `ForeignKey` to their base type's model, and the extension members will be flattened (as in `flatten_fields`).
   * `skip_code` - if `True`, the generated model code is to be skipped when saving the models module.
+  * `strategy` - if `1`, the strategy is to flatten all nested structures by default unless they refer to a toplevel model, or to a N:many relationship.
   * `strict_index_fields` - a `list` of Django model fields to generate a composite index including the primary key.
   * `unique_fields` - a `list` of Django model fields for which `unique=True` option should be generated.
 

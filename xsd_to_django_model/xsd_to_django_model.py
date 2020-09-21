@@ -33,12 +33,13 @@ import json
 import logging
 from operator import itemgetter
 import os.path
+import pickle
 import re
 import sys
 
 from docopt import docopt
 import ndifflib
-from lxml import etree
+import xmlschema
 
 
 try:
@@ -139,6 +140,7 @@ RE_CAMELCASE_TO_UNDERSCORE_2 = re.compile(r'([a-z0-9])([A-Z])')
 RE_RELATED_FIELD = re.compile(r'^models\.(ForeignKey|ManyToManyField)$')
 RE_RE_DECIMAL = re.compile(r'\\d\{(|(\d+),)(\d+)\}'
                            r'\(?\\\.\\d\{(|(\d+),)(\d+)\}(\)\?)?')
+RE_FIELD_CLASS_FILTER = re.compile(r'[^a-zA-Z0-9_]')
 RE_MARKDOWN_LIST_ENTRY = re.compile(r"^([-+ *]|\d+[).]) ")
 
 logging.basicConfig(level=logging.INFO)
@@ -171,12 +173,9 @@ def info(s):
     sys.stderr.write('%s%s' % (' ' * depth, s))
 
 
-def xpath(root, path, **kwargs):
-    return root.xpath(path, namespaces=NS, **kwargs)
-
-
-def xpath_one(root, path, **kwargs):
-    return next(iter(xpath(root, path, **kwargs)), None)
+def xfind(root, path, **kwargs):
+    # For simple ElementTree-compatible queries
+    return root.findall(path, namespaces=NS, **kwargs)
 
 
 @memoize
@@ -187,14 +186,22 @@ def get_model_for_type(name):
     return None
 
 
-def get_a_type_for_model(name, tree):
+def schema_get_type(schema, typename):
+    ns, name = get_ns(typename), strip_ns(typename)
+    return (schema.imports[schema.namespaces[ns]]
+            if schema.namespaces[ns] in schema.imports
+            else schema).types.get(name)
+
+
+def get_a_type_for_model(name, schema):
     names = (name, '+%s' % name)
     exprs = (expr for expr, sub in TYPE_MODEL_MAP.items()
              if ('(' not in expr and '\\' not in expr and sub in names))
     typename = None
     for expr in exprs:
         typename = expr
-        if len(xpath(tree, "//xs:complexType[@name=$n]", n=typename)):
+        if isinstance(schema_get_type(schema, typename),
+                      xmlschema.validators.XsdComplexType):
             break
     return typename
 
@@ -233,15 +240,27 @@ def get_opt(model_name, typename=None):
     return opt
 
 
-def get_doc(el_def, name, model_name, doc_prefix=None):
-    name = name or el_def.get('name')
+def get_doc(el_def, name, model_name, doc_prefix=None, choices=None):
+    if isinstance(el_def, (xmlschema.validators.XsdType,
+                           xmlschema.validators.XsdAttribute,
+                           xmlschema.validators.XsdElement)):
+        xs_el = el_def
+        el_def = xs_el.elem
+    else:
+        xs_el = None
+    name = name or (xs_el.prefixed_name if xs_el else el_def.get('name'))
     if model_name:
         try:
             return get_opt(model_name)['field_docs'][name]
         except KeyError:
             pass
-    doc = chain(xpath(el_def, "xs:annotation/xs:documentation"),
-                xpath(el_def, "xs:complexType/xs:annotation/xs:documentation"))
+    if xs_el and xs_el.annotation:
+        doc = (d.text for d in xs_el.annotation.documentation if d.text)
+    else:
+        doc = (d.text for d in
+               chain(xfind(el_def, "xs:annotation/xs:documentation"),
+                     xfind(el_def, "xs:complexType/xs:annotation/xs:documentation"))
+               if d.text)
     doc = '\n'.join([RE_SPACES.sub(r'\1 ', d.strip())
                      .replace(' )', ')').replace('\n\n', '\n').replace(' \n', '\n')
                      for d in doc])
@@ -302,7 +321,7 @@ def stringify(s):
 
 
 def get_null(el_def):
-    return el_def.get("minOccurs", None) == "0"
+    return el_def.occurs[0] == 0
 
 
 @memoize
@@ -324,10 +343,10 @@ def camelcase_to_underscore(name):
     return RE_CAMELCASE_TO_UNDERSCORE_2.sub(r'\1_\2', s1).lower()
 
 
-def coalesce(name, model):
+def coalesce(name, model, option):
     for expr, sub in \
-        chain(GLOBAL_MODEL_OPTIONS.get('coalesce_fields', {}).items(),
-              model.get('coalesce_fields', {}).items()):
+        chain(GLOBAL_MODEL_OPTIONS.get(option, {}).items(),
+              model.get(option, {}).items()):
         match = re.match(expr + '$', name)
         if match:
             return re.sub(expr + '$', sub, name)
@@ -342,20 +361,23 @@ def match(name, model, kind):
     return False
 
 
+def parse_user_options(options):
+    return (dict(o.split('=', 1) if RE_KWARG.match(o) else ('_', o)
+                 for o in options)
+            if not isinstance(options, dict)
+            else options)
+
+
 def override_field_options(field_name, options, model_options):
     add_field_options = dict(GLOBAL_MODEL_OPTIONS.get('field_options', {}),
                              **model_options.get('field_options', {}))
-    for add_field_options in (GLOBAL_MODEL_OPTIONS.get('field_options', {}),
-                              model_options.get('field_options', {})):
-        this_field_add_options = add_field_options.get(field_name, [])
-        for option in this_field_add_options:
-            option_key, _ = option.split('=', 1)
-            for n, old_option in enumerate(options):
-                if old_option.split('=', 1)[0] == option_key:
-                    del options[n]
-                    break
-        options += [o for o in this_field_add_options
-                    if o.split('=', 1)[1] != 'None']
+    this_field_add_options = \
+        parse_user_options(add_field_options.get(field_name, {}))
+    options = {k: v for k, v in options.items()
+               if k not in this_field_add_options}
+    options.update((k, v) for k, v in this_field_add_options.items()
+                   if v != 'None')
+    return options
 
 
 @memoize
@@ -394,30 +416,6 @@ def parse_default(basetype, default):
         return int(default)
     assert False, "parsing default value '%s' for %s type not implemented" \
         % (default, basetype)
-
-
-def resolve_ref(tree, el_def, tag):
-    if el_def is not None:
-        ref = el_def.get('ref')
-        if ref:
-            return xpath(tree, "//%s[@name=$n]" % tag, n=ref)[0]
-    return el_def
-
-
-def resolve_attr_group_ref(tree, attr_def):
-    return resolve_ref(tree, attr_def, "xs:attributeGroup")
-
-
-def resolve_attr_ref(tree, attr_def):
-    return resolve_ref(tree, attr_def, "xs:attribute")
-
-
-def resolve_el_ref(tree, el_def):
-    return resolve_ref(tree, el_def, "xs:element")
-
-
-def resolve_group_ref(tree, group_def):
-    return resolve_ref(tree, group_def, "xs:group")
 
 
 def indent_multiline(doc, indent):
@@ -514,29 +512,23 @@ class Model:
                                                           current_indent)))
             attrs_str = '\n'.join(attrs_lines)
             kwargs['doc'] = [JSON_DOC_HEADING + attrs_str]
-            kwargs['options'] = [
-                'null=True'
-            ]
+            kwargs['options'] = dict(null="True")
 
     def normalize_field_options(self, kwargs):
         if 'drop' in kwargs:
-            return []
-        options = kwargs.get('options', [])
+            return {}
+        options = kwargs.get('options', {}).copy()
         doc = kwargs.get('doc', None) or [kwargs['name']]
         if type(doc) is not list:
             kwargs['doc'] = [doc]
-        doc = stringify(doc)
-        if options and not RE_KWARG.match(options[0]):
-            if options[0][0] == '"':
-                options[0] = doc
+        doc = stringify(tuple(doc) if type(doc) is list else doc)
+        if '_' in options:
+            if options['_'].startswith('"'):
+                options['_'] = doc
             else:
-                for i, o in enumerate(options):
-                    if o.startswith('verbose_name='):
-                        del options[i]
-                        break
-                options.append('verbose_name=%s' % doc)
-            return [options[0]] + sorted(set(options[1:]))
-        return [doc] + sorted(set(options))
+                options['verbose_name'] = doc
+            return options
+        return dict(options, _=doc)
 
     def build_field_code(self, kwargs, force=False):
         self.build_attrs_options(kwargs)
@@ -550,18 +542,18 @@ class Model:
 
             final_django_field = kwargs.get('django_field')
             options = self.normalize_field_options(kwargs)
-            kwargs['options'] = options
+            kwargs['options'] = options.copy()
             kwargs['wrap_options'] = 'null=True' if 'wrap' in kwargs else ''
             if final_django_field == 'models.CharField' and \
-                    not any(o.startswith('max_length=') for o in options):
+                    int(options.get('max_length', 1000)) > 500:
                 final_django_field = 'models.TextField'
-            if ('null=True' in options and
+            if (options.get('null') == "True" and
                 ('wrap' in kwargs or
                  final_django_field in ('models.BooleanField',
                                         'models.ManyToManyField'))):
                 if final_django_field == 'models.BooleanField':
                     final_django_field = 'models.NullBooleanField'
-                options = [o for o in options if o != 'null=True']
+                del options['null']
 
             if kwargs.get('coalesce'):
                 kwargs['code'] = FIELD_TMPL['_coalesce'].format(**kwargs)
@@ -573,12 +565,25 @@ class Model:
             else:
                 if 'coalesce' in kwargs:
                     del kwargs['coalesce']
-                kwargs['code'] = ''
+                if kwargs.get('dotted_name') and \
+                        kwargs.get('name') and \
+                        kwargs.get('name') != kwargs['dotted_name'].replace('.', '_'):
+                    kwargs['code'] = FIELD_TMPL['_coalesce'].format(coalesce=kwargs.get('name'), **kwargs)
+                else:
+                    kwargs['code'] = ''
+
+            if len(kwargs.get('name', '')) > 63 and \
+                    kwargs.get('django_field') not in ('models.ManyToManyField',):
+                kwargs['code'] += "    # FIXME: {name} hits PostgreSQL column name 63 char limit!\n".format(**kwargs)
 
             if not skip_code:
-                serialized_options = ', '.join(options)
+                def serialized(options):
+                    return sorted(v if k == "_" else "{}={}".format(k, v)
+                                  for k, v in options.items())
+
+                serialized_options = ', '.join(serialized(options))
                 tmpl_ctx = dict(kwargs,
-                                options0=options[0] if options else None,
+                                options0=options.get("_"),
                                 final_django_field=final_django_field,
                                 serialized_options=serialized_options)
                 tmpl_row = next((r for r in FIELD_TMPL[tmpl_key].split('\n')
@@ -586,11 +591,13 @@ class Model:
                 if tmpl_row and len(tmpl_row.format(**tmpl_ctx)) > 80:
                     cmt = '# ' if tmpl_row[4] == '#' else ''
                     indent = '    %s    ' % cmt
-                    joiner = ',\n%s' % indent
+                    newline_indent = "\n" + indent
+                    joiner = "," + newline_indent
                     tmpl_ctx['serialized_options'] = \
                         '\n    %s    %s\n    %s' \
-                        % (cmt, joiner.join(o.replace('\n', '\n%s' % indent)
-                                            for o in options),
+                        % (cmt, joiner.join(serialized({k.replace("\n", newline_indent):
+                                                        str(v).replace("\n", newline_indent)
+                                                        for k, v in options.items()})),
                            cmt)
                 kwargs['code'] += FIELD_TMPL[tmpl_key].format(**tmpl_ctx)
 
@@ -599,7 +606,9 @@ class Model:
         meta_ctx = {'model_lower': self.model_name.lower()}
         meta = [template % meta_ctx
                 for template in chain(model_options.get('meta', []),
-                                      GLOBAL_MODEL_OPTIONS.get('meta', []))]
+                                      GLOBAL_MODEL_OPTIONS.get('meta', []))
+                if not (self.abstract and template.startswith('db_table = '))]
+
         if self.doc and not any(option for option in meta
                                 if option.startswith('verbose_name = ')):
             doc = stringify(tuple(self.doc)
@@ -682,18 +691,16 @@ class Model:
                     return any(
                         f for f in m.fields
                         if (is_related(f.get('django_field', '')) and
-                            f['options'][0] == options[0] and
+                            f['options']['_'] == options['_'] and
                             f['name'] != name)
                     )
 
-                if not any(o.startswith('related_name=') for o in options):
+                if 'related_name' not in options:
                     while m:
                         if model_has_other_related_field(m, name):
-                            options.append(
-                                'related_name="%s_as_%s"' % (
-                                    camelcase_to_underscore(self.model_name),
-                                    name
-                                )
+                            options['related_name'] = '"%s_as_%s"' % (
+                                camelcase_to_underscore(self.model_name),
+                                name
                             )
                             return
                         m = m.parent_model
@@ -701,9 +708,7 @@ class Model:
         if not kwargs:
             return
 
-        if 'name' in kwargs and match(kwargs['name'],
-                                      get_opt(self.model_name, self.type_name),
-                                      'drop_after_processing_fields'):
+        if kwargs.get('drop_after'):
             return
 
         if kwargs.get('one_to_one') or kwargs.get('one_to_many'):
@@ -721,9 +726,10 @@ class Model:
                     kwargs['django_basefield'] = f['parent']
                     break
             else:
-                def set_base(f):
+                def _set_base(f):
                     kwargs['django_basefield'] = f['parent']
-                self.builder.on_field_class(django_field, set_base)
+
+                self.builder.on_field_class(django_field, _set_base)
 
         self.build_field_code(kwargs)
 
@@ -737,11 +743,10 @@ class Model:
                            **kwargs):
         related_typename, ct_def = rel
         fk = dict(name=camelcase_to_underscore(self.model_name),
-                  options=[
-                      "'%s'" % self.model_name,
-                      'on_delete=models.CASCADE',
-                      'related_name="%s"' % name,
-                  ],
+                  options=dict(_="'%s'" % self.model_name,
+                               on_delete='models.CASCADE',
+                               related_name='"%s"' % name),
+                  doc=self.doc or [],
                   django_field=('models.OneToOneField' if one_to_one
                                 else 'models.ForeignKey'))
         self.builder.make_model(related_typename, ct_def, add_fields=[fk])
@@ -762,18 +767,6 @@ class Model:
         return None
 
 
-def parse_xmlns(file, ns_map):
-    events = "start", "start-ns"
-    root = None
-    for event, elem in etree.iterparse(file, events):
-        if event == "start-ns":
-            ns_map.append(elem)
-        elif event == "start":
-            if root is None:
-                root = elem
-    return etree.ElementTree(root)
-
-
 class XSDModelBuilder:
 
     def __init__(self, infile):
@@ -782,161 +775,136 @@ class XSDModelBuilder:
         self.fields = {}
         self.have_json = False
         self.on_field_class_cb = {}
-        ns_map = []
-        self.tree = parse_xmlns(infile, ns_map)
-        root = self.tree.getroot()
-        ns_list = set()
-        while True:
-            imports = list(xpath(self.tree, "//xs:import[@schemaLocation]") +
-                           xpath(self.tree, "//xs:include[@schemaLocation]"))
-            if not len(imports):
-                break
-            for imp in imports:
-                ns_uri = imp.get('namespace')
-                ns = None
-                for k, v in ns_map:
-                    if v == ns_uri:
-                        if k:
-                            ns = k + ':'
-                        break
-                if not ns or ns not in ns_list:
-                    loc = imp.get('schemaLocation')
-                    subtree = etree.parse(os.path.join(os.path.dirname(infile),
-                                                       loc))
-                    subroot = subtree.getroot()
-                    if ns:
-                        for el in subroot:
-                            name = el.get('name')
-                            if name:
-                                el.set('name', ns + name)
-                        ns_list.add(ns)
-                    root.extend(subroot)
-                root.remove(imp)
-        self.parent_map = {c: p for p in self.tree.iter() for c in p}
-        self.ns_map = dict(ns_map)
+        try:
+            with open(infile + ".pickle", "rb") as f:
+                self.schema = pickle.load(f)
+        except Exception:
+            pass
+        else:
+            return
 
-    def get_parent_ns(self, el_def):
-        root = self.tree.getroot()
-        ptr = el_def
-        while ptr != root:
-            parent = self.parent_map[ptr]
-            if ptr.tag.endswith(("}complexType", "}simpleType")) or \
-                    (parent == root and ptr == el_def):
-                name = ptr.get('name')
+        self.schema = xmlschema.XMLSchema(infile)
+
+        with open(infile + ".pickle", "wb") as f:
+            pickle.dump(self.schema, f)
+
+    def get_parent_ns(self, element):
+        ptr = element
+        while ptr:
+            parent = ptr.parent
+            if parent is None and (
+                ptr.elem.tag.endswith(("}complexType", "}simpleType")) or \
+                ptr == element
+            ):
+                name = ptr.elem.get('name')
                 if name and ':' in name:
                     ns, _ = name.split(':')
                     return ns + ':'
             ptr = parent
         return ''
 
-    def get_min_max(self, parent, restrict_def, validators,):
-        def parsedate(d):
-            return ['datetime.date(%d, %d, %d)' % (int(d[0:4]), int(d[5:7]),
-                                                   int(d[8:10]))]
-        min_inclusive = xpath(restrict_def, "xs:minInclusive/@value")
-        max_inclusive = xpath(restrict_def, "xs:maxInclusive/@value")
-        if parent == 'DateField':
-            if min_inclusive:
-                min_inclusive = parsedate(min_inclusive[0])
-            if max_inclusive:
-                max_inclusive = parsedate(max_inclusive[0])
-        if min_inclusive:
-            validators.append('MinValueValidator(%s)' % min_inclusive[0])
-        if max_inclusive:
-            validators.append('MaxValueValidator(%s)' % max_inclusive[0])
-
-    def get_max_length(self, options, restrict_def, pattern, enums):
-        l = None
-        length = (xpath(restrict_def, "xs:length/@value") or
-                  xpath(restrict_def, "xs:maxLength/@value"))
-        if length:
-            l = length[0]
-        elif pattern:
-            match = re.match(r'\\d\{(\d+,)?(\d+)\}$', pattern)
-            if match:
-                l = match.group(2)
-            else:
-                match = re.match(r'(\\d\{\d+\}\|)+\\d\{\d+\}$', pattern)
-                if match:
-                    l = max(int(match)
-                            for match in re.findall(r'\\d\{(\d+)\}', pattern))
-        if l:
-            options['max_length'] = int(l) * \
-                    GLOBAL_MODEL_OPTIONS.get('charfield_max_length_factor', 1)
-        elif enums:
-            options['max_length'] = max([len(x) for x in enums])
-
-    def get_digits_options(self, restrict_def, options, parent, pattern):
-        fraction_digits = xpath(restrict_def, "xs:fractionDigits/@value")
-        total_digits = xpath(restrict_def, "xs:totalDigits/@value")
-        if fraction_digits:
-            options['decimal_places'] = fraction_digits[0]
-        elif pattern and parent == 'DecimalField':
-            match = RE_RE_DECIMAL.match(pattern)
-            if match:
-                options['decimal_places'] = match.group(6)
-        if total_digits:
-            if parent == 'DecimalField':
-                options['max_digits'] = total_digits[0]
-            elif parent == 'IntegerField' and int(total_digits[0]) > 9:
-                parent = 'BigIntegerField'
-        return parent
-
-    def get_field_choices_from_simpletype(self, st_def):
-        enumerations = xpath(st_def, "xs:restriction/xs:enumeration")
+    def get_field_choices_from_enumerations(self, enumerations):
         return [(enumeration.get('value'),
                  get_doc(enumeration, None, None) or enumeration.get('value'))
                 for enumeration in enumerations]
 
-    def get_field_data_from_simpletype(self, st_def, el_def=None):
-        if len(xpath(st_def, "xs:union")):
+    def get_field_data_from_simpletype(self, stype):
+        if len(xfind(stype.elem, "xs:union")):
             logger.warning("xs:simpleType[name=%s]/xs:union is not supported"
                            " yet",
-                           st_def.get('name'))
-            return (get_doc(st_def, None, None), "TextField", {})
+                           stype.prefixed_name)
+            return (get_doc(stype, None, None), "TextField", {})
 
-        restrict_def = xpath(st_def, "xs:restriction")[0]
-        basetype = restrict_def.get("base")
+        basetype = self.global_name(stype.base_type)
         try:
-            doc, parent, options = (get_doc(st_def, None, None),
+            doc, parent, options = (get_doc(stype, None, None),
                                     BASETYPE_FIELD_MAP[basetype],
                                     {})
         except KeyError:
-            basetype = self.nsify(basetype, st_def)
-            doc, parent, options = self.get_field_data_from_type(basetype)
+            doc, parent, options = self.get_field_data_from_type(self.simplify_ns(basetype))
         assert type(options) is dict, \
             "options is not a dict while processing type %s" % basetype
 
-        pattern = xpath(restrict_def, "xs:pattern/@value")
-        enums = xpath(restrict_def, "xs:enumeration/@value")
-        min_length = xpath(restrict_def, "xs:minLength/@value")
+        def parsedate(d):
+            d = str(d)
+            return ('datetime.date(%d, %d, %d)' % (int(d[0:4]), int(d[5:7]),
+                                                   int(d[8:10])))
+
         validators = []
-        self.get_min_max(parent, restrict_def, validators)
-        if min_length:
-            if min_length[0] == '1':
-                options['blank'] = 'False'
+        facets = xmlschema.validators.facets
+        for v in stype.validators:
+            if isinstance(v, facets.XsdEnumerationFacets):
+                choices = self.get_field_choices_from_enumerations(v._elements)
+                options['choices'] = \
+                    '[%s]' % ', '.join(
+                        '(%s, %s)' %
+                        ((c[0] if parent == 'IntegerField'
+                          else ('"%s"' % c[0])),
+                         stringify(tuple(c[1]) if type(c[1]) is list
+                                   else c[1]))
+                        for c in choices
+                    )
+                if parent != 'IntegerField':
+                    options['max_length'] = max(len(c[0]) for c in choices)
+            elif isinstance(v, facets.XsdFractionDigitsFacet):
+                options['decimal_places'] = v.value
+            elif isinstance(v, facets.XsdLengthFacet) and parent != 'IntegerField':
+                options['max_length'] = v.value * \
+                    GLOBAL_MODEL_OPTIONS.get('charfield_max_length_factor', 1)
+            elif isinstance(v, facets.XsdMaxInclusiveFacet):
+                validators.append('MaxValueValidator(%s)' %
+                                  (parsedate(v.value)
+                                   if parent == 'DateField'
+                                   else v.value))
+            elif isinstance(v, facets.XsdMaxLengthFacet):
+                options['max_length'] = v.value * \
+                    GLOBAL_MODEL_OPTIONS.get('charfield_max_length_factor', 1)
+            elif isinstance(v, facets.XsdMinInclusiveFacet):
+                validators.append('MinValueValidator(%s)' %
+                                  (parsedate(v.value)
+                                   if parent == 'DateField'
+                                   else v.value))
+            elif isinstance(v, facets.XsdMinLengthFacet):
+                if v.value == 1:
+                    options['blank'] = 'False'
+                else:
+                    validators.append('MinLengthValidator(%s)' % v.value)
+            elif isinstance(v, facets.XsdTotalDigitsFacet):
+                if parent == 'DecimalField':
+                    options['max_digits'] = v.value
+                elif parent == 'IntegerField' and v.value > 9:
+                    parent = 'BigIntegerField'
             else:
-                validators.append('MinLengthValidator(%s)' % min_length[0])
+                raise Exception("Unknown validator facet %s" % v.__class__)
+
+        pattern = '|'.join(stype.patterns.regexps) if stype.patterns else None
         if pattern:
-            pattern = pattern[0]
-            validators.append('RegexValidator(r"%s")' % pattern)
-        if parent != 'IntegerField':
-            self.get_max_length(options, restrict_def, pattern, enums)
-        if enums:
-            choices = self.get_field_choices_from_simpletype(st_def)
-            options['choices'] = \
-                '[%s]' % ', '.join('("%s", %s)' % (c[0], stringify(c[1]))
-                                   for c in choices)
-        parent = self.get_digits_options(restrict_def, options, parent,
-                                         pattern)
+            if parent not in ('DecimalField', 'FloatField', 'IntegerField'):
+                validators.append('RegexValidator(r"%s")' % pattern)
+            if parent != 'IntegerField':
+                # Try to infer max_length from regexp
+                match = re.match(r'\\d\{(\d+,)?(\d+)\}$', pattern)
+                l = None
+                if match:
+                    l = match.group(2)
+                else:
+                    match = re.match(r'(\\d\{\d+\}\|)+\\d\{\d+\}$', pattern)
+                    if match:
+                        l = max(int(match)
+                                for match in re.findall(r'\\d\{(\d+)\}', pattern))
+                if l:
+                    options['max_length'] = int(l) * \
+                        GLOBAL_MODEL_OPTIONS.get('charfield_max_length_factor',
+                                                 1)
+            if parent == 'DecimalField':
+                match = RE_RE_DECIMAL.match(pattern)
+                if match:
+                    options['decimal_places'] = match.group(6)
+
         if len(validators):
             options['validators'] = \
                 '[%s]' % ', '.join('validators.%s' % x
                                    for x in sorted(validators))
-        if parent == 'CharField' and \
-                int(options.get('max_length', 1000)) > 500:
-            # Some data does not fit, even if XSD says it should
-            parent = 'TextField'
         return doc, parent, options
 
     def get_field_data_from_type(self, typename):
@@ -944,77 +912,90 @@ class XSDModelBuilder:
             return TYPE_OVERRIDES[typename]
         elif typename in BASETYPE_FIELD_MAP:
             return None, None, None
-        st_def = xpath_one(self.tree, "//xs:simpleType[@name=$n]",
-                           n=typename)
-        if st_def is None:
+
+        try:
+            stype = self.get_type(typename)
+        except KeyError:
             return None, None, None
-        return self.get_field_data_from_simpletype(st_def)
+        if isinstance(stype, xmlschema.validators.XsdComplexType):
+            return None, None, None
+        return self.get_field_data_from_simpletype(stype)
 
-    def get_simpletype_primitive(self, st_def):
-        base = None
-        while st_def is not None:
-            this_base = xpath_one(st_def, "xs:restriction/@base")
-            if this_base is None:
-                break
-            base = this_base
-            st_def = xpath_one(self.tree, "//xs:simpleType[@name=$n]", n=base)
-        return base
 
-    def get_field(self, typename, el_def=None, el_path=''):
+    def get_field(self, typename, element=None, el_path=''):
+        simplified_typename = self.simplify_ns(typename)
         orig_typename = typename
-        if typename not in self.fields:
+        if simplified_typename not in self.fields:
             if not typename:
-                st_def = xpath_one(el_def, "xs:simpleType")
-                if st_def is None:
-                    ct_def = xpath_one(el_def, "xs:complexType")
-                    assert ct_def is not None, (
-                        "%s nor a simpleType neither a complexType within %s" %
-                        (typename, el_def.get("name"))
-                    )
-
-                    self.make_model(el_path, ct_def)
+                if isinstance(element.type, xmlschema.validators.XsdComplexType):
+                    self.make_model(el_path, element.type)
                     model_name = get_model_for_type(el_path)
                     return orig_typename, {
                         'name': 'models.ForeignKey',
-                        'options': [model_name, 'on_delete=models.CASCADE'],
+                        'options': dict(_=model_name,
+                                        on_delete='models.PROTECT'),
+                    }
+                elif isinstance(element.type, xmlschema.validators.XsdSimpleType):
+                    doc, parent, options = \
+                        self.get_field_data_from_simpletype(element.type)
+                    orig_typename = element.type.primitive_type
+                    return orig_typename, {
+                        'name': 'models.%s' % parent,
+                        'options': options,
                     }
                 else:
-                    doc, parent, options = \
-                        self.get_field_data_from_simpletype(st_def, el_def)
-                    orig_typename = self.get_simpletype_primitive(st_def)
-                return orig_typename, {
-                    'name': 'models.%s' % parent,
-                    'options': ['%s=%s' % (k, v) for k, v in options.items()],
-                }
+                    raise Exception(
+                        "%s nor a simpleType neither a complexType within %s" %
+                        (typename, element.name)
+                    )
+
             else:
-                typename = self.nsify(typename, el_def)
-                doc, parent, options = self.get_field_data_from_type(typename)
+                typename = (self.global_name(element.type) or
+                            self.global_name(element.type.base_type))
+                simplified_typename = self.simplify_ns(typename)
+                doc, parent, options = self.get_field_data_from_type(simplified_typename)
                 if parent is None:
                     if typename in BASETYPE_FIELD_MAP:
                         return orig_typename, {
                             'name': 'models.%s' % BASETYPE_FIELD_MAP[typename]
                         }
-                    self.make_model(typename)
+                    self.make_model(simplified_typename)
                     return orig_typename, {
                         'name': 'models.ForeignKey',
-                        'options': [get_model_for_type(typename),
-                                    'on_delete=models.PROTECT'],
+                        'options': dict(_=get_model_for_type(simplified_typename),
+                                        on_delete='models.PROTECT'),
                     }
                 if 'choices' in options:
-                    st_def = xpath(self.tree, "//xs:simpleType[@name=$n]",
-                                   n=typename)[0]
-                    choices = self.get_field_choices_from_simpletype(st_def)
+                    validator = next(v for v in self.get_type(typename).validators
+                                     if isinstance(v, xmlschema.validators.facets.XsdEnumerationFacets))
+
+                    choices = \
+                        self.get_field_choices_from_enumerations(validator._elements)
                 else:
                     choices = None
-                self.make_field_class(typename, doc, parent, options, choices)
-        st_def = xpath_one(self.tree, "//xs:simpleType[@name=$n]", n=typename)
-        orig_typename = ("xs:string" if st_def is None
-                         else self.get_simpletype_primitive(st_def))
-        return orig_typename, self.fields[typename]
+                if parent == 'CharField' and \
+                        int(options.get('max_length', 1000)) > 500:
+                    # Some data does not fit, even if XSD says it should
+                    parent = 'TextField'
+                self.make_field_class(simplified_typename, doc,
+                                      parent, options, choices)
+        stype = self.get_type(typename)
+        orig_typename = ("xs:string" if stype is None
+                         else self.global_name(stype.primitive_type))
+        return orig_typename, self.fields[simplified_typename]
+
+    def get_type(self, typename):
+        t = schema_get_type(self.schema, typename)
+        if t is None:
+            raise KeyError(typename)
+        return t
+
+    def global_name(self, type_):
+        return xmlschema.qnames.get_prefixed_qname(type_.name,
+                                                   self.schema.namespaces)
 
     def make_field_class(self, typename, doc, parent, options, choices):
-        name = '%sField' \
-            % typename.replace(':', '_').replace('.', '_').replace('-', '_')
+        name = RE_FIELD_CLASS_FILTER.sub('_', typename) + 'Field'
         code = 'class {name}(models.{parent}):\n'.format(name=name,
                                                          parent=parent)
 
@@ -1054,39 +1035,50 @@ class XSDModelBuilder:
 
     def simplify_ns(self, typename):
         ns = get_ns(typename)
-        if ns and '' in self.ns_map and self.ns_map[ns] == self.ns_map['']:
+        ns_map = self.schema.namespaces
+        if ns and '' in ns_map and ns_map[ns] == ns_map['']:
             return strip_ns(typename)
         return typename
 
-    def get_element_type(self, el_def):
-        el_type = el_def.get("type")
-        if not el_type:
-            el_type = xpath_one(el_def, "xs:complexType/xs:complexContent/"
-                                "xs:extension[count(*)=0]/@base")
-        return self.simplify_ns(el_type)
+    def get_element_type(self, element):
+        t = element.type
+        return (t if t.name else
+                (t.base_type
+                 if (isinstance(t, xmlschema.validators.XsdComplexType) and
+                     not t.has_simple_content() and
+                     t.is_extension() and
+                     #(not (len(t.content) and t.content[-1].model in ('choice', 'sequence'))) and
+                     len(t.content) < 2)
+                 else None))
 
-    def get_element_complex_type(self, el_def):
-        el_type = self.get_element_type(el_def)
-        if el_type:
-            el_type = self.nsify(el_type, el_def)
-            return xpath_one(self.tree, "//xs:complexType[@name=$n]",
-                             n=el_type)
-        return xpath_one(el_def, "xs:complexType")
+    def get_element_type_name(self, element):
+        el_type = self.get_element_type(element)
+        return self.simplify_ns(self.global_name(el_type)) if el_type else None
 
-    def get_seq_or_choice(self, parent_def):
-        return (xpath_one(parent_def, "xs:sequence|xs:all"),
-                xpath_one(parent_def, "xs:choice"))
+    def get_element_complex_type(self, element):
+        type_ = self.get_element_type(element)
+        if isinstance(type_, xmlschema.validators.XsdComplexType):
+            return type_
+        if isinstance(element.type, xmlschema.validators.XsdComplexType):
+            return element.type
+        return None
+
+    def get_own_seq_or_choice(self, ctype):
+        return (next(iter(ctype.content[1:]), None)
+                if ctype.is_extension()
+                else ctype.content)
 
     def write_seq_or_choice(self, seq_or_choice, typename,
+                            dotted_prefix='',
                             prefix='',
                             doc_prefix='',
                             attrs=None,
                             null=False):
-        seq_def, choice_def = seq_or_choice
-        if choice_def is not None:
+        if seq_or_choice.model == 'choice':
             fields = self.models[typename].fields
             n_start = len(fields)
-            self.make_fields(typename, choice_def,
+            self.make_fields(typename, seq_or_choice,
+                             dotted_prefix=dotted_prefix,
                              prefix=prefix,
                              doc_prefix=doc_prefix,
                              attrs=attrs,
@@ -1095,133 +1087,139 @@ class XSDModelBuilder:
                 fields[n_start]['code'] = ('    # xs:choice start\n' +
                                            fields[n_start]['code'])
                 fields[-1]['code'] += '\n    # xs:choice end'
-        elif seq_def is not None:
-            self.make_fields(typename, seq_def,
+        elif seq_or_choice.model == 'sequence':
+            self.make_fields(typename, seq_or_choice,
+                             dotted_prefix=dotted_prefix,
                              prefix=prefix,
                              doc_prefix=doc_prefix,
                              attrs=attrs,
                              null=null)
         return ''
 
-    def write_attributes(self, ct_def, typename,
+    def write_attributes(self, ctype, typename,
+                         dotted_prefix='',
                          prefix='',
                          doc_prefix='',
                          attrs=None,
                          null=False):
-        if ct_def is None:
+        if ctype is None:
             return
         this_model = self.models[typename]
-        attr_defs = []
-        for group_def in xpath(ct_def, "xs:attributeGroup"):
-            group_def = resolve_attr_group_ref(self.tree, group_def)
-            attr_defs.extend(xpath(group_def, "xs:attribute"))
-        for attr_def in chain(attr_defs, xpath(ct_def, "xs:attribute")):
-            attr_name = attr_def.get("name") or attr_def.get("ref")
-            dotted_name = '%s@%s' % (prefix, attr_name)
-            name = '%s%s' % (prefix.replace('.', '_'), attr_name)
-            use_required = (attr_def.get("use") == "required")
+        for attribute in ctype.attributes.values():
+            attr_name = attribute.name or attribute.ref
+            dotted_name = '%s@%s' % (dotted_prefix, attr_name)
+            name = prefix + attr_name
+            use_required = (attribute.use == "required")
             this_model.add_field(
                 **self.make_a_field(typename, name, dotted_name,
-                                    attr_def=attr_def,
+                                    attribute=attribute,
+                                    dotted_prefix=dotted_prefix,
                                     prefix=prefix,
                                     doc_prefix=doc_prefix,
                                     attrs=attrs,
                                     null=null or not use_required)
             )
-        if len(xpath(ct_def, "xs:anyAttribute")):
-            attrs[''] = "Any additional attributes"
+            if isinstance(attribute, xmlschema.validators.XsdAnyAttribute):
+                attrs[''] = "Any additional attributes"
 
-    def get_n_to_many_relation(self, typename, name, el_def):
-        if el_def.get("maxOccurs") == 'unbounded':
-            el2_def = el_def
+    def get_n_to_many_relation(self, typename, name, element):
+        if element.max_occurs is None:  # unbounded
+            el2 = element
             el2_name = name
         else:
-            ct_def = self.get_element_complex_type(el_def)
-            el2_def = \
-                xpath_one(ct_def,
-                          "(xs:sequence|xs:all)/xs:element[@maxOccurs=$n]",
-                          n='unbounded')
-            if el2_def is not None:
-                el2_def = resolve_el_ref(self.tree, el2_def)
-                el2_name = '%s_%s' % (name, el2_def.get("name"))
+            ctype = self.get_element_complex_type(element)
+            own_seq = self.get_own_seq_or_choice(ctype)
+            el2 = own_seq[0]
+            if el2 and el2.max_occurs is None:  # unbounded
+                el2 = el2.ref or el2
+                el2_name = '%s_%s' % (name, el2.local_name)
             else:
-                el2_def = xpath_one(ct_def, "(xs:sequence|xs:all)/xs:element")
                 if (
-                    el2_def is not None and
-                    name == el2_def.get("name") + 's' and not
-                    (len(xpath(el2_def, "./following-sibling::xs:element")) +
-                     len(xpath(el2_def, "./following-sibling::xs:attribute")))
+                    el2 is not None and
+                    name == el2.local_name + 's' and
+                    len(own_seq) + len(ctype.attributes) == 1
                 ):
-                    el2_def = resolve_el_ref(self.tree, el2_def)
-                    el2_name = '%s_%s' % (name, el2_def.get("name"))
+                    el2 = el2.ref or el2
+                    el2_name = '%s_%s' % (name, el2.local_name)
                 else:
-                    el2_def = el_def
+                    el2 = element
                     el2_name = name
                 logger.warning("no maxOccurs=unbounded in %s,"
                                " pretending it's unbounded",
                                el2_name)
 
-        ct2_def = self.get_element_complex_type(el2_def)
-        assert ct2_def is not None, \
+        ctype2 = self.get_element_complex_type(el2)
+        assert ctype2 is not None, \
             "N:many field %s content not a complexType" % name
 
-        rel = ct2_def.get("name") or ('%s.%s' % (typename, el2_name))
-        return rel, ct2_def
+        rel = self.simplify_ns(self.global_name(ctype2)) or \
+            ('%s.%s' % (typename, el2_name))
+        return rel, ctype2
 
-    def get_n_to_one_relation(self, typename, name, el_def):
-        ct2_def = self.get_element_complex_type(el_def)
-        assert ct2_def is not None, \
+    def get_n_to_one_relation(self, typename, name, element):
+        ctype2 = self.get_element_complex_type(element)
+        assert ctype2 is not None, \
             "N:1 field %s content is not a complexType" % name
 
-        rel = ct2_def.get("name") or ('%s.%s' % (typename, name))
-        return rel, ct2_def
+        rel = self.simplify_ns(self.global_name(ctype2)) or \
+            ('%s.%s' % (typename, name))
+        return rel, ctype2
 
     def nsify(self, typename, context_def):
         return (typename if ':' in typename
                 else (self.get_parent_ns(context_def) + typename))
 
-    def flatten_ct(self, ct_def, typename, **kwargs):
-        if len(xpath(ct_def, "xs:simpleContent/xs:restriction")):
+    def flatten_ct(self, ctype, typename, **kwargs):
+        if ctype.has_simple_content() and ctype.is_restriction():
             logger.warning("xs:complexType[name=%s]/xs:simpleContent"
                            "/xs:restriction is not yet supported",
-                           ct_def.get('name'))
+                           ctype.prefixed_name)
 
-        sext_def = xpath_one(ct_def, "xs:simpleContent/xs:extension")
-        cext_def = xpath_one(ct_def, "xs:complexContent/xs:extension")
-        assert sext_def is None or cext_def is None, (
-            "both xs:simpleContent and xs:complexContent while flattening %s"
-            % typename
-        )
-        ext_def = sext_def if sext_def is not None else cext_def
+        if not ctype.has_simple_content() and ctype.is_extension():
+            ctype2 = ctype.base_type
+            self.flatten_ct(ctype2, typename, **kwargs)
 
-        if cext_def is not None:
-            ct2_def = xpath(self.tree, "//xs:complexType[@name=$n]",
-                            n=self.nsify(cext_def.get("base"), ct_def))[0]
-            self.flatten_ct(ct2_def, typename, **kwargs)
+        self.write_attributes(ctype, typename, **kwargs)
 
-        if ext_def is not None:
-            self.write_attributes(ext_def, typename, **kwargs)
-        self.write_attributes(ct_def, typename, **kwargs)
+        seq_or_choice = self.get_own_seq_or_choice(ctype)
+        if seq_or_choice:
+            self.write_seq_or_choice(seq_or_choice, typename, **kwargs)
+        elif ctype.is_extension():
+            logger.warning("xs:complexContent/xs:extension adds nothing to the base type %s",
+                           self.global_name(ctype.base_type))
+        return (self.global_name(ctype.base_type)
+                if ctype.has_simple_content() else None)
 
-        seq_or_choice_def = self.get_seq_or_choice(ext_def
-                                                   if ext_def is not None
-                                                   else ct_def)
-        self.write_seq_or_choice(seq_or_choice_def, typename, **kwargs)
-        return sext_def.get('base') if sext_def is not None else None
+    def is_eligible_n2m(self, typename, name, element, n):
+        if element is None:
+            return False
+        if element.max_occurs is None:  # unbounded
+            return True
+        ctype2 = self.get_element_complex_type(element)
+        if ctype2 is not None and \
+                len(ctype2.content) == 1 and \
+                ctype2.content[0].max_occurs is None:
+            t3_name = self.simplify_ns(self.global_name(ctype2.content[0].type))
+            model = get_model_for_type(t3_name or "%s.%s" % (typename, name))
+            return any(get_model_for_type(t) == model
+                       for t in self.target_typenames) != (n == 1)
+        return False
 
     def make_a_field(self, typename, name, dotted_name,
-                     el_def=None,
-                     attr_def=None,
+                     element=None,
+                     attribute=None,
+                     dotted_prefix='',
                      prefix='',
                      doc_prefix='',
                      attrs=None,
                      null=False):
         model_name = get_model_for_type(typename)
         this_model = self.models[typename]
-        model = get_opt(model_name, typename)
-        el_attr_def = (resolve_attr_ref(self.tree, attr_def) if el_def is None
-                       else resolve_el_ref(self.tree, el_def))
-        el_type = self.get_element_type(el_attr_def)
+        model = dict({'strategy': GLOBAL_MODEL_OPTIONS.get('strategy', 0)},
+                     **get_opt(model_name, typename))
+        el_attr = ((attribute.ref or attribute) if element is None
+                   else (element.ref or element))
+        el_type = self.get_element_type_name(el_attr)
         coalesced_dotted_name = dotted_name
 
         if match(name, model, 'drop_fields'):
@@ -1229,81 +1227,133 @@ class XSDModelBuilder:
         elif model.get('parent_field') == name:
             return dict(dotted_name=dotted_name, parent_field=True)
 
-        if match(name, model, 'drop_after_processing_fields'):
-            coalesce_target = None
-        else:
-            coalesce_target = coalesce(name, model)
-            if coalesce_target:
-                if name == dotted_name:
-                    coalesced_dotted_name = coalesce_target
-                name = coalesce_target
+        def do_coalesce(name, *options):
+            nonlocal coalesce_target
+            _name = name
+            for option in options:
+                coalesce_target = \
+                    coalesce(_name, model, option) or coalesce_target
+                if coalesce_target:
+                    _name = coalesce_target
+            return (_name,
+                    coalesce_target,
+                    (coalesce_target if coalesce_target and name == dotted_name
+                     else dotted_name))
 
-        doc = get_doc(el_attr_def, name, model_name, doc_prefix=doc_prefix)
+        drop_after = match(name, model, 'drop_after_processing_fields')
+        coalesce_target = None
+        if not drop_after:
+            name, coalesce_target, coalesced_dotted_name = do_coalesce(name, 'level1_substitutions', 'coalesce_fields')
 
-        if match(name, model, 'many_to_many_fields'):
-            try:
-                rel = model.get('many_to_many_field_overrides', {})[name]
-                ct2_def = None
-            except KeyError:
-                rel, ct2_def = self.get_n_to_many_relation(typename, name,
-                                                           el_def)
-            self.make_model(rel, ct2_def)
-            options = [get_model_for_type(rel)]
-            override_field_options(name, options, model)
-            return dict(dotted_name=dotted_name,
-                        name=name,
-                        django_field='models.ManyToManyField',
-                        doc=[doc] if doc else [],
-                        options=options)
+        assert isinstance(model.get('flatten_fields', ()),
+                          (tuple, list, set)), \
+            ("flatten_fields should be a tuple/list/set, got %s instead"
+             % repr(model['flatten_fields']))
+        flatten = match(name, model, 'flatten_fields')
+        flatten_name = name
 
-        elif match(name, model, 'one_to_many_fields'):
+        drop_after = drop_after or \
+            match(name, model, 'drop_after_processing_fields')
+        if not drop_after:
+            name, coalesce_target, coalesced_dotted_name = do_coalesce(name, 'level3_substitutions')
+
+        doc = get_doc(el_attr, name, model_name, doc_prefix=doc_prefix)
+
+        if match(name, model, 'one_to_one_fields'):
+            field = dict(dotted_name=dotted_name,
+                         one_to_one=True,
+                         typename=typename,
+                         name=name,
+                         drop_after=drop_after,
+                         doc=[doc] if doc else [])
+            rel = self.get_n_to_one_relation(typename, name, element)
+            field['options'] = \
+                dict(_=this_model.make_related_model(rel=rel, **field))
+            return field
+
+        elif match(dotted_name, model, 'json_fields'):
+            if not drop_after:
+                attrs[dotted_name] = doc
+            return {}
+
+        elif (match(name, model, 'one_to_many_fields') or
+              match(name, model, 'one_to_many_field_overrides')) or (
+            model.get('strategy', 0) >= 1 and
+            not flatten and
+            name not in model.get('many_to_many_fields', {}) and
+            name not in model.get('many_to_many_field_overrides', {}) and
+            self.is_eligible_n2m(typename, name, element, 1)
+        ):
             overrides = model.get('one_to_many_field_overrides', {})
             one_to_many = overrides.get(name, True)
             field = dict(dotted_name=dotted_name,
                          one_to_many=one_to_many,
                          typename=typename,
                          name=name,
+                         drop_after=drop_after,
                          doc=[doc] if doc else [])
             rel = (
-                self.get_n_to_many_relation(typename, name, el_def)
+                self.get_n_to_many_relation(typename, name, element)
                 if type(one_to_many) is bool
                 else (one_to_many, None)
             )
             field['options'] = \
-                [this_model.make_related_model(rel=rel, **field)]
+                dict(_=this_model.make_related_model(rel=rel, **field))
             return field
 
-        elif match(name, model, 'one_to_one_fields'):
-            field = dict(dotted_name=dotted_name,
-                         one_to_one=True,
-                         typename=typename,
-                         name=name,
-                         doc=[doc] if doc else [])
-            rel = self.get_n_to_one_relation(typename, name, el_def)
-            field['options'] = \
-                [this_model.make_related_model(rel=rel, **field)]
-            return field
+        elif (match(name, model, 'many_to_many_fields') or
+              match(name, model, 'many_to_many_field_overrides')) or (
+            model.get('strategy', 0) >= 1 and
+            not flatten and
+            self.is_eligible_n2m(typename, name, element, 2)
+        ):
+            try:
+                rel = model.get('many_to_many_field_overrides', {})[name]
+                ctype2 = None
+            except KeyError:
+                rel, ctype2 = self.get_n_to_many_relation(typename, name,
+                                                          element)
+            self.make_model(rel, ctype2)
+            options = dict(_=get_model_for_type(rel))
+            options = override_field_options(name, options, model)
+            return dict(dotted_name=dotted_name,
+                        name=name,
+                        drop_after=drop_after,
+                        django_field='models.ManyToManyField',
+                        doc=[doc] if doc else [],
+                        options=options)
 
-        elif match(name, model, 'json_fields'):
-            if not match(name, model, 'drop_after_processing_fields'):
-                attrs[coalesced_dotted_name] = doc
-            return {}
-
-        if el_def is not None:
-            ct2_def = self.get_element_complex_type(el_def)
+        if element is not None:
+            ctype2 = self.get_element_complex_type(element)
             flatten_prefix = \
-                name.startswith(cat(o.get('flatten_prefixes', ())
-                                    for o in (GLOBAL_MODEL_OPTIONS, model)))
-            flatten = match(name, model, 'flatten_fields')
-            if (ct2_def is not None and flatten_prefix) or flatten:
+                flatten_name.startswith(cat(o.get('flatten_prefixes', ())
+                                            for o in (GLOBAL_MODEL_OPTIONS,
+                                                      model)))
+
+            if (not flatten and
+                ctype2 is not None and
+                model.get('strategy', 0) >= 1 and
+                name not in model.get('foreign_key_overrides', {}) and
+                name not in model.get('reference_extension_fields', ()) and
+                element.max_occurs is not None  # unbounded
+            ):
+                ct2_name = self.simplify_ns(self.global_name(ctype2))
+                if (ct2_name not in self.target_typenames) and \
+                        not get_model_for_type(ct2_name or
+                                               '%s.%s' % (typename, name)):
+                    flatten = True
+            if (ctype2 is not None and flatten_prefix) or flatten:
+                doc = get_doc(el_attr, flatten_name, model_name,
+                              doc_prefix=doc_prefix) or flatten_name
                 o = {
-                    'prefix': '%s.' % dotted_name,
-                    'doc_prefix': '%s::' % (doc or name),
+                    'dotted_prefix': '%s.' % dotted_name,
+                    'prefix': '%s_' % flatten_name,
+                    'doc_prefix': '%s::%s' % (doc, ('\n' if len(doc) > 32 else '')),
                     'attrs': attrs,
                 }
-                if ct2_def is not None:
-                    o['null'] = null or get_null(el_def)
-                    simpletype_base = self.flatten_ct(ct2_def, typename, **o)
+                if ctype2 is not None:
+                    o['null'] = null or get_null(element)
+                    simpletype_base = self.flatten_ct(ctype2, typename, **o)
                     if not simpletype_base:
                         return {}
                     el_type = simpletype_base
@@ -1312,69 +1362,67 @@ class XSDModelBuilder:
                                    ' while flattening prefix %s',
                                    o['prefix'])
 
-        if not (len(name) <= 63 or
-                match(name, model, 'drop_after_processing_fields')):
+        if not (len(name) <= 63 or drop_after):
             logger.warning("%s hits PostgreSQL column name 63 char limit!" %
                            name)
 
         basetype = None
         reference_extension = match(name, model, 'reference_extension_fields')
         if reference_extension:
-            new_prefix = '%s.' % dotted_name
-            assert ct2_def is not None, (
+            new_dotted_prefix = '%s.' % dotted_name
+            new_prefix = '%s_' % flatten_name
+            assert ctype2 is not None, (
                 'complexType not found while processing reference extension'
-                ' for prefix %s' % new_prefix
+                ' for prefix %s' % new_dotted_prefix
             )
-            ext2_def = xpath_one(ct2_def, "xs:complexContent/xs:extension")
-            if ext2_def is not None:
-                basetype = ext2_def.get("base")
+            if ctype2.is_extension():
+                basetype = self.global_name(ctype2.base_type)
             else:
                 logger.warning("No reference extension while processing prefix"
                                " %s, falling back to normal processing",
-                               new_prefix)
+                               new_dotted_prefix)
                 reference_extension = False
 
         if match(name, model, 'array_fields'):
-            if ct2_def is not None:
-                final_el_attr_def = xpath(ct2_def,
-                                          "(xs:sequence|xs:all)/xs:element|"
-                                          "xs:attribute")[0]
-                final_type = self.get_element_type(final_el_attr_def)
+            if ctype2 is not None:
+                final_el_attr = next(chain(ctype2.attributes,
+                                           ctype2.content))
+                final_type = self.get_element_type_name(final_el_attr)
             else:
-                assert el_def.get('maxOccurs', '1') == 'unbounded', (
+                assert element.max_occurs is None, (
                     '%s has no maxOccurs=unbounded or complexType, required '
                     'for array_fields'
                     % dotted_name
                 )
-                final_el_attr_def = el_attr_def
+                final_el_attr = el_attr
                 final_type = basetype or el_type
-            doc = get_doc(final_el_attr_def, name, model_name,
+            doc = get_doc(final_el_attr, name, model_name,
                           doc_prefix=doc + '::')
         else:
-            final_el_attr_def = el_attr_def
+            final_el_attr = el_attr
             final_type = basetype or el_type
 
         try:
             rel = model.get('foreign_key_overrides', {})[name]
         except KeyError:
             final_type, field = self.get_field(final_type,
-                                               final_el_attr_def,
+                                               final_el_attr,
                                                '%s.%s' % (typename, name))
         else:
             if rel != '%s.%s' % (typename, name):
-                ct2_defs = xpath(self.tree, "//xs:complexType[@name=$n]", n=rel)
-                if len(ct2_defs):
-                    ct2_def = ct2_defs[0]
-                else:
-                    ct2_def = self.get_n_to_one_relation(typename, name, el_def)[1]
+                try:
+                    fk_ctype = self.get_type(rel)
+                except KeyError:
+                    fk_ctype = self.get_n_to_one_relation(typename, name,
+                                                          element)[1]
             else:
-                rel, ct2_def = self.get_n_to_one_relation(typename, name,
-                                                          el_def)
-            self.make_model(rel, ct2_def)
+                rel, fk_ctype = self.get_n_to_one_relation(typename, name,
+                                                           element)
+            self.make_model(rel, fk_ctype)
             field = {
                 'name': 'models.ForeignKey',
-                'options': [get_model_for_type(rel),
-                            'on_delete=models.PROTECT']
+                'options': dict(_=get_model_for_type(rel),
+                                on_delete='models.PROTECT'),
             }
 
         choices = field.get('choices', [])
@@ -1385,9 +1433,9 @@ class XSDModelBuilder:
         over_class = override_field_class(model_name, typename, name)
         if over_class:
             field = {'name': over_class,
-                     'options': field.get('options', [])}
+                     'options': field.get('options', {})}
 
-        options = field.get('options', [])
+        options = field.get('options', {})
 
         new_null = null or match(name, model, 'null_fields')
         if new_null:
@@ -1396,42 +1444,44 @@ class XSDModelBuilder:
                                " null=True. Skipping null=True",
                                model_name, name)
             else:
-                options.append('null=True')
+                options['null'] = 'True'
         else:
-            default = (final_el_attr_def.get('default') or
-                       final_el_attr_def.get('fixed'))
+            default = (final_el_attr.default or
+                       final_el_attr.fixed)
             if default:
                 default = parse_default(final_type, default)
-                options.append('default=%s' % repr(default))
+                options['default'] = repr(default)
 
         if match(name, model, 'array_fields'):
-            field['wrap'] = 'ArrayField'
+            field = dict(field, wrap='ArrayField')
 
-        if el_def is not None:
-            max_occurs = el_def.get("maxOccurs", "1")
+        if element is not None:
+            max_occurs = element.max_occurs
             assert \
-                (max_occurs == "1") or (field.get('wrap') == "ArrayField"), (
+                (max_occurs == 1) or (field.get('wrap') == "ArrayField"), (
                     "caught maxOccurs=%s in %s.%s (@type=%s). Consider adding"
                     " it to many_to_many_fields, one_to_many_fields,"
-                    " array_fields, or json_fields" % (max_occurs, typename,
-                                                       name, el_type)
+                    " array_fields, or json_fields" %
+                    ('unbounded' if max_occurs is None else max_occurs,
+                     typename, name, el_type)
                 )
 
         if name == model.get('primary_key', None):
-            options.append('primary_key=True')
+            options['primary_key'] = 'True'
             this_model.number_field = name
         elif match(name, model, 'unique_fields'):
-            options.append('unique=True')
+            options['unique'] = 'True'
         if match(name, model, 'index_fields'):
-            options.append('db_index=True')
+            options['db_index'] = 'True'
         elif (match(name, model, 'gin_index_fields') or
-              match(name, model, 'plain_index_fields')):
-            options.append('db_index=INDEX_IN_META')
-        override_field_options(name, options, model)
+              match(name, model, 'plain_index_fields') or
+              match(name, model, 'strict_index_fields')):
+            options['db_index'] = 'INDEX_IN_META'
+        options = override_field_options(name, options, model)
 
         if reference_extension:
-            seq_or_choice2_def = self.get_seq_or_choice(ext2_def)
-            self.write_seq_or_choice(seq_or_choice2_def, typename,
+            self.write_seq_or_choice(self.get_own_seq_or_choice(ctype2), typename,
+                                     dotted_prefix=new_dotted_prefix,
                                      prefix=new_prefix,
                                      doc_prefix=doc_prefix,
                                      attrs=attrs,
@@ -1443,65 +1493,95 @@ class XSDModelBuilder:
                     doc=[doc] if doc else [],
                     django_field=field['name'],
                     options=options,
+                    drop_after=drop_after,
                     coalesce=coalesce_target)
 
     def make_fields(self, typename, seq_def,
+                    dotted_prefix='',
                     prefix='',
                     doc_prefix='',
                     attrs=None,
                     null=False):
         this_model = self.models[typename]
         null = (null or get_null(seq_def))
-        seqs = []
-        for group_def in xpath(seq_def, "xs:group"):
-            group_def = resolve_group_ref(self.tree, group_def)
-            seqs.extend([(s, None)
-                         for s in xpath(group_def, "xs:sequence|xs:all")])
-            seqs.extend([(None, c) for c in xpath(group_def, "xs:choice")])
-        seqs.extend([(s, None) for s in xpath(seq_def, "xs:sequence|xs:all")])
-        seqs.extend([(None, c) for c in xpath(seq_def, "xs:choice")])
 
-        for seq_or_choice_def in seqs:
-            self.write_seq_or_choice(seq_or_choice_def, typename,
-                                     prefix=prefix,
-                                     doc_prefix=doc_prefix,
-                                     attrs=attrs,
-                                     null=null)
+        for el in seq_def:
 
-        for el_def in xpath(seq_def, "xs:element"):
-            el_name = el_def.get("name") or el_def.get("ref")
-            dotted_name = prefix + el_name
-            name = prefix.replace('.', '_') + el_name
+            if isinstance(el, xmlschema.validators.XsdAnyElement):
+                attrs[''] = "Any additional elements"
+                continue
+
+            if not isinstance(el, xmlschema.validators.XsdElement):
+                self.write_seq_or_choice(el, typename,
+                                         dotted_prefix=dotted_prefix,
+                                         prefix=prefix,
+                                         doc_prefix=doc_prefix,
+                                         attrs=attrs,
+                                         null=null)
+                continue
+
+            el_name = el.local_name or el.ref
+            dotted_name = dotted_prefix + el_name
+            name = prefix + el_name
 
             this_model.add_field(
                 **self.make_a_field(typename, name, dotted_name,
-                                    el_def=el_def,
+                                    element=el,
+                                    dotted_prefix=dotted_prefix,
                                     prefix=prefix,
                                     doc_prefix=doc_prefix,
                                     attrs=attrs,
-                                    null=null or get_null(el_def))
+                                    null=null or get_null(el))
             )
 
-        if len(xpath(seq_def, "xs:any")):
-            attrs[''] = "Any additional elements"
+    def get_parent_type_name_from_ct(self, ctype):
+        seq_or_choice = self.get_own_seq_or_choice(ctype)
+        if not seq_or_choice and not ctype.is_extension() and \
+                not ctype.attributes:
+            logger.warning("no sequence/choice, no attributes, and"
+                           " no complexContent in %s complexType",
+                           ctype.prefixed_name)
+        elif not seq_or_choice and ctype.is_extension():
+            n_attributes = len(ctype.attributes)
+            ext_def = xfind(ctype.elem, "xs:complexContent/xs:extension")[0]
+            assert len(ext_def) == n_attributes, (
+                "no sequence or choice and no attributes in"
+                " extension in complexContent in %s complexType"
+                " but %d other children exist"
+                % (ctype.prefixed_name, len(ext_def) - n_attributes)
+            )
+            if not n_attributes:
+                logger.warning("no additions in extension in"
+                               " complexContent in %s complexType",
+                               ctype.prefixed_name)
 
-    def make_model(self, typename, ct_def=None, add_fields=None):
+        parent = None
+        if ctype.is_extension():
+            parent = self.simplify_ns(self.global_name(ctype.base_type))
+            assert parent, (
+                "no base attribute in extension in %s complexType"
+                % ctype.prefixed_name
+            )
+
+        return parent
+
+    def make_model(self, typename, ctype=None, add_fields=None):
         global depth
         depth += 1
 
-        if not get_model_for_type(typename):
+        model_name = get_model_for_type(typename)
+        if not model_name:
             logger.warning('Automatic model name: %s. Consider adding it to'
                            ' TYPE_MODEL_MAP\n',
                            typename)
             TYPE_MODEL_MAP[typename.replace('.', r'\.')] = typename
+            model_name = get_model_for_type(typename)
 
         if typename in self.types:
             depth -= 1
             return
 
         self.types.add(typename)
-
-        model_name = get_model_for_type(typename)
 
         model = get_opt(model_name, typename)
 
@@ -1516,128 +1596,104 @@ class XSDModelBuilder:
                 " prefix specified" % (typename, model_name)
             )
 
-        parent = None
+        parent_type = None
         deps = []
         attrs = {}
 
         if not model.get('custom', False):
-            if ct_def is None:
-                ct_def = xpath_one(self.tree, "//xs:complexType[@name=$n]",
-                                   n=typename)
-                assert ct_def is not None, "%s not found in schema" % typename
+            if ctype is None:
+                try:
+                    ctype = self.get_type(typename)
+                except KeyError:
+                    raise Exception("%s not found in schema" % typename)
 
             this_model.abstract = (model.get('abstract', False) or
-                                   ct_def.get('abstract') == 'true')
+                                   ctype.abstract)
 
-            if ct_def.get('mixed') == 'true':
+            if ctype.mixed:
                 logger.warning(
                     'xs:complexType[name="%s"] mixed=true is not supported'
                     ' yet',
                     typename
                 )
-            if len(xpath(ct_def, "xs:simpleContent")):
+            if ctype.has_simple_content():
                 logger.warning(
                     'xs:complexType[name="%s"]/xs:simpleContent is only'
                     ' supported within flatten_fields',
                     typename
                 )
-            if len(xpath(ct_def, "xs:complexContent/xs:restriction")):
+            if ctype.has_restriction():
                 logger.warning(
                     'xs:complexType[name="%s"]/xs:complexContent'
                     '/xs:restriction is not supported yet',
                     typename
                 )
 
-            doc = get_doc(ct_def, None, None)
+            doc = get_doc(ctype, None, None)
             if not doc:
-                parent_el = self.parent_map[ct_def]
-                if parent_el.tag.endswith("element"):
-                    doc = get_doc(parent_el, None, None)
+                if ctype.parent and isinstance(ctype.parent, xmlschema.validators.XsdElement):
+                    doc = get_doc(ctype.parent, None, None)
             this_model.doc = [doc] if doc else None
 
-            self.write_attributes(ct_def, typename, attrs=attrs)
-
-            seq_def, choice_def = self.get_seq_or_choice(ct_def)
-            if seq_def is None and choice_def is None:
-                ext_def = xpath_one(ct_def, "xs:complexContent/xs:extension")
-                if ext_def is None:
-                    if len(xpath(ct_def, "xs:attribute")) == 0:
-                        logger.warning("no sequence/choice, no attributes, and"
-                                       " no complexContent in %s complexType",
-                                       typename)
-                else:
-                    self.write_attributes(ext_def, typename, attrs=attrs)
-                    seq_def, choice_def = self.get_seq_or_choice(ext_def)
-                    if seq_def is None and choice_def is None:
-                        n_attributes = len(xpath(ext_def, "xs:attribute"))
-                        assert len(ext_def) == n_attributes, (
-                            "no sequence or choice and no attributes in"
-                            " extension in complexContent in %s complexType"
-                            " but %d other children exist"
-                            % (typename, len(ext_def) - n_attributes)
-                        )
-                        if not n_attributes:
-                            logger.warning("no additions in extension in"
-                                           " complexContent in %s complexType",
-                                           typename)
-                    parent = self.simplify_ns(ext_def.get("base"))
-                    assert parent, (
-                        "no base attribute in extension in %s complexType"
-                        % typename
-                    )
-                    parent = self.nsify(parent, ext_def)
-
-            if not parent:
+            parent_type = self.get_parent_type_name_from_ct(ctype)
+            if not parent_type:
                 parent_field = model.get('parent_field')
                 if parent_field:
-                    assert seq_def or choice_def, (
-                        'parent_field is set for %s but no sequence or choice'
-                        % typename
-                    )
+                    try:
+                        parent_type = next(self.global_name(el.type)
+                                           for el in ctype.content
+                                           if el.local_name == parent_field)
+                    except StopIteration:
+                        raise Exception(
+                            'parent_field is set for %s but not found'
+                            % typename
+                        )
 
-                    parent = xpath(seq_def or choice_def,
-                                   "xs:element[@name=$n]/@type",
-                                   n=parent_field)[0]
+            self.write_attributes(ctype, typename, attrs=attrs)
 
         if 'parent_type' in model:
-            parent = model['parent_type']
+            parent_type = model['parent_type']
 
-        if parent:
+        if model.get('include_parent_fields') and not parent_type:
+            logger.warning(
+                "include_parent_fields, but parent not found in %s", typename
+            )
+        if parent_type:
             if model.get('include_parent_fields'):
-                parent_def = xpath(self.tree, "//xs:complexType[@name=$n]",
-                                   n=parent)[0]
-                self.write_attributes(parent_def, typename, attrs=attrs)
-                self.write_seq_or_choice(self.get_seq_or_choice(parent_def),
-                                         typename, attrs=attrs)
-                parent = None
+                parent = self.get_type(parent_type)
+                self.write_seq_or_choice(parent.content, typename,
+                                         attrs=attrs)
             else:
-                self.make_model(parent)
+                self.make_model(parent_type)
                 if not this_model.parent_model:
-                    this_model.parent_model = self.models[parent]
-                parent_model_name = get_model_for_type(parent)
+                    this_model.parent_model = self.models[parent_type]
+                parent_model_name = get_model_for_type(parent_type)
                 deps.append(parent_model_name)
                 if not this_model.parent:
                     this_model.parent = parent_model_name
 
         if not model.get('custom', False):
-            self.write_seq_or_choice((seq_def, choice_def), typename,
-                                     attrs=attrs)
+            seq_or_choice = self.get_own_seq_or_choice(ctype)
+            if seq_or_choice:
+                self.write_seq_or_choice(seq_or_choice, typename, attrs=attrs)
 
         for f in chain(model.get('add_fields', []),
                        add_fields or []):
             related_typename = f.get('one_to_many') or f.get('one_to_one')
+            f['options'] = parse_user_options(f.get('options', []))
             if related_typename:
                 assert type(related_typename) is not bool, (
                     "one_to_many or one_to_one within add_fields should be a"
                     " typename not bool"
                 )
-                f['options'] = \
-                    [this_model.make_related_model(rel=(related_typename,
-                                                        None),
-                                                   **f)]
+                f['options'] = dict(
+                    _=this_model.make_related_model(
+                        rel=(related_typename, None),
+                        **f),
+                )
             elif f.get('django_field') in ('models.ForeignKey',
                                            'models.ManyToManyField'):
-                dep_name = get_a_type_for_model(f['options'][0], self.tree)
+                dep_name = get_a_type_for_model(f['options']['_'], self.schema)
                 if dep_name:
                     self.make_model(dep_name)
             this_model.add_field(**f)
@@ -1656,8 +1712,8 @@ class XSDModelBuilder:
             if f.get('django_field') in ('models.ForeignKey',
                                          'models.OneToOneField',
                                          'models.ManyToManyField'):
-                if not f['options'][0].startswith("'"):
-                    deps.append(f['options'][0])
+                if not f['options']['_'].startswith("'"):
+                    deps.append(f['options']['_'])
         this_model.deps = list(set(deps + (this_model.deps or [])))
 
         if not this_model.number_field:
@@ -1677,6 +1733,7 @@ class XSDModelBuilder:
         depth -= 1
 
     def make_models(self, typenames):
+        self.target_typenames = typenames
         for typename in typenames:
             if typename.startswith('/'):
                 self.make_model('typename1', xpath(self.tree, typename)[0])
@@ -1734,12 +1791,14 @@ class XSDModelBuilder:
         def merge_field(name, dotted_name, containing_models, models):
             omnipresent = (len(containing_models) == len(models))
 
-            containing_opts = (m.get(dotted_name=dotted_name,
-                                     name=name).get('options', [])
-                               for m in containing_models)
-            if not omnipresent or any('null=True' in o
+            containing_opts = [m.get(dotted_name=dotted_name,
+                                     name=name).get('options', {})
+                               for m in containing_models]
+            if not omnipresent or any((o.get('null') == 'True' or
+                                       o.get('django_field') == 'models.NullBooleanField')
                                       for o in containing_opts):
-                if any('primary_key=True' in o for o in containing_opts):
+                if any(o.get('primary_key') == 'True'
+                       for o in containing_opts):
                     logger.warning("Warning: %s is a primary key but wants"
                                    " null=True in %s",
                                    (name, dotted_name), merged_typename)
@@ -1747,9 +1806,9 @@ class XSDModelBuilder:
                     for m in containing_models:
                         f = m.get(dotted_name=dotted_name, name=name)
                         if 'options' not in f:
-                            f['options'] = []
-                        if 'null=True' not in f['options']:
-                            f['options'].append('null=True')
+                            f['options'] = {}
+                        if f['options'].get('null') != 'True':
+                            f['options']['null'] = 'True'
                             m.build_field_code(f, force=True)
 
             first_model_field = None
@@ -1768,14 +1827,17 @@ class XSDModelBuilder:
                             normalize_code(first_model_field['code']):
                         force_list = get_opt(m.model_name, m.type_name) \
                             .get('ignore_merge_mismatch_fields', ())
-                        assert f.get('dotted_name') in force_list, (
-                            "first field in type %s: %s,\n"
-                            "second field in type %s: %s"
-                            % (containing_models[0].type_name,
-                               first_model_field['code'],
-                               m.type_name,
-                               f['code'])
-                        )
+                        if f.get('dotted_name') not in force_list:
+                            first_model_field['code'] = (
+                                '    # FIXME: cannot merge fields:\n'
+                                '    # first field in type %s:\n'
+                                '%s\n'
+                                '    # second field in type %s:\n'
+                                '%s\n'
+                            ) % (containing_models[0].type_name,
+                                 first_model_field['code'],
+                                 m.type_name,
+                                 f['code'])
 
             f = first_model_field
 
@@ -1802,15 +1864,14 @@ class XSDModelBuilder:
 
         def merge_model_parents(models, merged_models):
             def fix_related_name(m, f):
-                old_relname_prefix = 'related_name="%s_as_' \
+                old_relname_prefix = '"%s_as_' \
                     % camelcase_to_underscore(m.model_name)
-                for j, option in enumerate(f.get('options', [])):
-                    if option.startswith(old_relname_prefix):
-                        f['options'][j] = 'related_name="%s_as_%s' \
-                            % (camelcase_to_underscore(parents[1]),
-                               option[len(old_relname_prefix):])
-                        m.build_field_code(f, force=True)
-                        break
+                option = f.get('options', {}).get('related_name', '')
+                if option.startswith(old_relname_prefix):
+                    options['related_name'] = '"%s_as_%s' \
+                        % (camelcase_to_underscore(parents[1]),
+                           option[len(old_relname_prefix):])
+                    m.build_field_code(f, force=True)
 
             def check_fields(parent_model, parent_name, m, f, f1):
                 parent_opts = get_opt(parent_model.model_name,
@@ -1862,14 +1923,25 @@ class XSDModelBuilder:
                     f1.get('django_field') == 'models.OneToOneField' and
                     f2.get('django_field') == 'models.ForeignKey'
                 )
+
+                single_and_array = (
+                    f2.get('django_field') == 'ArrayField' and
+                    f1.get('django_field') == f2.get('options', {}).get('_')
+                )
+                if single_and_array:
+                    f1['django_field'] = f2['django_field']
+                    f1['options']['_'] = f2['options']['_']
+
                 drop_and_add = (f1.get('drop') and not f2.get('drop'))
                 if drop_and_add:
                     f2['code'] = \
                         '    # The original {dotted_name} is dropped and' \
                         ' replaced by an added one\n{code}'.format(**f2)
-                if fk_and_one_to_one or drop_and_add:
-                    f1.clear()
-                    f1.update(f2)
+
+                if any((fk_and_one_to_one, single_and_array, drop_and_add)):
+                    if not single_and_array:
+                        f1.clear()
+                        f1.update(f2)
                     return
 
         merged_models = dict()
