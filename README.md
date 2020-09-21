@@ -179,3 +179,9 @@ It may define the following module-level variables:
 
    DOC_PREPROCESSOR = doc_preprocessor
    ```
+
+* `JSON_DOC_HEADING` is documentation heading template for `JsonField`s.
+
+* `JSON_GROUP_HEADING` is documentation attribute group heading template for `JsonField`s.
+
+* `JSON_DOC_INDENT` is indent prefix in documentation sublists. The default is 4 spaces, which is compatible between Markdown and reStructuredText.

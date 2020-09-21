@@ -28,15 +28,18 @@ from copy import deepcopy
 import datetime
 import decimal
 from functools import partial, wraps
-from itertools import chain
+from itertools import chain, groupby
 import json
 import logging
+from operator import itemgetter
 import os.path
 import re
 import sys
 
 from docopt import docopt
+import ndifflib
 from lxml import etree
+
 
 try:
     from xsd_to_django_model_settings import TYPE_MODEL_MAP
@@ -66,6 +69,18 @@ try:
     from xsd_to_django_model_settings import DOC_PREPROCESSOR
 except ImportError:
     DOC_PREPROCESSOR = ''
+try:
+    from xsd_to_django_model_settings import JSON_DOC_HEADING
+except ImportError:
+    JSON_DOC_HEADING = "JSON attributes:\n"
+try:
+    from xsd_to_django_model_settings import JSON_GROUP_HEADING
+except ImportError:
+    JSON_GROUP_HEADING = "*   JSON attribute group \u2013 "
+try:
+    from xsd_to_django_model_settings import JSON_DOC_INDENT
+except ImportError:
+    JSON_DOC_INDENT = " " * 4
 
 
 BASETYPE_FIELD_MAP = {
@@ -117,13 +132,14 @@ HEADER = ('# THIS FILE IS GENERATED AUTOMATICALLY. DO NOT EDIT\n'
           '# -*- coding: utf-8 -*-\n\n'
           'from __future__ import unicode_literals\n\n')
 
-RE_SPACES = re.compile(r'  +')
+RE_SPACES = re.compile('([^\n])  +', re.U)
 RE_KWARG = re.compile(r'^[a-zi0-9_]+=')
 RE_CAMELCASE_TO_UNDERSCORE_1 = re.compile(r'(.)([A-Z][a-z]+)')
 RE_CAMELCASE_TO_UNDERSCORE_2 = re.compile(r'([a-z0-9])([A-Z])')
 RE_RELATED_FIELD = re.compile(r'^models\.(ForeignKey|ManyToManyField)$')
 RE_RE_DECIMAL = re.compile(r'\\d\{(|(\d+),)(\d+)\}'
                            r'\(?\\\.\\d\{(|(\d+),)(\d+)\}(\)\?)?')
+RE_MARKDOWN_LIST_ENTRY = re.compile(r"^([-+ *]|\d+[).]) ")
 
 logging.basicConfig(level=logging.INFO)
 logger = logging.getLogger(__name__)
@@ -226,9 +242,15 @@ def get_doc(el_def, name, model_name, doc_prefix=None):
             pass
     doc = chain(xpath(el_def, "xs:annotation/xs:documentation"),
                 xpath(el_def, "xs:complexType/xs:annotation/xs:documentation"))
-    doc = '\n'.join([RE_SPACES.sub(' ', d.text.strip())
-                     .rstrip('.').replace(' )', ')').replace('\n\n', '\n')
-                     for d in doc if d.text])
+    doc = '\n'.join([RE_SPACES.sub(r'\1 ', d.strip())
+                     .replace(' )', ')').replace('\n\n', '\n').replace(' \n', '\n')
+                     for d in doc])
+    if choices:
+        doc = ((doc + ':\n') if doc else '') + '\n'.join(
+            '%s%s' % (c[0], ' - %s' % c[1] if c[1] != c[0] else '')
+            for c in choices
+            if not re.search(r"^%s(| - .*)$" % c[0], doc or "", re.M)
+        )
     if DOC_PREPROCESSOR:
         doc = DOC_PREPROCESSOR(doc)
     if doc_prefix:
@@ -236,13 +258,46 @@ def get_doc(el_def, name, model_name, doc_prefix=None):
     return doc or None
 
 
+def circled(n):
+    return chr(n + (0x2460 if n < 20 else (0x3251 - 20)))
+
+
+def mark_diff_n(seq, n):
+    for containers, lines in seq:
+        if len(containers) == n:
+            prefix = ''
+        else:
+            prefix = ''.join(circled(n) + ' ' for n in containers)
+        for line in lines:
+            yield prefix + line
+
+
+def makediff_n(sequences):
+    if len(sequences) == 1:
+        return sequences[0]
+    sm = ndifflib.SequenceMatcher(None, *sequences).get_opcodes()
+    markup = []
+    for opcode, begins, indices in sm:
+        if opcode == 'equal':
+            containers = list(range(len(begins)))
+        else:
+            containers = list(n for n in range(len(begins))
+                              if indices[n] != begins[n])
+        container = containers[0]
+        sequence = sequences[container]
+        markup.append((containers,
+                       sequence[begins[container]:indices[container]]))
+    return mark_diff_n(markup, len(sequences))
+
+
+@memoize
 def stringify(s):
-    if type(s) is list:
-        s = '|'.join(el.strip() for el in s)
-    return '"%s"' % RE_SPACES.sub(' ', s.strip()) \
+    if type(s) is tuple:
+        s = sorted(set(el.strip() for el in s))
+        s = '\n'.join(makediff_n([el.split('\n') for el in s]))
+    return '"%s"' % s \
         .replace('\\', '\\\\') \
         .replace('"', '\\"') \
-        .replace('\n\n', '\n') \
         .replace('\n', '\\n"\n"')
 
 
@@ -250,6 +305,7 @@ def get_null(el_def):
     return el_def.get("minOccurs", None) == "0"
 
 
+@memoize
 def get_ns(typename):
     if typename and ':' in typename:
         return typename.split(':')[0]
@@ -262,6 +318,7 @@ def strip_ns(typename):
     return typename
 
 
+@memoize
 def camelcase_to_underscore(name):
     s1 = RE_CAMELCASE_TO_UNDERSCORE_1.sub(r'\1_\2', name)
     return RE_CAMELCASE_TO_UNDERSCORE_2.sub(r'\1_\2', s1).lower()
@@ -363,6 +420,25 @@ def resolve_group_ref(tree, group_def):
     return resolve_ref(tree, group_def, "xs:group")
 
 
+def indent_multiline(doc, indent):
+    return "\n{indent}{doc}\n".format(doc=doc.replace("\n", "\n" + indent),
+                                      indent=indent)
+
+
+def markdown_to_bullet_list(doc, first=""):
+    result = []
+    for n, line in enumerate(doc.split('\n')):
+        if n == 0:
+            prefix = first
+        elif RE_MARKDOWN_LIST_ENTRY.match(line):
+            prefix = " " * len(first)
+        else:
+            prefix = first
+        if line:
+            result.append(prefix + line)
+    return '\n'.join(result)
+
+
 class Model:
 
     def __init__(self, builder, model_name, type_name):
@@ -382,15 +458,62 @@ class Model:
 
     def build_attrs_options(self, kwargs):
         if kwargs.get('name') == 'attrs':
-            # Add parent attrs in child model definition, pseudo-inheritance
+            # Include parent attrs in child model definition, pseudo-inheritance
             attrs = next((f['attrs'] for f in (self.parent_model.fields
                                                if self.parent_model else [])
                           if 'attrs' in f),
                          {})
             attrs.update(kwargs['attrs'])
-            attrs_str = '\n'.join('%s [%s]\n' % x
-                                  for x in sorted(attrs.items()))
-            kwargs['doc'] = ['JSON attributes:\n%s' % attrs_str]
+            attrs_lines = []
+
+            diffed_attrs = (
+                (name,
+                 '\n'.join(makediff_n([d.split('\n')
+                                       for d in multidoc.split('\n|')])))
+                for name, multidoc in attrs.items()
+            )
+
+            def split_prefix(pair):
+                name, s = pair
+                return [name] + (list(map(str.strip, s.rsplit("::", maxsplit=1))) if "::" in s
+                                 else ["", s])
+
+            diffed_attrs_with_prefixes = map(split_prefix, diffed_attrs)
+
+            def prefix_key(triple):
+                name, prefix, doc = triple
+                return (prefix, name)
+
+            def process_multiline(s, indent=""):
+                if '\n' not in s:
+                    return s
+                return indent_multiline(s, indent=indent + JSON_DOC_INDENT) \
+                    .replace('\n', '\n\n').rstrip()
+
+            current_indent = ""
+
+            for prefix, it in groupby(sorted(diffed_attrs_with_prefixes,
+                                             key=prefix_key),
+                                      key=itemgetter(1)):
+                prefix_attrs = list(it)
+                if prefix:
+                    if current_indent or len(prefix_attrs) > 1:
+                        attrs_lines.append("%s%s\n" %
+                                           (JSON_GROUP_HEADING,
+                                            process_multiline(prefix)))
+                        current_indent = JSON_DOC_INDENT
+                    else:
+                        prefix_attrs = [(name, 0, "::".join((prefix, doc)))
+                                        for name, _, doc in prefix_attrs]
+                for name, _, doc in prefix_attrs:
+                    attrs_lines.append('%s%s``%s`` \u2013 %s\n' %
+                                       (current_indent,
+                                        "*".ljust(len(JSON_DOC_INDENT)),
+                                        name,
+                                        process_multiline(doc,
+                                                          current_indent)))
+            attrs_str = '\n'.join(attrs_lines)
+            kwargs['doc'] = [JSON_DOC_HEADING + attrs_str]
             kwargs['options'] = [
                 'null=True'
             ]
@@ -479,7 +602,16 @@ class Model:
                                       GLOBAL_MODEL_OPTIONS.get('meta', []))]
         if self.doc and not any(option for option in meta
                                 if option.startswith('verbose_name = ')):
-            meta.append('verbose_name = %s' % stringify(self.doc))
+            doc = stringify(tuple(self.doc)
+                            if type(self.doc) is list else self.doc)
+            if '\n' in doc:
+                indent = " " * 4
+                doc = '({doc}{indent}{indent})'.format(
+                    doc=indent_multiline(doc, indent=indent * 3),
+                    indent=indent,
+                )
+            meta.append('verbose_name = %s' % doc)
+
         if self.abstract and not any(option for option in meta
                                      if option.startswith('abstract = ')):
             meta.append('abstract = True')
@@ -509,7 +641,22 @@ class Model:
         if methods:
             methods = '\n\n' + methods
 
-        content = ''.join(['\n'.join(f['code'] for f in self.fields),
+        one_to_many_fields = [f for f in self.fields if 'one_to_many' in f]
+        one_to_many_descriptions = [
+            ' ' * 8 + stringify(name) + ": " +
+            stringify(tuple(chain.from_iterable(
+                _['doc']
+                for _ in one_to_many_fields if _['name'] == name
+            ))) + ",\n"
+            for name in sorted(set(f['name'] for f in one_to_many_fields))
+        ]
+        one_to_many_descriptions = (
+            '    AUTO_ONE_TO_MANY_FIELDS = {\n' +
+            ''.join(one_to_many_descriptions) +
+            '    }\n'
+        ) if one_to_many_descriptions else ''
+        content = ''.join([one_to_many_descriptions,
+                           '\n'.join(f['code'] for f in self.fields),
                            meta,
                            methods])
         if not content:
@@ -1232,11 +1379,8 @@ class XSDModelBuilder:
 
         choices = field.get('choices', [])
         if any(c[0] not in (doc or '') for c in choices):
-            doc = (doc + '\n' if doc else '') + '\n'.join(
-                '%s%s' % (c[0], ' - %s' % c[1] if c[1] != c[0] else '')
-                for c in choices
-                if '\n%s - ' % c[0] not in (doc or '')
-            )
+            doc = get_doc(el_attr, name, model_name,
+                          doc_prefix=doc_prefix, choices=choices)
 
         over_class = override_field_class(model_name, typename, name)
         if over_class:
@@ -1563,9 +1707,10 @@ class XSDModelBuilder:
             attrs = {}
             for key in set(chain(attrs1.keys(), attrs2.keys())):
                 if key in attrs1 and key in attrs2:
-                    attrs[key] = '|'.join(squeeze_docs(cat(a[key].split('|')
-                                                           for a in (attrs1,
-                                                                     attrs2))))
+                    attrs[key] = '\n|'.join(squeeze_docs(cat(
+                        a[key].split('\n|')
+                        for a in (attrs1, attrs2)
+                    )))
                 else:
                     attrs[key] = attrs1.get(key, attrs2.get(key))
             f1['attrs'] = attrs
@@ -1699,6 +1844,7 @@ class XSDModelBuilder:
                 del parents[0]
             return parents
 
+        @memoize
         def normalize_code(s):
             s = s.replace('..', '.')
             s = re.sub(r'(\n?    # xs:choice (start|end)\n?'
