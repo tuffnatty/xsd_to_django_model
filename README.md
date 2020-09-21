@@ -4,7 +4,6 @@ Generate Django models from an XSD schema description (and a bunch of hints)
 ## TODO
 * More examples.
 * More heuristics.
-* Python 3 support.
 * `xs:complexType/(xs:simpleContent|xs:complexContent)/xs:restriction` support.
 * `xs:simpleType/xs:union` support.
 * ...?
@@ -142,6 +141,7 @@ It may define the following module-level variables:
   * `primary_key` specifies a single field name for which `primary_key=True` Django model field option is to be generated.
   * `reference_extension_fields` - a `list` of field names which use `xs:complexType/xs:complexContent/xs:extension' inheritance schema but extend the base type with extra members; these fields will be mapped to a `ForeignKey` to their base type's model, and the extension members will be flattened (as in `flatten_fields`).
   * `skip_code` - if `True`, the generated model code is to be skipped when saving the models module.
+  * `strict_index_fields` - a `list` of Django model fields to generate a composite index including the primary key.
   * `unique_fields` - a `list` of Django model fields for which `unique=True` option should be generated.
 
 * `GLOBAL_MODEL_OPTIONS` is a `dict` of model options applied to each model (but may be overridden by the respective options in that very model):

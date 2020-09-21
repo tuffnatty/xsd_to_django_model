@@ -37,7 +37,6 @@ import sys
 
 from docopt import docopt
 from lxml import etree
-import six
 
 try:
     from xsd_to_django_model_settings import TYPE_MODEL_MAP
@@ -166,7 +165,7 @@ def xpath_one(root, path, **kwargs):
 
 @memoize
 def get_model_for_type(name):
-    for expr, sub in six.iteritems(TYPE_MODEL_MAP):
+    for expr, sub in TYPE_MODEL_MAP.items():
         if re.match(expr + '$', name):
             return re.sub(expr + '$', sub, name).replace('+', '')
     return None
@@ -174,7 +173,7 @@ def get_model_for_type(name):
 
 def get_a_type_for_model(name, tree):
     names = (name, '+%s' % name)
-    exprs = (expr for expr, sub in six.iteritems(TYPE_MODEL_MAP)
+    exprs = (expr for expr, sub in TYPE_MODEL_MAP.items()
              if ('(' not in expr and '\\' not in expr and sub in names))
     typename = None
     for expr in exprs:
@@ -186,7 +185,7 @@ def get_a_type_for_model(name, tree):
 
 @memoize
 def get_merge_for_type(name):
-    for expr, sub in six.iteritems(TYPE_MODEL_MAP):
+    for expr, sub in TYPE_MODEL_MAP.items():
         if re.match(expr + '$', name):
             return sub.startswith('+')
     return False
@@ -197,10 +196,10 @@ def get_opt(model_name, typename=None):
     opt = MODEL_OPTIONS.get(model_name, {})
     if not typename:
         return opt
-    for opt2 in (o for pattern, o in six.iteritems(opt.get('if_type', {}))
+    for opt2 in (o for pattern, o in opt.get('if_type', {}).items()
                  if re.match(pattern + '$', typename)):
         opt = deepcopy(opt)
-        for k, v in six.iteritems(opt2):
+        for k, v in opt2.items():
             try:
                 v1 = opt[k]
             except KeyError:
@@ -208,8 +207,8 @@ def get_opt(model_name, typename=None):
             else:
                 if type(v1) == dict and type(v) == dict:
                     opt[k] = dict(v1, **v)
-                elif isinstance(v1, six.string_types) and \
-                        isinstance(v, six.string_types):
+                elif isinstance(v1, (str, bytes)) and \
+                        isinstance(v, (str, bytes)):
                     opt[k] = v
                 elif k == 'add_fields':
                     opt[k] = list(chain(v1, v))
@@ -270,8 +269,8 @@ def camelcase_to_underscore(name):
 
 def coalesce(name, model):
     for expr, sub in \
-        chain(six.iteritems(GLOBAL_MODEL_OPTIONS.get('coalesce_fields', {})),
-              six.iteritems(model.get('coalesce_fields', {}))):
+        chain(GLOBAL_MODEL_OPTIONS.get('coalesce_fields', {}).items(),
+              model.get('coalesce_fields', {}).items()):
         match = re.match(expr + '$', name)
         if match:
             return re.sub(expr + '$', sub, name)
@@ -484,13 +483,17 @@ class Model:
         if self.abstract and not any(option for option in meta
                                      if option.startswith('abstract = ')):
             meta.append('abstract = True')
-        indexes = \
+
+        indexes = list(chain(
+            ['models.Index(fields=["%s", "%s"])' % (f, model_options.get('primary_key', 'id'))
+             for f in model_options.get('strict_index_fields', [])],
             ['GinIndex(fields=["%s"])' % f
-             for f in model_options.get('gin_index_fields', [])] + \
+             for f in model_options.get('gin_index_fields', [])],
             ['models.Index(fields=["%s"])' % f
              for f in list(set(model_options.get('plain_index_fields', [])) -
                            set(model_options.get('unique_fields', [])))
-             if f != model_options.get('primary_key')]
+             if f != model_options.get('primary_key')],
+        ))
         if indexes:
             meta.append('indexes = [\n            %s\n        ]'
                         % ',\n            '.join(sorted(indexes)))
@@ -1496,7 +1499,7 @@ class XSDModelBuilder:
             this_model.add_field(**f)
 
         for attr_name, attr_doc in \
-                six.iteritems(model.get('add_json_attrs', {})):
+                model.get('add_json_attrs', {}).items():
             attrs[attr_name] = attr_doc
 
         if len(attrs):
@@ -1558,7 +1561,7 @@ class XSDModelBuilder:
             attrs1 = f1['attrs']
             attrs2 = f2['attrs']
             attrs = {}
-            for key in set(chain(six.iterkeys(attrs1), six.iterkeys(attrs2))):
+            for key in set(chain(attrs1.keys(), attrs2.keys())):
                 if key in attrs1 and key in attrs2:
                     attrs[key] = '|'.join(squeeze_docs(cat(a[key].split('|')
                                                            for a in (attrs1,
@@ -1676,8 +1679,8 @@ class XSDModelBuilder:
                     % (parent_name, f1['code'], m.model_name, f['code'])
                 )
 
-            parents = sorted(set(m.parent for m in models))
-            if parents[0] is None and len(parents) == 2:
+            parents = sorted(set((m.parent or '') for m in models))
+            if parents[0] == '' and len(parents) == 2:
                 parent_model = merged_models[parents[1]]
                 for m in models:
                     if m.parent is None:
@@ -1725,7 +1728,7 @@ class XSDModelBuilder:
 
         merged_models = dict()
         merged = dict()
-        for model in six.itervalues(self.models):
+        for model in self.models.values():
             if model.model_name in merged:
                 merged[model.model_name].append(model)
             else:
@@ -1739,8 +1742,8 @@ class XSDModelBuilder:
             else:
                 merged1[model_name] = models
 
-        for model_name, models in chain(six.iteritems(merged1),
-                                        six.iteritems(merged2)):
+        for model_name, models in chain(merged1.items(),
+                                        merged2.items()):
             if len(models) == 1:
                 merged_model = models[0]
             else:
@@ -1765,7 +1768,8 @@ class XSDModelBuilder:
                 field_ids = sorted(set((f.get('coalesce', f.get('name')),
                                         ('coalesce' in f),
                                         f.get('dotted_name'))
-                                       for f in cat(m.fields for m in models)))
+                                       for f in cat(m.fields for m in models)),
+                                   key=lambda _: (_[0] or '', _[1], _[2] or ''))
                 field_ids = [(f[0], f[2], [m for m in models
                                            if m.get(dotted_name=f[2],
                                                     name=f[0])])
@@ -1808,7 +1812,7 @@ class XSDModelBuilder:
         for dep in sorted(model.deps):
             if dep != model.model_name and not get_opt(dep).get('skip_code'):
                 self.write_model(self.models[dep], outfile)
-        outfile.write(model.code.encode('utf-8'))
+        outfile.write(model.code)
         model.written = True
 
     def write(self, models_file, fields_file, map_file):
@@ -1819,7 +1823,7 @@ class XSDModelBuilder:
         for key in sorted(self.fields):
             field = self.fields[key]
             if 'code' in field:
-                fields_file.write(field['code'].encode('utf-8'))
+                fields_file.write(field['code'])
 
         models_file.write(HEADER)
         models_file.write('import datetime\n')
@@ -1840,7 +1844,9 @@ class XSDModelBuilder:
                 % ', \\\n        '.join(fields)
             )
         models_file.write(IMPORTS + '\n\n\n')
-        if any('gin_index_fields' in o or 'plain_index_fields' in o
+        if any(('gin_index_fields' in o or
+                'plain_index_fields' in o or
+                'strict_index_fields' in o)
                for o in MODEL_OPTIONS.values()):
             models_file.write('INDEX_IN_META = False  # A handy marker\n\n\n')
         for model_name in sorted(self.models.keys()):
@@ -1856,7 +1862,7 @@ class XSDModelBuilder:
                         'match_fields',
                         'number_field'):
                 value = getattr(m, key)
-                if value is not None:
+                if not (value is None or (key == 'parent' and not value)):
                     model_mapping[key] = value
             mapping[m.model_name] = model_mapping
         json.dump(mapping, map_file, ensure_ascii=False, indent=4)
@@ -1867,13 +1873,14 @@ if __name__ == '__main__':
         args = docopt(__doc__)
 
         builder = XSDModelBuilder(args['<xsd_filename>'])
-        builder.make_models([a.decode('UTF-8') for a in args['<xsd_type>']])
+        builder.make_models([(a.decode('UTF-8') if hasattr(a, 'decode') else a)
+                             for a in args['<xsd_type>']])
         builder.merge_models()
-        builder.write(open(args['-m'], "w"),
-                      open(args['-f'], "w"),
+        builder.write(codecs.open(args['-m'], "w", 'utf-8'),
+                      codecs.open(args['-f'], "w", 'utf-8'),
                       codecs.open(args['-j'], "w", 'utf-8'))
     except Exception as e:
-        logger.error('EXCEPTION: %s', six.text_type(e))
+        logger.error('EXCEPTION: %s', str(e))
         type, value, tb = sys.exc_info()
         import traceback
         import pdb
