@@ -838,16 +838,16 @@ class XSDModelBuilder:
         for v in stype.validators:
             if isinstance(v, facets.XsdEnumerationFacets):
                 choices = self.get_field_choices_from_enumerations(v._elements)
+                is_int = parent in ('SmallIntegerField', 'IntegerField', 'BigIntegerField')
                 options['choices'] = \
                     '[%s]' % ', '.join(
                         '(%s, %s)' %
-                        ((c[0] if parent == 'IntegerField'
-                          else ('"%s"' % c[0])),
+                        ((c[0] if is_int else ('"%s"' % c[0])),
                          stringify(tuple(c[1]) if type(c[1]) is list
                                    else c[1]))
                         for c in choices
                     )
-                if parent != 'IntegerField':
+                if not is_int:
                     options['max_length'] = max(len(c[0]) for c in choices)
             elif isinstance(v, facets.XsdFractionDigitsFacet):
                 options['decimal_places'] = v.value
