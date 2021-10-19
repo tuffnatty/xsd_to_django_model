@@ -1336,7 +1336,8 @@ class XSDModelBuilder:
                         drop_after=drop_after,
                         django_field='models.ManyToManyField',
                         doc=[doc] if doc else [],
-                        options=options)
+                        options=options,
+                        coalesce=coalesce_target)
 
         if element is not None:
             ctype2 = self.get_element_complex_type(element)
@@ -1465,7 +1466,11 @@ class XSDModelBuilder:
             default = (final_el_attr.default or
                        final_el_attr.fixed)
             if default:
-                default = parse_default(final_type, default)
+                try:
+                    default = parse_default(final_type, default)
+                except Exception as e:
+                    raise ValueError("%s while parsing default for %s.%s" %
+                                     (type(e), model_name, name)) from e
                 options['default'] = repr(default)
 
         if match(name, model, 'array_fields'):
@@ -1839,8 +1844,17 @@ class XSDModelBuilder:
                     else:
                         unify_special_cases(f, first_model_field)
                     merge_field_docs(first_model, first_model_field, m, f)
-                    if normalize_code(f['code']) != \
-                            normalize_code(first_model_field['code']):
+                    code1, code2 = (normalize_code(f['code']),
+                                    normalize_code(first_model_field['code']))
+                    if not code1 or not code2:
+                        # Looks like one of them is fully coalesced, can concatenate code
+                        if first_model_field['code'] in f['code']:
+                            first_model_field['code'] = f['code']
+                        elif f['code'] in first_model_field['code']:
+                            pass
+                        else:
+                            first_model_field['code'] = first_model_field['code'] + f['code']
+                    elif code1 != code2:
                         force_list = get_opt(m.model_name, m.type_name) \
                             .get('ignore_merge_mismatch_fields', ())
                         if f.get('dotted_name') not in force_list:
@@ -2070,7 +2084,7 @@ class XSDModelBuilder:
                               ' GinIndex\n')
 
         models_file.write('\n')
-        fields = sorted(f['name'] for f in self.fields.values())
+        fields = sorted(f['name'] for f in self.fields.values() if 'code' in f)
         if len(fields):
             models_file.write(
                 'from .fields import \\\n        %s\n'
