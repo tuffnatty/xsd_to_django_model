@@ -854,6 +854,11 @@ class XSDModelBuilder:
             elif isinstance(v, facets.XsdLengthFacet) and parent != 'IntegerField':
                 options['max_length'] = v.value * \
                     GLOBAL_MODEL_OPTIONS.get('charfield_max_length_factor', 1)
+            elif isinstance(v, facets.XsdMaxExclusiveFacet):
+                validators.append('MaxValueValidator(%s)' %
+                                  ((parsedate(v.value) - datetime.timedelta(days=1))
+                                   if parent == 'DateField'
+                                   else (v.value - 1)))
             elif isinstance(v, facets.XsdMaxInclusiveFacet):
                 validators.append('MaxValueValidator(%s)' %
                                   (parsedate(v.value)
@@ -862,6 +867,11 @@ class XSDModelBuilder:
             elif isinstance(v, facets.XsdMaxLengthFacet):
                 options['max_length'] = v.value * \
                     GLOBAL_MODEL_OPTIONS.get('charfield_max_length_factor', 1)
+            elif isinstance(v, facets.XsdMinExclusiveFacet):
+                validators.append('MinValueValidator(%s)' %
+                                  ((parsedate(v.value) + datetime.timedelta(days=1))
+                                   if parent == 'DateField'
+                                   else (v.value + 1)))
             elif isinstance(v, facets.XsdMinInclusiveFacet):
                 validators.append('MinValueValidator(%s)' %
                                   (parsedate(v.value)
