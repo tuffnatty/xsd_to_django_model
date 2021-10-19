@@ -32,7 +32,6 @@ from itertools import chain, groupby
 import json
 import logging
 from operator import itemgetter
-import os.path
 import pickle
 import re
 import sys
@@ -344,13 +343,16 @@ def camelcase_to_underscore(name):
 
 
 def coalesce(name, model, option):
-    for expr, sub in \
-        chain(GLOBAL_MODEL_OPTIONS.get(option, {}).items(),
-              model.get(option, {}).items()):
-        match = re.match(expr + '$', name)
-        if match:
-            return re.sub(expr + '$', sub, name)
-    return None
+    try:
+        expr, sub = next(
+            (expr, sub)
+            for expr, sub in chain(GLOBAL_MODEL_OPTIONS.get(option, {}).items(),
+                                   model.get(option, {}).items())
+            if re.match(expr + '$', name)
+        )
+    except StopIteration:
+        return None
+    return re.sub(expr + '$', sub, name)
 
 
 def match(name, model, kind):
@@ -391,8 +393,7 @@ def override_field_class(model_name, typename, name):
 def parse_default(basetype, default):
     if basetype == "xs:boolean":
         assert default in ("true", "false"), (
-            "cannot parse boolean %s.%s default value: %s"
-            % (model_name, name, default)
+            "cannot parse boolean default value: %s" % default
         )
         return (default == "true")
     if basetype == "xs:date":
@@ -568,13 +569,15 @@ class Model:
                 if kwargs.get('dotted_name') and \
                         kwargs.get('name') and \
                         kwargs.get('name') != kwargs['dotted_name'].replace('.', '_'):
-                    kwargs['code'] = FIELD_TMPL['_coalesce'].format(coalesce=kwargs.get('name'), **kwargs)
+                    kwargs['code'] = FIELD_TMPL['_coalesce'].format(coalesce=kwargs.get('name'),
+                                                                    **kwargs)
                 else:
                     kwargs['code'] = ''
 
             if len(kwargs.get('name', '')) > 63 and \
                     kwargs.get('django_field') not in ('models.ManyToManyField',):
-                kwargs['code'] += "    # FIXME: {name} hits PostgreSQL column name 63 char limit!\n".format(**kwargs)
+                kwargs['code'] += \
+                    "    # FIXME: %(name)s hits PostgreSQL column name 63 char limit!\n" % kwargs
 
             if not skip_code:
                 def serialized(options):
@@ -793,7 +796,7 @@ class XSDModelBuilder:
         while ptr:
             parent = ptr.parent
             if parent is None and (
-                ptr.elem.tag.endswith(("}complexType", "}simpleType")) or \
+                ptr.elem.tag.endswith(("}complexType", "}simpleType")) or
                 ptr == element
             ):
                 name = ptr.elem.get('name')
@@ -884,16 +887,16 @@ class XSDModelBuilder:
             if parent != 'IntegerField':
                 # Try to infer max_length from regexp
                 match = re.match(r'\\d\{(\d+,)?(\d+)\}$', pattern)
-                l = None
+                max_length = None
                 if match:
-                    l = match.group(2)
+                    max_length = match.group(2)
                 else:
                     match = re.match(r'(\\d\{\d+\}\|)+\\d\{\d+\}$', pattern)
                     if match:
-                        l = max(int(match)
-                                for match in re.findall(r'\\d\{(\d+)\}', pattern))
-                if l:
-                    options['max_length'] = int(l) * \
+                        max_length = max(int(match)
+                                         for match in re.findall(r'\\d\{(\d+)\}', pattern))
+                if max_length:
+                    options['max_length'] = int(max_length) * \
                         GLOBAL_MODEL_OPTIONS.get('charfield_max_length_factor',
                                                  1)
             if parent == 'DecimalField':
@@ -920,7 +923,6 @@ class XSDModelBuilder:
         if isinstance(stype, xmlschema.validators.XsdComplexType):
             return None, None, None
         return self.get_field_data_from_simpletype(stype)
-
 
     def get_field(self, typename, element=None, el_path=''):
         simplified_typename = self.simplify_ns(typename)
@@ -966,8 +968,10 @@ class XSDModelBuilder:
                                         on_delete='models.PROTECT'),
                     }
                 if 'choices' in options:
-                    validator = next(v for v in self.get_type(typename).validators
-                                     if isinstance(v, xmlschema.validators.facets.XsdEnumerationFacets))
+                    validator = next(
+                        v for v in self.get_type(typename).validators
+                        if isinstance(v, xmlschema.validators.facets.XsdEnumerationFacets)
+                    )
 
                     choices = \
                         self.get_field_choices_from_enumerations(validator._elements)
@@ -1243,7 +1247,8 @@ class XSDModelBuilder:
         drop_after = match(name, model, 'drop_after_processing_fields')
         coalesce_target = None
         if not drop_after:
-            name, coalesce_target, coalesced_dotted_name = do_coalesce(name, 'level1_substitutions', 'coalesce_fields')
+            name, coalesce_target, coalesced_dotted_name = \
+                do_coalesce(name, 'level1_substitutions', 'coalesce_fields')
 
         assert isinstance(model.get('flatten_fields', ()),
                           (tuple, list, set)), \
@@ -1330,7 +1335,8 @@ class XSDModelBuilder:
                                             for o in (GLOBAL_MODEL_OPTIONS,
                                                       model)))
 
-            if (not flatten and
+            if (
+                not flatten and
                 ctype2 is not None and
                 model.get('strategy', 0) >= 1 and
                 name not in model.get('foreign_key_overrides', {}) and
@@ -1736,7 +1742,7 @@ class XSDModelBuilder:
         self.target_typenames = typenames
         for typename in typenames:
             if typename.startswith('/'):
-                self.make_model('typename1', xpath(self.tree, typename)[0])
+                self.make_model('typename1', self.schema.elements[typename[1:]].type)
             else:
                 self.make_model(typename)
 
@@ -1834,6 +1840,7 @@ class XSDModelBuilder:
                                 '%s\n'
                                 '    # second field in type %s:\n'
                                 '%s\n'
+                                '    # EOFIXME\n'
                             ) % (containing_models[0].type_name,
                                  first_model_field['code'],
                                  m.type_name,
@@ -1866,7 +1873,8 @@ class XSDModelBuilder:
             def fix_related_name(m, f):
                 old_relname_prefix = '"%s_as_' \
                     % camelcase_to_underscore(m.model_name)
-                option = f.get('options', {}).get('related_name', '')
+                options = f.get('options', {})
+                option = options.get('related_name', '')
                 if option.startswith(old_relname_prefix):
                     options['related_name'] = '"%s_as_%s' \
                         % (camelcase_to_underscore(parents[1]),
@@ -1947,10 +1955,7 @@ class XSDModelBuilder:
         merged_models = dict()
         merged = dict()
         for model in self.models.values():
-            if model.model_name in merged:
-                merged[model.model_name].append(model)
-            else:
-                merged[model.model_name] = [model]
+            merged.setdefault(model.model_name, []).append(model)
         merged1 = dict()
         merged2 = dict()
         for model_name in merged.keys():
