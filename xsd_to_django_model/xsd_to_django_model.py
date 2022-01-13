@@ -1135,8 +1135,9 @@ class XSDModelBuilder:
 
     def get_own_seq_or_choice(self, ctype):
         return (next(iter(ctype.content[1:]), None)
-                if ctype.is_extension()
-                else ctype.content)
+                if ctype.is_extension() and ctype.has_complex_content()
+                else ([] if ctype.is_extension() and ctype.has_simple_content()
+                      else ctype.content))
 
     def write_seq_or_choice(self, seq_or_choice, typename,
                             dotted_prefix='',
@@ -1267,10 +1268,13 @@ class XSDModelBuilder:
             return True
         ctype2 = self.get_element_complex_type(element)
         if ctype2 is not None and \
+                ctype2.has_complex_content() and \
                 len(ctype2.content) == 1 and \
                 ctype2.content[0].max_occurs == MAX_OCCURS_UNBOUNDED:
             t3_name = self.simplify_ns(self.global_name(ctype2.content[0].type))
             model = get_model_for_type(t3_name or "%s.%s" % (typename, name))
+            # If referencing one of our explicit target types, then it's an eligible many-to-many
+            # field, otherwise it's an eligible one-to-many field:
             return any(get_model_for_type(t) == model
                        for t in self.target_typenames) != (n == 1)
         return False
@@ -1463,6 +1467,9 @@ class XSDModelBuilder:
             if ctype2 is not None:
                 final_el_attr = next(chain(ctype2.attributes,
                                            ctype2.content))
+                ctype3 = self.get_element_complex_type(final_el_attr)
+                if ctype3 and len(ctype3.content) == 1:
+                    final_el_attr = ctype3.content[0]
                 final_type = self.get_element_type_name(final_el_attr)
             else:
                 assert element.max_occurs == MAX_OCCURS_UNBOUNDED, (
@@ -1624,7 +1631,8 @@ class XSDModelBuilder:
                            ctype.prefixed_name)
         elif not seq_or_choice and ctype.is_extension():
             n_attributes = len(ctype.attributes)
-            ext_def = xfind(ctype.elem, "xs:complexContent/xs:extension")[0]
+            complexity = ("complex" if ctype.has_complex_content() else "simple")
+            ext_def = xfind(ctype.elem, "xs:%sContent/xs:extension" % complexity)[0]
             assert len(ext_def) == n_attributes, (
                 "no sequence or choice and no attributes in"
                 " extension in complexContent in %s complexType"
@@ -1739,7 +1747,14 @@ class XSDModelBuilder:
             logger.warning(
                 "include_parent_fields, but parent not found in %s", typename
             )
-        if parent_type:
+        if parent_type and parent_type in BASETYPE_FIELD_MAP:
+            # Probably simpleContent
+            this_model.add_field(django_field=BASETYPE_FIELD_MAP[parent_type],
+                                 name=ctype.parent.local_name,
+                                 dotted_name=ctype.parent.local_name,
+                                 doc=doc,
+                                 options=[])
+        elif parent_type:
             if model.get('include_parent_fields'):
                 parent = self.get_type(parent_type)
                 self.write_seq_or_choice(parent.content, typename,
