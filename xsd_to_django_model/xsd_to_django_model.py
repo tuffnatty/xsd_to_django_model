@@ -150,6 +150,8 @@ RE_RE_DECIMAL = re.compile(r'\\d\{(|(\d+),)(\d+)\}'
 RE_FIELD_CLASS_FILTER = re.compile(r'[^a-zA-Z0-9_]')
 RE_MARKDOWN_LIST_ENTRY = re.compile(r"^([-+ *]|\d+[).]) ")
 
+MAX_OCCURS_UNBOUNDED = None
+
 logging.basicConfig(level=logging.INFO)
 logger = logging.getLogger(__name__)
 
@@ -1056,8 +1058,8 @@ class XSDModelBuilder:
         return t
 
     def global_name(self, type_):
-        return xmlschema.qnames.get_prefixed_qname(type_.name,
-                                                   self.schema.namespaces)
+        return xmlschema.helpers.get_prefixed_qname(type_.name,
+                                                    self.schema.namespaces)
 
     def make_field_class(self, typename, doc, parent, options, choices):
         name = RE_FIELD_CLASS_FILTER.sub('_', typename) + 'Field'
@@ -1191,14 +1193,14 @@ class XSDModelBuilder:
                 attrs[''] = "Any additional attributes"
 
     def get_n_to_many_relation(self, typename, name, element):
-        if element.max_occurs is None:  # unbounded
+        if element.max_occurs == MAX_OCCURS_UNBOUNDED:
             el2 = element
             el2_name = name
         else:
             ctype = self.get_element_complex_type(element)
             own_seq = self.get_own_seq_or_choice(ctype)
             el2 = own_seq[0]
-            if el2 and el2.max_occurs is None:  # unbounded
+            if el2 and el2.max_occurs == MAX_OCCURS_UNBOUNDED:
                 el2 = el2.ref or el2
                 el2_name = '%s_%s' % (name, el2.local_name)
             else:
@@ -1261,12 +1263,12 @@ class XSDModelBuilder:
     def is_eligible_n2m(self, typename, name, element, n):
         if element is None:
             return False
-        if element.max_occurs is None:  # unbounded
+        if element.max_occurs == MAX_OCCURS_UNBOUNDED:
             return True
         ctype2 = self.get_element_complex_type(element)
         if ctype2 is not None and \
                 len(ctype2.content) == 1 and \
-                ctype2.content[0].max_occurs is None:
+                ctype2.content[0].max_occurs == MAX_OCCURS_UNBOUNDED:
             t3_name = self.simplify_ns(self.global_name(ctype2.content[0].type))
             model = get_model_for_type(t3_name or "%s.%s" % (typename, name))
             return any(get_model_for_type(t) == model
@@ -1406,7 +1408,7 @@ class XSDModelBuilder:
                 model.get('strategy', 0) >= 1 and
                 name not in model.get('foreign_key_overrides', {}) and
                 name not in model.get('reference_extension_fields', ()) and
-                element.max_occurs is not None  # unbounded
+                element.max_occurs != MAX_OCCURS_UNBOUNDED
             ):
                 ct2_name = self.simplify_ns(self.global_name(ctype2))
                 if (ct2_name not in self.target_typenames) and \
@@ -1460,7 +1462,7 @@ class XSDModelBuilder:
                                            ctype2.content))
                 final_type = self.get_element_type_name(final_el_attr)
             else:
-                assert element.max_occurs is None, (
+                assert element.max_occurs == MAX_OCCURS_UNBOUNDED, (
                     '%s has no maxOccurs=unbounded or complexType, required '
                     'for array_fields'
                     % dotted_name
@@ -1538,7 +1540,7 @@ class XSDModelBuilder:
                     "caught maxOccurs=%s in %s.%s (@type=%s). Consider adding"
                     " it to many_to_many_fields, one_to_many_fields,"
                     " array_fields, or json_fields" %
-                    ('unbounded' if max_occurs is None else max_occurs,
+                    ('unbounded' if max_occurs == MAX_OCCURS_UNBOUNDED else max_occurs,
                      typename, name, el_type)
                 )
 
