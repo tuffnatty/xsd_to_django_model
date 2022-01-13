@@ -711,8 +711,12 @@ class Model:
                     for _ in one_to_many_descriptions) +
             '    }\n'
         ) if one_to_many_descriptions else ''
+        sorted_fields = self.fields
+        if GLOBAL_MODEL_OPTIONS.get('reverse_fields'):
+            sorted_fields = sorted(self.fields,
+                                   key=lambda f: f.get('dotted_name', f.get('name', ''))[::-1])
         content = ''.join([one_to_many_descriptions,
-                           '\n'.join(f['code'] for f in self.fields),
+                           '\n'.join(f['code'] for f in sorted_fields).rstrip(),
                            meta,
                            methods])
         if not content:
