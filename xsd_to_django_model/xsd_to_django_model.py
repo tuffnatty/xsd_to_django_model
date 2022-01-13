@@ -975,7 +975,7 @@ class XSDModelBuilder:
 
     def get_field_data_from_type(self, typename):
         if typename in TYPE_OVERRIDES:
-            return TYPE_OVERRIDES[typename]
+            return deepcopy(TYPE_OVERRIDES[typename])
         elif typename in BASETYPE_FIELD_MAP:
             return None, None, None
 
