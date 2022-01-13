@@ -819,7 +819,7 @@ class Model:
 
 class XSDModelBuilder:
 
-    def __init__(self, infile):
+    def __init__(self, infile, custom_fields=False):
         self.types = set()
         self.models = {}
         self.fields = {}
@@ -827,6 +827,7 @@ class XSDModelBuilder:
         self.have_datetime = False
         self.have_json = False
         self.on_field_class_cb = {}
+        self.custom_fields = bool(custom_fields)
         try:
             with open(infile + ".pickle", "rb") as f:
                 self.schema = pickle.load(f)
@@ -1048,6 +1049,12 @@ class XSDModelBuilder:
                         int(options.get('max_length', 1000)) > 500:
                     # Some data does not fit, even if XSD says it should
                     parent = 'TextField'
+                if not self.custom_fields:
+                    return orig_typename, dict(name='models.' + parent,
+                                               options=options,
+                                               doc=doc,
+                                               **(dict(choices=choices)
+                                                  if choices else {}))
                 self.make_field_class(simplified_typename, doc,
                                       parent, options, choices)
         stype = self.get_type(typename)
@@ -2140,14 +2147,15 @@ class XSDModelBuilder:
         model.written = True
 
     def write(self, models_file, fields_file, map_file):
-        fields_file.write(HEADER)
-        fields_file.write('import datetime\n')
-        fields_file.write('from django.core import validators\n')
-        fields_file.write('from django.db import models\n\n\n')
-        for key in sorted(self.fields):
-            field = self.fields[key]
-            if 'code' in field:
-                fields_file.write(field['code'])
+        if fields_file:
+            fields_file.write(HEADER)
+            fields_file.write('import datetime\n')
+            fields_file.write('from django.core import validators\n')
+            fields_file.write('from django.db import models\n\n\n')
+            for key in sorted(self.fields):
+                field = self.fields[key]
+                if 'code' in field:
+                    fields_file.write(field['code'])
 
         models_file.write(HEADER)
         if self.have_datetime:
@@ -2166,18 +2174,19 @@ class XSDModelBuilder:
                               ' GinIndex\n')
 
         models_file.write('\n')
-        fields = sorted(
-            set(f['name'] for f in self.fields.values() if 'code' in f)
-            .intersection(f.get('django_field')
-                          for f in chain.from_iterable(m.fields
-                                                       for n, m in self.models.items()
-                                                       if not get_opt(n).get('skip_code')))
-        )
-        if len(fields):
-            models_file.write(
-                'from .fields import \\\n        %s\n'
-                % ', \\\n        '.join(fields)
+        if fields_file:
+            fields = sorted(
+                set(f['name'] for f in self.fields.values() if 'code' in f)
+                .intersection(f.get('django_field')
+                              for f in chain.from_iterable(m.fields
+                                                           for n, m in self.models.items()
+                                                           if not get_opt(n).get('skip_code')))
             )
+            if len(fields):
+                models_file.write(
+                    'from .fields import \\\n        %s\n'
+                    % ', \\\n        '.join(fields)
+                )
         models_file.write(IMPORTS + '\n\n\n')
         if any(('gin_index_fields' in o or
                 'plain_index_fields' in o or
@@ -2207,12 +2216,13 @@ if __name__ == '__main__':
     try:
         args = docopt(__doc__)
 
-        builder = XSDModelBuilder(args['<xsd_filename>'])
+        builder = XSDModelBuilder(args['<xsd_filename>'], args['-f'])
         builder.make_models([(a.decode('UTF-8') if hasattr(a, 'decode') else a)
                              for a in args['<xsd_type>']])
         builder.merge_models()
         builder.write(codecs.open(args['-m'], "w", 'utf-8'),
-                      codecs.open(args['-f'], "w", 'utf-8'),
+                      (codecs.open(args['-f'], "w", 'utf-8')
+                       if args['-f'] else None),
                       codecs.open(args['-j'], "w", 'utf-8'))
     except Exception as e:
         logger.error('EXCEPTION: %s', str(e))
