@@ -12,8 +12,9 @@ Usage:
 Options:
     -h --help              Show this screen.
     -m <models_filename>   Output models filename [default: models.py].
-    -f <fields_filename>   Output fields filename [default: fields.py].
-    -j <mapping_filename>  Output JSON mapping filename [default: mapping.json].
+    -f <fields_filename>   Output fields filename to generate custom fields.
+    -j <mapping_filename>  Output JSON mapping filename
+                           [default: mapping.json].
     <xsd_filename>         Input XSD schema filename.
     <xsd_type>             XSD type (or an XPath query for XSD type) for which
                            a Django model should be generated.
@@ -35,6 +36,7 @@ from operator import itemgetter
 import pickle
 import re
 import sys
+import textwrap
 
 from docopt import docopt
 import ndifflib
@@ -81,6 +83,10 @@ try:
     from xsd_to_django_model_settings import JSON_DOC_INDENT
 except ImportError:
     JSON_DOC_INDENT = " " * 4
+try:
+    from xsd_to_django_model_settings import MAX_LINE_LENGTH
+except ImportError:
+    MAX_LINE_LENGTH = 80
 
 
 BASETYPE_FIELD_MAP = {
@@ -110,16 +116,18 @@ NS = {'xs': "http://www.w3.org/2001/XMLSchema"}
 
 FIELD_TMPL = {
     '_coalesce':
-        '    # {dotted_name} field coalesces to {coalesce}\n',
+        '{dotted_name} => {coalesce}',
     'drop':
-        '    # Dropping {dotted_name} field',
+        '    # Dropping {dotted_name}',
     'parent_field':
         '    # {dotted_name} field translates to this model\'s parent',
     'one_to_many':
-        '    # {name} is declared as a reverse relation from {options0}\n'
+        '    # {name} is declared as a reverse relation\n'
+        '    #  from {options0}\n'
         '    # {name} = OneToManyField({serialized_options})',
     'one_to_one':
-        '    # {name} is declared as a reverse relation from {options0}\n'
+        '    # {name} is declared as a reverse relation\n'
+        '    #  from {options0}\n'
         '    # {name} = OneToOneField({serialized_options})',
     'wrap':
         '    {name} = {wrap}({final_django_field}({serialized_options})'
@@ -309,14 +317,27 @@ def makediff_n(sequences):
 
 
 @memoize
-def stringify(s):
+def stringify(s, max_length=None):
     if type(s) is tuple:
         s = sorted(set(el.strip() for el in s))
         s = '\n'.join(makediff_n([el.split('\n') for el in s]))
-    return '"%s"' % s \
+    s = s \
         .replace('\\', '\\\\') \
-        .replace('"', '\\"') \
-        .replace('\n', '\\n"\n"')
+        .replace('"', '\\"')
+    if max_length:
+        return '"%s"' % '\\n"\n"'.join(
+            '"\n"'.join(textwrap.wrap(_, width=max_length - 4,
+                                      break_long_words=False, drop_whitespace=False))
+            for _ in s.split('\n')
+        )
+    return '"%s"' % s.replace('\n', '\\n"\n"')
+
+
+def multiline_comment(s, indent=4):
+    prefix = " " * indent + "# "
+    return "\n".join(textwrap.wrap(s, width=MAX_LINE_LENGTH, break_long_words=False,
+                                   initial_indent=prefix,
+                                   subsequent_indent=prefix + " ")) + "\n"
 
 
 def get_null(el_def):
@@ -522,14 +543,14 @@ class Model:
         doc = kwargs.get('doc', None) or [kwargs['name']]
         if type(doc) is not list:
             kwargs['doc'] = [doc]
-        doc = stringify(tuple(doc) if type(doc) is list else doc)
+        doc = tuple(doc) if type(doc) is list else doc
         if '_' in options:
             if options['_'].startswith('"'):
-                options['_'] = doc
+                options['_'] = stringify(doc, MAX_LINE_LENGTH - 8)
             else:
-                options['verbose_name'] = doc
+                options['verbose_name'] = stringify(doc, MAX_LINE_LENGTH - 23)
             return options
-        return dict(options, _=doc)
+        return dict(options, _=stringify(doc, MAX_LINE_LENGTH - 8))
 
     def build_field_code(self, kwargs, force=False):
         self.build_attrs_options(kwargs)
@@ -557,7 +578,7 @@ class Model:
                 del options['null']
 
             if kwargs.get('coalesce'):
-                kwargs['code'] = FIELD_TMPL['_coalesce'].format(**kwargs)
+                kwargs['code'] = multiline_comment(FIELD_TMPL['_coalesce'].format(**kwargs))
                 skip_code = any(('coalesce' in f and
                                  f['coalesce'] == kwargs['coalesce'] and
                                  'code' in f and
@@ -569,15 +590,17 @@ class Model:
                 if kwargs.get('dotted_name') and \
                         kwargs.get('name') and \
                         kwargs.get('name') != kwargs['dotted_name'].replace('.', '_'):
-                    kwargs['code'] = FIELD_TMPL['_coalesce'].format(coalesce=kwargs.get('name'),
-                                                                    **kwargs)
+                    kwargs['code'] = multiline_comment(FIELD_TMPL['_coalesce']
+                                                       .format(coalesce=kwargs.get('name'),
+                                                               **kwargs))
                 else:
                     kwargs['code'] = ''
 
             if len(kwargs.get('name', '')) > 63 and \
                     kwargs.get('django_field') not in ('models.ManyToManyField',):
-                kwargs['code'] += \
-                    "    # FIXME: %(name)s hits PostgreSQL column name 63 char limit!\n" % kwargs
+                kwargs['code'] += multiline_comment(
+                    "FIXME: %(name)s hits PostgreSQL column name 63 char limit!\n" % kwargs
+                )
 
             if not skip_code:
                 def serialized(options):
@@ -591,18 +614,28 @@ class Model:
                                 serialized_options=serialized_options)
                 tmpl_row = next((r for r in FIELD_TMPL[tmpl_key].split('\n')
                                  if '{serialized_options}' in r), None)
-                if tmpl_row and len(tmpl_row.format(**tmpl_ctx)) > 80:
-                    cmt = '# ' if tmpl_row[4] == '#' else ''
+                if tmpl_row:
+                    templated_line = tmpl_row.format(**tmpl_ctx)
+                    add_indent = '    ' if templated_line.index('(') > MAX_LINE_LENGTH - 1 else ''
+                    if len(templated_line) > MAX_LINE_LENGTH:
+                        cmt = '# ' if tmpl_row[4] == '#' else ''
+                        indent = '    %s    %s' % (cmt, add_indent)
+                        newline_indent = "\n" + indent
+                        joiner = "," + newline_indent
+                        tmpl_ctx['serialized_options'] = \
+                            '\n    %s    %s%s\n    %s%s' \
+                            % (cmt, add_indent,
+                               joiner.join(serialized({k.replace("\n", newline_indent):
+                                                       str(v).replace("\n", newline_indent)
+                                                       for k, v in options.items()})),
+                               cmt, add_indent)
+                templated_code = FIELD_TMPL[tmpl_key].format(**tmpl_ctx)
+                if tmpl_key == 'default' and templated_code.index('(') > MAX_LINE_LENGTH - 1:
+                    cmt = '# ' if templated_code[4] == '#' else ''
                     indent = '    %s    ' % cmt
                     newline_indent = "\n" + indent
-                    joiner = "," + newline_indent
-                    tmpl_ctx['serialized_options'] = \
-                        '\n    %s    %s\n    %s' \
-                        % (cmt, joiner.join(serialized({k.replace("\n", newline_indent):
-                                                        str(v).replace("\n", newline_indent)
-                                                        for k, v in options.items()})),
-                           cmt)
-                kwargs['code'] += FIELD_TMPL[tmpl_key].format(**tmpl_ctx)
+                    templated_code = templated_code.replace('= ', '= \\' + newline_indent)
+                kwargs['code'] += templated_code
 
     def build_code(self):
         model_options = get_opt(self.model_name, self.type_name)
@@ -614,15 +647,16 @@ class Model:
 
         if self.doc and not any(option for option in meta
                                 if option.startswith('verbose_name = ')):
-            doc = stringify(tuple(self.doc)
-                            if type(self.doc) is list else self.doc)
-            if '\n' in doc:
+            doc = tuple(self.doc) if type(self.doc) is list else self.doc
+            doc1 = stringify(doc, MAX_LINE_LENGTH - 23)
+            if '\n' in doc1:
+                doc1 = stringify(doc, MAX_LINE_LENGTH - 12)
                 indent = " " * 4
-                doc = '({doc}{indent}{indent})'.format(
-                    doc=indent_multiline(doc, indent=indent * 3),
+                doc1 = '({doc}{indent}{indent})'.format(
+                    doc=indent_multiline(doc1, indent=indent * 3),
                     indent=indent,
                 )
-            meta.append('verbose_name = %s' % doc)
+            meta.append('verbose_name = %s' % doc1)
 
         if self.abstract and not any(option for option in meta
                                      if option.startswith('abstract = ')):
@@ -659,12 +693,14 @@ class Model:
             stringify(tuple(chain.from_iterable(
                 _['doc']
                 for _ in one_to_many_fields if _['name'] == name
-            ))) + ",\n"
+            )), MAX_LINE_LENGTH - 12) + ",\n"
             for name in sorted(set(f['name'] for f in one_to_many_fields))
         ]
         one_to_many_descriptions = (
             '    AUTO_ONE_TO_MANY_FIELDS = {\n' +
-            ''.join(one_to_many_descriptions) +
+            ''.join(_.replace(": ", ":\n", 1).replace("\n", "\n            ").rstrip() + "\n"
+                    if len(_) > MAX_LINE_LENGTH else _
+                    for _ in one_to_many_descriptions) +
             '    }\n'
         ) if one_to_many_descriptions else ''
         content = ''.join([one_to_many_descriptions,
@@ -674,13 +710,12 @@ class Model:
         if not content:
             content = '    pass'
 
-        code = ('# Corresponds to XSD type[s]: {typename}\n'
-                'class {name}({parent}):\n{content}\n\n\n'.format(
-                     typename=self.type_name,
-                     name=self.model_name,
-                     parent=self.parent or 'models.Model',
-                     content=content,
-                 ))
+        code = '\n\n{cmt}class {name}({parent}):\n{content}\n'.format(
+            cmt=multiline_comment('Corresponds to XSD type[s]: ' + self.type_name, indent=0),
+            name=self.model_name,
+            parent=self.parent or 'models.Model',
+            content=content,
+        )
         self.code = code
 
     def add_field(self, **kwargs):
@@ -840,7 +875,7 @@ class XSDModelBuilder:
                 choices = self.get_field_choices_from_enumerations(v._elements)
                 is_int = parent in ('SmallIntegerField', 'IntegerField', 'BigIntegerField')
                 options['choices'] = \
-                    '[%s]' % ', '.join(
+                    '[\n    %s\n]' % ',\n    '.join(
                         '(%s, %s)' %
                         ((c[0] if is_int else ('"%s"' % c[0])),
                          stringify(tuple(c[1]) if type(c[1]) is list
@@ -1014,10 +1049,13 @@ class XSDModelBuilder:
                                                          parent=parent)
 
         if doc:
-            if '\n' in doc:
-                code += '    description = (%s)\n\n' % stringify(doc)
+            doc1 = stringify(doc)
+            if len(doc1) > MAX_LINE_LENGTH - 20:
+                doc1 = stringify(doc, MAX_LINE_LENGTH - 8)
+            if '\n' in doc1:
+                code += '    description = (%s)\n\n' % doc1
             else:
-                code += '    description = %s\n\n' % stringify(doc)
+                code += '    description = %s\n\n' % doc1
 
         if len(options):
             code += '    def __init__(self, *args, **kwargs):\n' + \
@@ -1875,16 +1913,13 @@ class XSDModelBuilder:
             if not omnipresent and not f.get('drop', False):
                 if len(containing_models) > len(models) / 2:
                     lacking_models = set(models) - set(containing_models)
-                    f['code'] = '    # NULL in %s\n%s' % (
-                        ','.join(sorted(m.type_name for m in lacking_models)),
-                        f['code'],
-                    )
+                    f['code'] = multiline_comment(
+                        "NULL in %s" % ', '.join(sorted(m.type_name for m in lacking_models))
+                    ) + f['code']
                 else:
-                    f['code'] = '    # Only in %s\n%s' % (
-                        ','.join(sorted(m.type_name
-                                        for m in containing_models)),
-                        f['code'],
-                    )
+                    f['code'] = multiline_comment(
+                        "Only in %s" % ', '.join(sorted(m.type_name for m in containing_models))
+                    ) + f['code']
             return f
 
         def merge_model_docs(models):
@@ -1942,8 +1977,9 @@ class XSDModelBuilder:
             s = s.replace('..', '.')
             s = re.sub(r'(\n?    # xs:choice (start|end)\n?'
                        r'|\n?    # (NULL|Only) in [^\n]+\n'
-                       r'|\n?    # [^\n]+ field coalesces to [^\n]+\n'
+                       r'|\n?    # [^\n]+ => [^\n]+\n'
                        r'|\n?    # The original [^\n]+\n'
+                       r'|\n?    #  [^\n]+\n'
                        r'|,\s+(#\s+)?related_name="[^"]+"'
                        r'|,\s+[a-z_]+=None\b)',
                        '', s)
