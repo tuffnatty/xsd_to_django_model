@@ -576,6 +576,9 @@ class Model:
                 if final_django_field == 'models.BooleanField':
                     final_django_field = 'models.NullBooleanField'
                 del options['null']
+            elif final_django_field == 'models.TextField' \
+                    and 'max_length' in options:
+                del options['max_length']
 
             if kwargs.get('coalesce'):
                 kwargs['code'] = multiline_comment(FIELD_TMPL['_coalesce'].format(**kwargs))
