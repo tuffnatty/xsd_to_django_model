@@ -131,6 +131,7 @@ It may define the following module-level variables:
   * `null_fields` - a `list` of field names for which `null=True` Django model field option should be enforced.
   * `one_to_many_field_overrides` - a `dict` mapping one-to-many relationship field names to related Django model names when automated logic does not work well.
   * `one_to_many_fields` - a `list` of field names that get mapped to one-to-many relationships in Django, that is, a `ForeignKey` to this model is added to the related model's fields.
+  * `one_to_one_fields` - a `list` of field names that get mapped to one-to-one (shared primary key) relationships in Django, that is, a `OneToOneField(primary_key=True)` to this model is added to the related models's fields.
   * `override_field_class` - a `dict` mapping field names to corresponding Django field class names when automated logic does not work well, e.g.:
     ```python
     'override_field_class': {

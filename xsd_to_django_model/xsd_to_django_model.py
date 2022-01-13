@@ -795,7 +795,8 @@ class Model:
         fk = dict(name=camelcase_to_underscore(self.model_name),
                   options=dict(_="'%s'" % self.model_name,
                                on_delete='models.CASCADE',
-                               related_name='"%s"' % name),
+                               related_name='"%s"' % name,
+                               **({'primary_key': 'True'} if one_to_one else {})),
                   doc=self.doc or [],
                   django_field=('models.OneToOneField' if one_to_one
                                 else 'models.ForeignKey'))
