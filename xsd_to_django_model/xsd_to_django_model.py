@@ -1351,6 +1351,7 @@ class XSDModelBuilder:
               match(name, model, 'one_to_many_field_overrides')) or (
             model.get('strategy', 0) >= 1 and
             not flatten and
+            name not in model.get('array_fields', {}) and
             name not in model.get('many_to_many_fields', {}) and
             name not in model.get('many_to_many_field_overrides', {}) and
             self.is_eligible_n2m(typename, name, element, 1)
@@ -1376,6 +1377,7 @@ class XSDModelBuilder:
               match(name, model, 'many_to_many_field_overrides')) or (
             model.get('strategy', 0) >= 1 and
             not flatten and
+            name not in model.get('array_fields', {}) and
             self.is_eligible_n2m(typename, name, element, 2)
         ):
             try:
@@ -1408,6 +1410,7 @@ class XSDModelBuilder:
                 model.get('strategy', 0) >= 1 and
                 name not in model.get('foreign_key_overrides', {}) and
                 name not in model.get('reference_extension_fields', ()) and
+                name not in model.get('array_fields', ()) and
                 element.max_occurs != MAX_OCCURS_UNBOUNDED
             ):
                 ct2_name = self.simplify_ns(self.global_name(ctype2))
