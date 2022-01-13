@@ -475,6 +475,7 @@ class Model:
         self.doc = None
         self.number_field = None
         self.abstract = False
+        self.have_validators = False
 
     def build_attrs_options(self, kwargs):
         if kwargs.get('name') == 'attrs':
@@ -639,6 +640,8 @@ class Model:
                     newline_indent = "\n" + indent
                     templated_code = templated_code.replace('= ', '= \\' + newline_indent)
                 kwargs['code'] += templated_code
+                if 'validators' in options:
+                    self.have_validators = True
 
     def build_code(self):
         model_options = get_opt(self.model_name, self.type_name)
@@ -814,6 +817,8 @@ class XSDModelBuilder:
         self.types = set()
         self.models = {}
         self.fields = {}
+        self.have_array = False
+        self.have_datetime = False
         self.have_json = False
         self.on_field_class_cb = {}
         try:
@@ -893,28 +898,36 @@ class XSDModelBuilder:
                 options['max_length'] = v.value * \
                     GLOBAL_MODEL_OPTIONS.get('charfield_max_length_factor', 1)
             elif isinstance(v, facets.XsdMaxExclusiveFacet):
-                validators.append('MaxValueValidator(%s)' %
-                                  ((parsedate(v.value) - datetime.timedelta(days=1))
-                                   if parent == 'DateField'
-                                   else (v.value - 1)))
+                if parent == 'DateField':
+                    self.have_datetime = True
+                    arg = parsedate(v.value) + ' - datetime.timedelta(days=1)'
+                else:
+                    arg = v.value - 1
+                validators.append('MaxValueValidator(%s)' % arg)
             elif isinstance(v, facets.XsdMaxInclusiveFacet):
-                validators.append('MaxValueValidator(%s)' %
-                                  (parsedate(v.value)
-                                   if parent == 'DateField'
-                                   else v.value))
+                if parent == 'DateField':
+                    self.have_datetime = True
+                    arg = parsedate(v.value)
+                else:
+                    arg = v.value
+                validators.append('MaxValueValidator(%s)' % arg)
             elif isinstance(v, facets.XsdMaxLengthFacet):
                 options['max_length'] = v.value * \
                     GLOBAL_MODEL_OPTIONS.get('charfield_max_length_factor', 1)
             elif isinstance(v, facets.XsdMinExclusiveFacet):
-                validators.append('MinValueValidator(%s)' %
-                                  ((parsedate(v.value) + datetime.timedelta(days=1))
-                                   if parent == 'DateField'
-                                   else (v.value + 1)))
+                if parent == 'DateField':
+                    self.have_datetime = True
+                    arg = parsedate(v.value) + ' + datetime.timedelta(days=1)'
+                else:
+                    arg = v.value + 1
+                validators.append('MinValueValidator(%s)' % arg)
             elif isinstance(v, facets.XsdMinInclusiveFacet):
-                validators.append('MinValueValidator(%s)' %
-                                  (parsedate(v.value)
-                                   if parent == 'DateField'
-                                   else v.value))
+                if parent == 'DateField':
+                    self.have_datetime = True
+                    arg = parsedate(v.value)
+                else:
+                    arg = v.value
+                validators.append('MinValueValidator(%s)' % arg)
             elif isinstance(v, facets.XsdMinLengthFacet):
                 if v.value == 1:
                     options['blank'] = 'False'
@@ -1516,6 +1529,7 @@ class XSDModelBuilder:
 
         if match(name, model, 'array_fields'):
             field = dict(field, wrap='ArrayField')
+            self.have_array = True
 
         if element is not None:
             max_occurs = element.max_occurs
@@ -2112,18 +2126,29 @@ class XSDModelBuilder:
                 fields_file.write(field['code'])
 
         models_file.write(HEADER)
-        models_file.write('import datetime\n')
-        models_file.write('from django.core import validators\n')
+        if self.have_datetime:
+            models_file.write('import datetime\n')
+        if any(_.have_validators for _ in self.models.values()):
+            models_file.write('from django.core import validators\n')
         models_file.write('from django.db import models\n')
+        if self.have_array:
+            models_file.write('from django.contrib.postgres.fields import'
+                              ' ArrayField\n')
         if self.have_json:
             models_file.write('from django.contrib.postgres.fields import'
-                              ' ArrayField, JSONField\n')
+                              ' JSONField\n')
         if any('gin_index_fields' in o for o in MODEL_OPTIONS.values()):
             models_file.write('from django.contrib.postgres.indexes import'
                               ' GinIndex\n')
 
         models_file.write('\n')
-        fields = sorted(f['name'] for f in self.fields.values() if 'code' in f)
+        fields = sorted(
+            set(f['name'] for f in self.fields.values() if 'code' in f)
+            .intersection(f.get('django_field')
+                          for f in chain.from_iterable(m.fields
+                                                       for n, m in self.models.items()
+                                                       if not get_opt(n).get('skip_code')))
+        )
         if len(fields):
             models_file.write(
                 'from .fields import \\\n        %s\n'
@@ -2134,7 +2159,7 @@ class XSDModelBuilder:
                 'plain_index_fields' in o or
                 'strict_index_fields' in o)
                for o in MODEL_OPTIONS.values()):
-            models_file.write('INDEX_IN_META = False  # A handy marker\n\n\n')
+            models_file.write('INDEX_IN_META = False  # A handy marker\n')
         for model_name in sorted(self.models.keys()):
             if not get_opt(model_name).get('skip_code'):
                 self.write_model(self.models[model_name], models_file)
