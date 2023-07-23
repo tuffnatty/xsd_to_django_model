@@ -2086,6 +2086,13 @@ class XSDModelBuilder:
                 merged_model.match_fields = models[0].match_fields
                 merged_model.number_field = models[0].number_field
 
+                if all(m.abstract for m in models):
+                    merged_model.abstract = True
+                else:
+                    assert not any(m.abstract for m in models), \
+                        "only some of merged types are abstract: %s" % merged_typename
+
+
                 parents = merge_model_parents(models, merged_models)
                 assert len(parents) <= 1, \
                     "different parents %s for types %s" % (parents,
