@@ -111,7 +111,7 @@ It may define the following module-level variables:
   * `ignore_merge_mismatch_fields`: a `list` of fields for which generated code differences are to be ignored when model merging takes place. I do not recommend to use this option as it gets harder to track changes over time.
   * `include_parent_fields`: when `True`, the parent (`xs:complexType/xs:complexContent/xs:extension[@base]` type's fields are simply included in the current model instead of making Django model inheritance structures.
   * `index_fields` - a `list` of Django model fields for which `db_index=True` option should be generated.
-  * `json_fields` - a `list` of XSD fields which do not get their own Django model fields but are all mapped to a single `attrs = django.contrib.postgres.fields.JSONField()`.
+  * `json_fields` - a `list` of XSD fields which do not get their own Django model fields but are all mapped to a single `attrs = django.db.models.JSONField()`.
   * `many_to_many_field_overrides` - a `dict` mapping field names to XSD type names when this field is to be treated as a `ManyToManyField` reference to that type`s corresponding model.
   * `many_to_many_fields` - a `list` of field names that get mapped to Django `ManyToManyField`s.
   * `meta` - a `list` of Django model `Meta` options' string templates added to the generated model's `Meta`:

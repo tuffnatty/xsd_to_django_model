@@ -574,10 +574,7 @@ class Model:
                 final_django_field = 'models.TextField'
             if (options.get('null') == "True" and
                 ('wrap' in kwargs or
-                 final_django_field in ('models.BooleanField',
-                                        'models.ManyToManyField'))):
-                if final_django_field == 'models.BooleanField':
-                    final_django_field = 'models.NullBooleanField'
+                 final_django_field == 'models.ManyToManyField')):
                 del options['null']
             elif final_django_field == 'models.TextField' \
                     and 'max_length' in options:
@@ -1902,8 +1899,7 @@ class XSDModelBuilder:
             containing_opts = [m.get(dotted_name=dotted_name,
                                      name=name).get('options', {})
                                for m in containing_models]
-            if not omnipresent or any((o.get('null') == 'True' or
-                                       o.get('django_field') == 'models.NullBooleanField')
+            if not omnipresent or any(o.get('null') == 'True'
                                       for o in containing_opts):
                 if any(o.get('primary_key') == 'True'
                        for o in containing_opts):
@@ -2175,8 +2171,12 @@ class XSDModelBuilder:
             models_file.write('from django.contrib.postgres.fields import'
                               ' ArrayField\n')
         if self.have_json:
-            models_file.write('from django.contrib.postgres.fields import'
-                              ' JSONField\n')
+            models_file.write(
+                'try:\n'
+                '    JSONField = models.JSONField\n'
+                'except AttributeError:\n'
+                '    from django.contrib.postgres.fields import JSONField\n'
+            )
         if any('gin_index_fields' in o for o in MODEL_OPTIONS.values()):
             models_file.write('from django.contrib.postgres.indexes import'
                               ' GinIndex\n')
