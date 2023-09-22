@@ -90,6 +90,7 @@ except ImportError:
 
 
 BASETYPE_FIELD_MAP = {
+    'xs:anySimpleType': 'JSONField',
     'xs:base64Binary': 'BinaryField',
     'xs:boolean': 'BooleanField',
     'xs:byte': 'SmallIntegerField',
@@ -103,6 +104,7 @@ BASETYPE_FIELD_MAP = {
     'xs:integer': 'IntegerField',
     'xs:long': 'BigIntegerField',
     'xs:nonNegativeInteger': 'PositiveIntegerField',
+    'xs:normalizedString': 'CharField',
     'xs:positiveInteger': 'PositiveIntegerField',
     'xs:short': 'SmallIntegerField',
     'xs:string': 'CharField',
@@ -1121,7 +1123,7 @@ class XSDModelBuilder:
 
     def get_element_type(self, element):
         t = element.type
-        return (t if t.name else
+        return (t if t.name and t.name != 'xs:anyType' else
                 (t.base_type
                  if (isinstance(t, xmlschema.validators.XsdComplexType) and
                      not t.has_simple_content() and
