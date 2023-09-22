@@ -1,0 +1,1107 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!-- *****************************************************************************
+        XML Schema Definition (XSD) for the Cellosaurus XML
+
+        Date: 2023-June-29; Release: 6.10
+
+        Copyright (c) CALIPHO group @ SIB - Swiss Institute of Bioinformatics
+        Distributed under the Creative Commons Attribution 4.0 International (CC BY 4.0) licence
+*******************************************************************************-->
+<xs:schema xmlns:xs="http://www.w3.org/2001/XMLSchema" elementFormDefault="qualified" version="1.0">
+
+   <!-- Root element Cellosaurus definition begins -->
+   <xs:element name="Cellosaurus">
+      <xs:annotation>
+         <xs:documentation>Describes the Cellosaurus XML file.</xs:documentation>
+      </xs:annotation>
+      <xs:complexType>
+         <xs:sequence>
+            <xs:element ref="header" minOccurs="1" maxOccurs="1"/>
+            <xs:element ref="cell-line-list" minOccurs="1" maxOccurs="1"/>
+            <xs:element ref="publication-list" minOccurs="1" maxOccurs="1"/>
+            <xs:element ref="copyright" minOccurs="1" maxOccurs="1"/>
+         </xs:sequence>
+      </xs:complexType>
+   </xs:element>
+   <!-- Root element Cellosaurus definition ends -->
+
+   <!-- Header element definition begins -->
+   <xs:element name="header">
+      <xs:annotation>
+         <xs:documentation>Describes the header.</xs:documentation>
+      </xs:annotation>
+      <xs:complexType>
+         <xs:sequence>
+            <xs:element ref="terminology-name" minOccurs="1" maxOccurs="1"/>
+            <xs:element ref="description" minOccurs="1" maxOccurs="1"/>
+            <xs:element ref="release" minOccurs="1" maxOccurs="1"/>
+            <xs:element ref="terminology-list" minOccurs="1" maxOccurs="1"/>
+         </xs:sequence>
+      </xs:complexType>
+   </xs:element>
+   <!-- Header element definition ends -->
+
+   <xs:element name="terminology-name" type="xs:string"/>
+   <xs:element name="description" type="xs:string"/>
+
+   <!-- Release element definition begins -->
+   <xs:element name="release">
+      <xs:annotation>
+         <xs:documentation>Describes the Cellosaurus release.</xs:documentation>
+      </xs:annotation>
+      <xs:complexType>
+         <xs:attribute name="version" type="xs:decimal" use="required"/>
+         <xs:attribute name="updated" type="xs:date" use="required"/>
+         <xs:attribute name="nb-cell-lines" type="xs:integer" use="required"/>
+         <xs:attribute name="nb-publications" type="xs:integer" use="required"/>
+      </xs:complexType>
+   </xs:element>
+   <!-- Release element definition ends -->
+
+   <!-- Terminology list element definition begins -->
+   <xs:element name="terminology-list">
+       <xs:annotation>
+          <xs:documentation>Describes the terminologies used in the Cellosaurus.</xs:documentation>
+       </xs:annotation>
+       <xs:complexType>
+          <xs:sequence>
+             <xs:element ref="terminology" minOccurs="1" maxOccurs="unbounded"/>
+          </xs:sequence>
+       </xs:complexType>
+   </xs:element>
+   <!-- Terminology list element definition ends -->
+
+   <!-- Terminology element definition begins -->
+   <xs:element name="terminology">
+       <xs:annotation>
+          <xs:documentation>Describes a terminology used in the Cellosaurus.</xs:documentation>
+       </xs:annotation>
+       <xs:complexType>
+          <xs:sequence>
+             <xs:element ref="url" minOccurs="1" maxOccurs="1"/>
+          </xs:sequence>
+       <xs:attribute name="name" use="required"/>
+       <xs:attribute name="source" use="required"/>
+       <xs:attribute name="description" use="required"/>
+       <xs:attribute name="release" use="optional"/>
+       </xs:complexType>
+   </xs:element>
+   <!-- Terminology element definition ends -->
+
+   <!-- Cell line list element definition begins -->
+   <xs:element name="cell-line-list">
+       <xs:annotation>
+          <xs:documentation>Describes the collection of cell lines and parts thereof.</xs:documentation>
+       </xs:annotation>
+       <xs:complexType>
+          <xs:sequence>
+             <xs:element ref="cell-line" minOccurs="1" maxOccurs="unbounded"/>
+          </xs:sequence>
+       </xs:complexType>
+   </xs:element>
+   <!-- Cell line list element definition ends -->
+
+   <!-- Cell line element definition begins -->
+   <xs:element name="cell-line">
+       <xs:annotation>
+          <xs:documentation>Describes a cell line entry.</xs:documentation>
+       </xs:annotation>
+       <xs:complexType>
+          <xs:sequence>
+             <xs:element ref="accession-list" minOccurs="1" maxOccurs="1"/>
+             <xs:element ref="name-list" minOccurs="1" maxOccurs="1"/>
+             <xs:element ref="comment-list" minOccurs="0" maxOccurs="1"/>
+             <xs:element ref="str-list" minOccurs="0" maxOccurs="1"/>
+             <xs:element ref="disease-list" minOccurs="0" maxOccurs="1"/>
+             <xs:element ref="species-list" minOccurs="1" maxOccurs="1"/>
+             <xs:element ref="derived-from" minOccurs="0" maxOccurs="1"/>
+             <xs:element ref="same-origin-as" minOccurs="0" maxOccurs="1"/>
+             <xs:element ref="web-page-list" minOccurs="0" maxOccurs="1"/>
+             <xs:element ref="reference-list" minOccurs="0" maxOccurs="1"/>
+             <xs:element ref="hla-typing-list" minOccurs="0" maxOccurs="1"/>
+             <xs:element ref="doubling-time-list" minOccurs="0" maxOccurs="1"/>
+             <xs:element ref="derived-from-site-list" minOccurs="0" maxOccurs="1"/>
+             <xs:element ref="cell-type" minOccurs="0" maxOccurs="1"/>
+             <xs:element ref="genome-ancestry" minOccurs="0" maxOccurs="1"/>
+             <xs:element ref="misspelling-list" minOccurs="0" maxOccurs="1"/>
+             <xs:element ref="registration-list" minOccurs="0" maxOccurs="1"/>
+             <xs:element ref="sequence-variation-list" minOccurs="0" maxOccurs="1"/>
+             <xs:element ref="xref-list" minOccurs="0" maxOccurs="1"/>
+          </xs:sequence>
+          <xs:attribute name="category" use="required">
+             <xs:simpleType>
+                <xs:restriction base="xs:string">
+                   <xs:enumeration value="Cancer cell line"/>
+                   <xs:enumeration value="Conditionally immortalized cell line"/>
+                   <xs:enumeration value="Embryonic stem cell"/>
+                   <xs:enumeration value="Factor-dependent cell line"/>
+                   <xs:enumeration value="Finite cell line"/>
+                   <xs:enumeration value="Hybrid cell line"/>
+                   <xs:enumeration value="Hybridoma"/>
+                   <xs:enumeration value="Induced pluripotent stem cell"/>
+                   <xs:enumeration value="Somatic stem cell"/>
+                   <xs:enumeration value="Spontaneously immortalized cell line"/>
+                   <xs:enumeration value="Stromal cell line"/>
+                   <xs:enumeration value="Telomerase immortalized cell line"/>
+                   <xs:enumeration value="Transformed cell line"/>
+                   <xs:enumeration value="Undefined cell line type"/>
+                </xs:restriction>
+             </xs:simpleType>
+          </xs:attribute>
+          <xs:attribute name="sex" use="optional">
+             <xs:simpleType>
+                <xs:restriction base="xs:string">
+                   <xs:enumeration value="Female"/>
+                   <xs:enumeration value="Male"/>
+                   <xs:enumeration value="Mixed sex"/>
+                   <xs:enumeration value="Sex ambiguous"/>
+                   <xs:enumeration value="Sex unspecified"/>
+                </xs:restriction>
+             </xs:simpleType>
+          </xs:attribute>
+          <xs:attribute name="created" type="xs:date" use="required"/>
+          <xs:attribute name="last-updated" type="xs:date" use="required"/>
+          <xs:attribute name="entry-version" type="xs:integer" use="required"/>
+          <xs:attribute name="age" use="optional"/>
+       </xs:complexType>
+   </xs:element>
+   <!-- Cell line element definition ends -->
+
+   <!-- Accession list element definition begins -->
+   <xs:element name="accession-list">
+      <xs:annotation>
+         <xs:documentation>Describes the collection of accession numbers for a cell line.</xs:documentation>
+      </xs:annotation>
+      <xs:complexType>
+         <xs:sequence>
+            <xs:element ref="accession" minOccurs="1" maxOccurs="unbounded"/>
+         </xs:sequence>
+      </xs:complexType>
+   </xs:element>
+   <!-- Accession list element definition ends -->
+
+   <!-- Accession element definition begins -->
+   <xs:element name="accession">
+      <xs:annotation>
+         <xs:documentation>Describes the accession number(s) for a cell line.</xs:documentation>
+      </xs:annotation>
+      <xs:complexType>
+         <xs:simpleContent>
+            <xs:extension base="xs:string">
+               <xs:attribute name="type" use="required">
+                  <xs:simpleType>
+                     <xs:restriction base="xs:string">
+                        <xs:enumeration value="primary"/>
+                        <xs:enumeration value="secondary"/>
+                     </xs:restriction>
+                  </xs:simpleType>
+               </xs:attribute>
+            </xs:extension>
+         </xs:simpleContent>
+      </xs:complexType>
+   </xs:element>
+   <!-- Accession element definition ends -->
+
+   <!-- Name list element definition begins -->
+   <xs:element name="name-list">
+      <xs:annotation>
+         <xs:documentation>Describes the collection of names for a cell line.</xs:documentation>
+      </xs:annotation>
+      <xs:complexType>
+         <xs:sequence>
+            <xs:element ref="name" minOccurs="1" maxOccurs="unbounded"/>
+         </xs:sequence>
+      </xs:complexType>
+   </xs:element>
+   <!-- Name list element definition ends -->
+
+   <!-- Name element definition begins -->
+   <xs:element name="name">
+      <xs:annotation>
+         <xs:documentation>Describes the identifier (cell line recommanded name) and synonyms for a cell line.</xs:documentation>
+      </xs:annotation>
+      <xs:complexType>
+         <xs:simpleContent>
+            <xs:extension base="xs:string">
+               <xs:attribute name="type" use="required">
+                  <xs:simpleType>
+                     <xs:restriction base="xs:string">
+                        <xs:enumeration value="identifier"/>
+                        <xs:enumeration value="synonym"/>
+                     </xs:restriction>
+                  </xs:simpleType>
+               </xs:attribute>
+            </xs:extension>
+         </xs:simpleContent>
+      </xs:complexType>
+   </xs:element>
+   <!-- Name element definition ends -->
+
+   <!-- Comment list element definition begins -->
+   <xs:element name="comment-list">
+      <xs:annotation>
+         <xs:documentation>Describes the collection of comments for a cell line.</xs:documentation>
+      </xs:annotation>
+      <xs:complexType>
+         <xs:sequence>
+            <xs:element ref="comment" minOccurs="1" maxOccurs="unbounded"/>
+         </xs:sequence>
+      </xs:complexType>
+   </xs:element>
+   <!-- Comment list element definition ends -->
+
+   <!-- Comment element definition begins -->
+   <xs:element name="comment">
+      <xs:annotation>
+         <xs:documentation>Describes a comment concerning the cell line.</xs:documentation>
+      </xs:annotation>
+      <xs:complexType mixed="true">
+         <xs:sequence>
+            <xs:element ref="method" minOccurs="0" maxOccurs="1"/>
+            <xs:element ref="xref-list" minOccurs="0" maxOccurs="1"/>
+            <xs:element ref="cv-term" minOccurs="0" maxOccurs="1"/>
+         </xs:sequence>
+         <xs:attribute name="category" use="required">
+            <xs:simpleType>
+               <xs:restriction base="xs:string">
+                  <xs:enumeration value="Anecdotal"/>
+                  <xs:enumeration value="Biotechnology"/>
+                  <xs:enumeration value="Breed/subspecies"/>
+                  <xs:enumeration value="Caution"/>
+                  <xs:enumeration value="Characteristics"/>
+                  <xs:enumeration value="Discontinued"/>
+                  <xs:enumeration value="Donor information"/>
+                  <xs:enumeration value="From"/>
+                  <xs:enumeration value="Group"/>
+                  <xs:enumeration value="Karyotypic information"/>
+                  <xs:enumeration value="Knockout cell"/>
+                  <xs:enumeration value="Microsatellite instability"/>
+                  <xs:enumeration value="Miscellaneous"/>
+                  <xs:enumeration value="Monoclonal antibody isotype"/>
+                  <xs:enumeration value="Monoclonal antibody target"/>
+                  <xs:enumeration value="Omics"/>
+                  <xs:enumeration value="Part of"/>
+                  <xs:enumeration value="Population"/>
+                  <xs:enumeration value="Problematic cell line"/>
+                  <xs:enumeration value="Selected for resistance to"/>
+                  <xs:enumeration value="Senescence"/>
+                  <xs:enumeration value="Transfected with"/>
+                  <xs:enumeration value="Transformant"/>
+                  <xs:enumeration value="Virology"/>
+               </xs:restriction>
+            </xs:simpleType>
+         </xs:attribute>
+      </xs:complexType>
+   </xs:element>
+   <!-- Comment element definition ends -->
+
+   <xs:element name="method" type="xs:string"/>
+
+   <!-- Cross-reference list element definition begins -->
+   <xs:element name="xref-list">
+      <xs:annotation>
+         <xs:documentation>Describes the collection of cross-references for the entry.</xs:documentation>
+      </xs:annotation>
+      <xs:complexType>
+         <xs:sequence>
+            <xs:element ref="xref" minOccurs="1" maxOccurs="unbounded"/>
+         </xs:sequence>
+      </xs:complexType>
+   </xs:element>
+   <!-- Cross-reference list element definition ends -->
+
+   <!-- Cross-reference element definition begins -->
+   <xs:element name="xref">
+      <xs:annotation>
+         <xs:documentation>Describes a cross-reference.</xs:documentation>
+      </xs:annotation>
+      <xs:complexType>
+         <xs:sequence>
+            <xs:element ref="property-list" minOccurs="0" maxOccurs="1"/>
+            <xs:element ref="url" minOccurs="0" maxOccurs="1"/>
+         </xs:sequence>
+         <xs:attribute ref="database" use="required"/>
+         <xs:attribute name="category" use="required">
+            <xs:simpleType>
+               <xs:restriction base="xs:string">
+                  <xs:enumeration value="Anatomy/cell type resources"/>
+                  <xs:enumeration value="Biological sample resources"/>
+                  <xs:enumeration value="Cell line collections (Providers)"/>
+                  <xs:enumeration value="Cell line databases/resources"/>
+                  <xs:enumeration value="Chemistry resources"/>
+                  <xs:enumeration value="Encyclopedic resources"/>
+                  <xs:enumeration value="Experimental variables resources"/>
+                  <xs:enumeration value="Gene expression databases"/>
+                  <xs:enumeration value="Medical resources"/>
+                  <xs:enumeration value="Metabolomic databases"/>
+                  <xs:enumeration value="Organism-specific databases"/>
+                  <xs:enumeration value="Polymorphism and mutation databases"/>
+                  <xs:enumeration value="Proteomic databases"/>
+                  <xs:enumeration value="Reference resources"/>
+                  <xs:enumeration value="Sequence databases"/>
+                  <xs:enumeration value="Taxonomy"/>
+               </xs:restriction>
+            </xs:simpleType>
+         </xs:attribute>
+         <xs:attribute ref="accession" use="required"/>
+      </xs:complexType>
+   </xs:element>
+   <!-- Cross-reference element definition ends -->
+
+   <!-- Property list element definition begins -->
+   <xs:element name="property-list">
+      <xs:annotation>
+         <xs:documentation>Describes the collection of properties.</xs:documentation>
+      </xs:annotation>
+      <xs:complexType>
+         <xs:sequence>
+            <xs:element ref="property" minOccurs="1" maxOccurs="unbounded"/>
+         </xs:sequence>
+      </xs:complexType>
+   </xs:element>
+   <!-- Property list definition ends -->
+
+   <!-- Property element definition begins -->
+   <xs:element name="property">
+      <xs:annotation>
+         <xs:documentation>Describes a property.</xs:documentation>
+      </xs:annotation>
+      <xs:complexType>
+         <xs:attribute name="name" type="xs:normalizedString" use="required"/>
+         <xs:attribute name="value" type="xs:normalizedString" use="required"/>
+         <xs:attribute name="value-type" type="xs:normalizedString" use="optional"/>
+         <xs:attribute ref="accession" use="optional"/>
+      </xs:complexType>
+   </xs:element>
+   <!-- Property term definition ends -->
+
+   <!-- Controlled vocabulary (cv) term element definition begins -->
+   <xs:element name="cv-term">
+      <xs:annotation>
+         <xs:documentation>Describes a controlled vocabulary term.</xs:documentation>
+      </xs:annotation>
+      <xs:complexType>
+         <xs:simpleContent>
+            <xs:extension base="xs:string">
+               <xs:attribute name="terminology" use="required">
+                  <xs:simpleType>
+                     <xs:restriction base="xs:string">
+                        <xs:enumeration value="Cellosaurus"/>
+                        <xs:enumeration value="ChEBI"/>
+                        <xs:enumeration value="DrugBank"/>
+                        <xs:enumeration value="NCBI-Taxonomy"/>
+                        <xs:enumeration value="NCIt"/>
+                        <xs:enumeration value="ORDO"/>
+                        <xs:enumeration value="PubChem"/>
+                        <xs:enumeration value="UBERON"/>
+                        <xs:enumeration value="CL"/>
+                     </xs:restriction>
+                  </xs:simpleType>
+               </xs:attribute>
+               <xs:attribute ref="accession" use="required"/>
+            </xs:extension>
+         </xs:simpleContent>
+      </xs:complexType>
+   </xs:element>
+   <!-- Controlled vocabulary (cv) term element definition ends -->
+
+   <!-- STR list element definition begins -->
+   <xs:element name="str-list">
+      <xs:annotation>
+         <xs:documentation>Describes the collection of short tandem repeats (STRs) for a cell line.</xs:documentation>
+      </xs:annotation>
+      <xs:complexType>
+         <xs:sequence>
+            <xs:element ref="source-list" minOccurs="1" maxOccurs="1"/>
+            <xs:element ref="marker-list" minOccurs="1" maxOccurs="1"/>
+         </xs:sequence>
+      </xs:complexType>
+   </xs:element>
+   <!-- STR list element definition ends -->
+
+   <!-- STR source list element definition begins -->
+   <xs:element name="source-list">
+      <xs:annotation>
+         <xs:documentation>Describes the sources for short tandem repeats (STRs) for a cell line.</xs:documentation>
+      </xs:annotation>
+      <xs:complexType>
+         <xs:sequence>
+            <xs:choice maxOccurs="unbounded">
+               <xs:element ref="source"/>
+               <xs:element ref="reference-list"/>
+            </xs:choice>
+         </xs:sequence>
+      </xs:complexType>
+   </xs:element>
+   <!-- STR source list element definition ends -->
+
+   <xs:element name="source" type="xs:string"/>
+
+   <!-- STR reference list element definition begins -->
+   <xs:element name="reference-list">
+      <xs:annotation>
+         <xs:documentation>Describes the references for short tandem repeats (STRs) for a cell line.</xs:documentation>
+      </xs:annotation>
+      <xs:complexType>
+         <xs:sequence>
+            <xs:element ref="reference" minOccurs="1" maxOccurs="unbounded"/>
+         </xs:sequence>
+      </xs:complexType>
+   </xs:element>
+   <!-- STR reference list element definition ends -->
+
+   <!-- STR reference element definition begins -->
+   <xs:element name="reference">
+      <xs:annotation>
+         <xs:documentation>Describes a reference for short tandem repeats (STRs) for a cell line.</xs:documentation>
+      </xs:annotation>
+      <xs:complexType>
+         <xs:attribute name="resource-internal-ref" type="xs:string" use="required"/>
+      </xs:complexType>
+   </xs:element>
+   <!-- STR reference element definition ends -->
+
+   <!-- STR marker list element definition begins -->
+   <xs:element name="marker-list">
+      <xs:annotation>
+         <xs:documentation>Describes the short tandem repeats (STRs) markers for a cell line.</xs:documentation>
+      </xs:annotation>
+      <xs:complexType>
+         <xs:sequence>
+            <xs:element ref="marker" minOccurs="1" maxOccurs="unbounded"/>
+         </xs:sequence>
+      </xs:complexType>
+   </xs:element>
+   <!-- STR marker list element definition ends -->
+
+   <!-- STR marker element definition begins -->
+   <xs:element name="marker">
+      <xs:annotation>
+         <xs:documentation>Describes a short tandem repeats (STRs) marker for a cell line.</xs:documentation>
+      </xs:annotation>
+      <xs:complexType>
+         <xs:sequence>
+            <xs:element ref="marker-data-list" minOccurs="1" maxOccurs="1"/>
+         </xs:sequence>
+         <xs:attribute name="id" type="xs:string" use="required"/>
+         <xs:attribute name="conflict" type="xs:boolean" use="required"/>
+      </xs:complexType>
+   </xs:element>
+   <!-- STR marker element definition ends -->
+
+   <!-- STR marker data list element definition begins -->
+   <xs:element name="marker-data-list">
+      <xs:annotation>
+         <xs:documentation>Describes the collection of STR marker data for a cell line.</xs:documentation>
+      </xs:annotation>
+      <xs:complexType>
+         <xs:sequence>
+            <xs:element ref="marker-data" minOccurs="1" maxOccurs="unbounded"/>
+         </xs:sequence>
+      </xs:complexType>
+   </xs:element>
+   <!-- STR marker data list element definition ends -->
+
+   <!-- STR marker data element definition begins -->
+   <xs:element name="marker-data">
+      <xs:annotation>
+         <xs:documentation>Describes the STR marker data for a cell line.</xs:documentation>
+      </xs:annotation>
+      <xs:complexType>
+         <xs:sequence>
+            <xs:element ref="marker-alleles" minOccurs="1" maxOccurs="1"/>
+            <xs:element ref="source-list" minOccurs="0" maxOccurs="1"/>
+         </xs:sequence>
+      </xs:complexType>
+   </xs:element>
+   <!-- STR marker data element definition ends -->
+
+   <xs:element name="hla-alleles" type="xs:string"/>
+   <xs:element name="marker-alleles" type="xs:string"/>
+
+
+<!-- ========== starts CC Topic Cell type ============================  -->
+
+   <xs:element name="cell-type">
+      <xs:annotation>
+         <xs:documentation>Describes the cell-type the cell line is derived from.</xs:documentation>
+      </xs:annotation>
+      <xs:complexType mixed="true">
+         <xs:sequence>
+            <xs:element ref="cv-term" minOccurs="0" maxOccurs="1"/>
+         </xs:sequence>
+      </xs:complexType>
+   </xs:element>
+
+<!-- ========== ens CC Topic Cell type ============================  -->
+
+<!-- ======== starts CC Topic : Derived from site ==================  -->
+
+   <xs:element name="derived-from-site-list">
+      <xs:annotation>
+         <xs:documentation>Describes the list of body parts or organs the cell line is derived from.</xs:documentation>
+      </xs:annotation>
+      <xs:complexType>
+         <xs:sequence>
+            <xs:element ref="derived-from-site" minOccurs="1" maxOccurs="unbounded"/>
+         </xs:sequence>
+      </xs:complexType>
+   </xs:element>
+
+   <xs:element name="derived-from-site">
+      <xs:annotation>
+         <xs:documentation>Describes a body part or organ the cell line is derived from.</xs:documentation>
+      </xs:annotation>
+      <xs:complexType>
+         <xs:sequence>
+            <xs:element ref="site" minOccurs="1" maxOccurs="1"/>
+            <xs:element ref="site-note" minOccurs="0" maxOccurs="1"/>
+         </xs:sequence>
+      </xs:complexType>
+   </xs:element>
+
+   <xs:element name="site-note" type="xs:string"/>
+
+   <xs:element name="site">
+      <xs:annotation>
+         <xs:documentation>Describes a body part or organ.</xs:documentation>
+      </xs:annotation>
+      <xs:complexType mixed="true">
+         <xs:sequence>
+            <xs:element ref="cv-term" minOccurs="0" maxOccurs="unbounded"/>
+         </xs:sequence>
+         <xs:attribute name="site-type" use="required">
+            <xs:simpleType>
+               <xs:restriction base="xs:string">
+                  <xs:enumeration value="In situ"/>
+                  <xs:enumeration value="Metastatic"/>
+               </xs:restriction>
+            </xs:simpleType>
+         </xs:attribute>
+      </xs:complexType>
+   </xs:element>
+
+<!--   ======== ends CC Topic : Derived from site ==================  -->
+
+   <xs:element name="doubling-time-list">
+      <xs:annotation>
+         <xs:documentation>Describes the list of doubling time(s) observed for the cell line.</xs:documentation>
+      </xs:annotation>
+      <xs:complexType>
+         <xs:sequence>
+            <xs:element ref="doubling-time" minOccurs="1" maxOccurs="unbounded"/>
+         </xs:sequence>
+      </xs:complexType>
+   </xs:element>
+
+   <xs:element name="doubling-time">
+      <xs:annotation>
+         <xs:documentation>Describes doubling time observed for the cell line.</xs:documentation>
+      </xs:annotation>
+      <xs:complexType>
+         <xs:sequence>
+            <xs:element ref="doubling-time-value" minOccurs="1" maxOccurs="1"/>
+            <xs:element ref="doubling-time-note" minOccurs="0" maxOccurs="1"/>
+            <xs:element ref="doubling-time-sources" minOccurs="1" maxOccurs="1"/>
+         </xs:sequence>
+      </xs:complexType>
+   </xs:element>
+
+   <xs:element name="doubling-time-value" type="xs:string"/>
+   <xs:element name="doubling-time-note" type="xs:string"/>
+
+   <xs:element name="doubling-time-sources">
+      <xs:annotation>
+         <xs:documentation>Describes doubling time observed for the cell line.</xs:documentation>
+      </xs:annotation>
+      <xs:complexType>
+         <xs:sequence>
+            <xs:element ref="xref-list" minOccurs="0" maxOccurs="1"/>
+            <xs:element ref="reference-list" minOccurs="0" maxOccurs="1"/>
+            <xs:element ref="source-list" minOccurs="0" maxOccurs="1"/>
+         </xs:sequence>
+      </xs:complexType>
+   </xs:element>
+
+
+   <!-- Disease list element definition begins -->
+   <xs:element name="disease-list">
+      <xs:annotation>
+         <xs:documentation>Describes the diseases associated with the cell line.</xs:documentation>
+      </xs:annotation>
+      <xs:complexType>
+         <xs:sequence>
+            <xs:element ref="cv-term" minOccurs="1" maxOccurs="unbounded"/>
+         </xs:sequence>
+      </xs:complexType>
+   </xs:element>
+   <!-- Disease list element definition ends -->
+
+   <!-- Species list element definition begins -->
+   <xs:element name="species-list">
+      <xs:annotation>
+         <xs:documentation>Describes the species of origin for the cell line.</xs:documentation>
+      </xs:annotation>
+      <xs:complexType>
+         <xs:sequence>
+            <xs:element ref="cv-term" minOccurs="1" maxOccurs="3"/>
+         </xs:sequence>
+      </xs:complexType>
+   </xs:element>
+   <!-- Species list element definition ends -->
+
+   <!-- HLA lists element definition begins -->
+   <xs:element name="hla-typing-list">
+      <xs:annotation>
+         <xs:documentation>Describes HLA typing list for a cell line.</xs:documentation>
+      </xs:annotation>
+      <xs:complexType>
+         <xs:sequence>
+            <xs:element ref="hla-typing" minOccurs="1" maxOccurs="unbounded"/>
+         </xs:sequence>
+      </xs:complexType>
+   </xs:element>
+   <!-- HLA lists element definition ends -->
+
+   <!-- HLA list element definition begins -->
+   <xs:element name="hla-typing">
+      <xs:annotation>
+         <xs:documentation>Describes the HLA genes and alleles for the cell line.</xs:documentation>
+      </xs:annotation>
+      <xs:complexType>
+         <xs:sequence>
+            <xs:element ref="hla-gene-alleles-list" minOccurs="1" maxOccurs="1"/>
+            <xs:element ref="hla-typing-source" minOccurs="1" maxOccurs="1"/>
+        </xs:sequence>
+      </xs:complexType>
+   </xs:element>
+   <!-- HLA list element definition ends -->
+
+   <!-- HLA gene data element definition begins -->
+   <xs:element name="hla-gene-alleles-list">
+      <xs:annotation>
+         <xs:documentation>Describes a list of HLA gene alleles for a cell line.</xs:documentation>
+      </xs:annotation>
+      <xs:complexType>
+         <xs:sequence>
+            <xs:element ref="hla-gene-alleles" minOccurs="1" maxOccurs="unbounded"/>
+         </xs:sequence>
+      </xs:complexType>
+   </xs:element>
+
+   <!-- HLA gene data element definition begins -->
+   <xs:element name="hla-gene-alleles">
+      <xs:annotation>
+         <xs:documentation>Describes the alleles for one HLA gene for a cell line.</xs:documentation>
+      </xs:annotation>
+      <xs:complexType>
+         <xs:attribute name="alleles" type="xs:string" use="required"/>
+         <xs:attribute name="gene" type="xs:string" use="required"/>
+      </xs:complexType>
+   </xs:element>
+   <!-- HLA gene data element definition ends -->
+
+   <!-- HLA list source element definition begins -->
+   <xs:element name="hla-typing-source">
+      <xs:annotation>
+         <xs:documentation>Describes the HLA source for a cell line and a HLA typing list.</xs:documentation>
+      </xs:annotation>
+      <xs:complexType>
+         <xs:sequence>
+            <xs:choice maxOccurs="1">
+               <xs:element ref="source"/>
+               <xs:element ref="xref"/>
+               <xs:element ref="reference"/>
+            </xs:choice>
+         </xs:sequence>
+      </xs:complexType>
+   </xs:element>
+   <!-- HLA list source element definition ends -->
+
+   <!-- Sequence variation list element definition begins -->
+   <xs:element name="sequence-variation-list">
+      <xs:annotation>
+         <xs:documentation>Describes the sequence variations for a cell line.</xs:documentation>
+      </xs:annotation>
+      <xs:complexType>
+         <xs:sequence>
+            <xs:element ref="sequence-variation" minOccurs="1" maxOccurs="unbounded"/>
+         </xs:sequence>
+      </xs:complexType>
+   </xs:element>
+   <!-- Sequence variation list element definition ends -->
+
+   <xs:element name="mutation-description" type="xs:string"/>
+   <xs:element name="variation-note" type="xs:string"/>
+
+   <!-- variation-sources list element definition begins -->
+   <xs:element name="variation-sources">
+      <xs:annotation>
+         <xs:documentation>Describes the sources for sequence variation for a cell line.</xs:documentation>
+      </xs:annotation>
+      <xs:complexType>
+         <xs:sequence>
+            <xs:choice maxOccurs="unbounded">
+               <xs:element ref="source"/>
+               <xs:element ref="reference-list"/>
+            </xs:choice>
+         </xs:sequence>
+      </xs:complexType>
+   </xs:element>
+   <!-- variation-sources list element definition ends -->
+
+   <!-- Sequence variation element definition begins -->
+    <xs:element name="sequence-variation">
+      <xs:complexType>
+         <xs:sequence>
+            <xs:element ref="mutation-description" minOccurs="0" maxOccurs="1"/>
+            <xs:element ref="variation-note" minOccurs="0" maxOccurs="1"/>
+            <xs:element ref="xref-list" minOccurs="1" maxOccurs="1"/>
+            <xs:element ref="variation-sources" minOccurs="0" maxOccurs="unbounded"/>
+         </xs:sequence>
+         <xs:attribute name="variation-type" use="required">
+             <xs:simpleType>
+                <xs:restriction base="xs:string">
+                   <xs:enumeration value="Gene amplification"/>
+                   <xs:enumeration value="Gene deletion"/>
+                   <xs:enumeration value="Gene fusion"/>
+                   <xs:enumeration value="Mutation"/>
+                </xs:restriction>
+             </xs:simpleType>
+         </xs:attribute>
+         <xs:attribute name="mutation-type" use="optional">
+             <xs:simpleType>
+                <xs:restriction base="xs:string">
+                   <!-- For amplification -->
+                   <xs:enumeration value="Duplication"/>
+                   <xs:enumeration value="Triplication"/>
+                   <xs:enumeration value="Quadruplication"/>
+                   <xs:enumeration value="Extensive"/>
+                   <!-- For mutation -->
+                   <xs:enumeration value="Simple"/>
+                   <xs:enumeration value="Simple_corrected"/>
+                   <xs:enumeration value="Simple_edited"/>
+                   <xs:enumeration value="Repeat_expansion"/>
+                   <xs:enumeration value="Repeat_expansion_corrected"/>
+                   <xs:enumeration value="Repeat_expansion_edited"/>
+                   <xs:enumeration value="Unexplicit"/>
+                   <xs:enumeration value="Unexplicit_corrected"/>
+                   <xs:enumeration value="Unexplicit_edited"/>
+                   <xs:enumeration value="None_reported"/>
+                </xs:restriction>
+             </xs:simpleType>
+         </xs:attribute>
+         <xs:attribute name="zygosity-type" use="optional">
+             <xs:simpleType>
+                <xs:restriction base="xs:string">
+                   <xs:enumeration value="Hemizygous"/>
+                   <xs:enumeration value="Heteroplasmic"/>
+                   <xs:enumeration value="Heterozygous"/>
+                   <xs:enumeration value="Homoplasmic"/>
+                   <xs:enumeration value="Homozygous"/>
+                   <xs:enumeration value="Mosaic"/>
+                   <xs:enumeration value="Unspecified"/>
+                   <xs:enumeration value="-"/>
+                </xs:restriction>
+             </xs:simpleType>
+         </xs:attribute>
+      </xs:complexType>
+   </xs:element>
+   <!-- Sequence variation element definition ends -->
+
+   <!-- Genome ancestry element definition begins -->
+   <xs:element name="genome-ancestry">
+      <xs:annotation>
+         <xs:documentation>Describes the genome ancestry for a cell line.</xs:documentation>
+      </xs:annotation>
+      <xs:complexType>
+         <xs:sequence>
+            <xs:element ref="population-list" minOccurs="1" maxOccurs="1"/>
+            <xs:element ref="genome-ancestry-source" minOccurs="1" maxOccurs="1"/>
+        </xs:sequence>
+      </xs:complexType>
+   </xs:element>
+   <!-- Genome ancestry element definition ends -->
+
+   <!-- Population list element definition begins -->
+   <xs:element name="population-list">
+      <xs:annotation>
+         <xs:documentation>Describes the population list of a cell line genome ancestry.</xs:documentation>
+      </xs:annotation>
+      <xs:complexType>
+         <xs:sequence>
+            <xs:element ref="population" minOccurs="1" maxOccurs="unbounded"/>
+         </xs:sequence>
+      </xs:complexType>
+   </xs:element>
+   <!-- Population list element definition ends -->
+
+   <!-- Population data element definition begins -->
+   <xs:element name="population">
+      <xs:annotation>
+         <xs:documentation>Describes the population percentage.</xs:documentation>
+      </xs:annotation>
+      <xs:complexType>
+          <xs:attribute name="population-name" use="required">
+            <xs:simpleType>
+             <xs:restriction base="xs:string">
+                   <xs:enumeration value="African"/>
+                   <xs:enumeration value="Native American"/>
+                   <xs:enumeration value="East Asian, North"/>
+                   <xs:enumeration value="East Asian, South"/>
+                   <xs:enumeration value="South Asian"/>
+                   <xs:enumeration value="European, North"/>
+                   <xs:enumeration value="European, South"/>
+             </xs:restriction>
+            </xs:simpleType>
+          </xs:attribute>
+          <xs:attribute name="population-percentage" type="xs:string" use="required"/>
+      </xs:complexType>
+   </xs:element>
+   <!-- Population data element definition ends -->
+
+   <!-- Genome ancestry source element definition begins -->
+   <xs:element name="genome-ancestry-source">
+      <xs:annotation>
+         <xs:documentation>Describes the source for a genome ancestry record.</xs:documentation>
+      </xs:annotation>
+      <xs:complexType>
+         <xs:sequence>
+            <xs:choice maxOccurs="1">
+               <xs:element ref="source"/>
+               <xs:element ref="reference"/>
+            </xs:choice>
+         </xs:sequence>
+      </xs:complexType>
+   </xs:element>
+   <!-- Genome ancestry source element definition ends -->
+
+   <!-- Misspelling list element definition begins -->
+   <xs:element name="misspelling-list">
+      <xs:annotation>
+         <xs:documentation>Describes the collection of misspellings for a cell line.</xs:documentation>
+      </xs:annotation>
+      <xs:complexType>
+         <xs:sequence>
+            <xs:element ref="misspelling" minOccurs="1" maxOccurs="unbounded"/>
+         </xs:sequence>
+      </xs:complexType>
+   </xs:element>
+
+   <!-- Misspelling element definition begins -->
+   <xs:element name="misspelling">
+      <xs:annotation>
+         <xs:documentation>Describes a misspelling.</xs:documentation>
+      </xs:annotation>
+      <xs:complexType>
+         <xs:sequence>
+            <xs:element ref="misspelling-name" minOccurs="1" maxOccurs="1"/>
+            <xs:element ref="misspelling-note" minOccurs="0" maxOccurs="1"/>
+            <xs:element ref="xref-list" minOccurs="0" maxOccurs="1"/>
+            <xs:element ref="reference-list" minOccurs="0" maxOccurs="1"/>
+         </xs:sequence>
+      </xs:complexType>
+   </xs:element>
+   <!-- Misspelling element definition ends -->
+
+   <xs:element name="misspelling-name" type="xs:string"/>
+   <xs:element name="misspelling-note" type="xs:string"/>
+
+   <!-- Registration list element definition begins -->
+   <xs:element name="registration-list">
+      <xs:annotation>
+         <xs:documentation>Describes the collection of registrations for a cell line.</xs:documentation>
+      </xs:annotation>
+      <xs:complexType>
+         <xs:sequence>
+            <xs:element ref="registration" minOccurs="1" maxOccurs="unbounded"/>
+         </xs:sequence>
+      </xs:complexType>
+   </xs:element>
+   <!-- Registration list element definition ends -->
+
+   <!-- Registration element definition begins -->
+   <xs:element name="registration">
+      <xs:annotation>
+         <xs:documentation>Describes a registration.</xs:documentation>
+      </xs:annotation>
+      <xs:complexType>
+         <xs:attribute name="registry" use="required"/>
+         <xs:attribute name="registration-number" use="required"/>
+      </xs:complexType>
+   </xs:element>
+   <!-- Registration element definition ends -->
+
+   <!-- Derived from element definition begins -->
+   <xs:element name="derived-from">
+      <xs:annotation>
+         <xs:documentation>Describes the hierarchy for the cell line.</xs:documentation>
+      </xs:annotation>
+      <xs:complexType>
+         <xs:sequence>
+            <xs:element ref="cv-term" minOccurs="1" maxOccurs="3"/>
+         </xs:sequence>
+      </xs:complexType>
+   </xs:element>
+   <!-- Derived from element definition ends -->
+
+   <!-- Same origin as element definition begins -->
+   <xs:element name="same-origin-as">
+      <xs:annotation>
+         <xs:documentation>Describes cell lines that originate from same individual as the cell line.</xs:documentation>
+      </xs:annotation>
+      <xs:complexType>
+         <xs:sequence>
+            <xs:element ref="cv-term" minOccurs="1" maxOccurs="unbounded"/>
+         </xs:sequence>
+      </xs:complexType>
+   </xs:element>
+   <!-- Same origin as element definition ends -->
+
+   <!-- Web page list element definition begins -->
+   <xs:element name="web-page-list">
+      <xs:annotation>
+         <xs:documentation>Describes web pages for the entry.</xs:documentation>
+      </xs:annotation>
+      <xs:complexType>
+         <xs:sequence>
+            <xs:element ref="url" minOccurs="1" maxOccurs="unbounded"/>
+         </xs:sequence>
+      </xs:complexType>
+   </xs:element>
+   <!-- Web page list element definition ends -->
+
+   <xs:element name="url" type="xs:string"/>
+
+   <!-- Publication list element definition begins -->
+   <xs:element name="publication-list">
+      <xs:annotation>
+         <xs:documentation>Describes the collection of publications for the entry.</xs:documentation>
+      </xs:annotation>
+      <xs:complexType>
+         <xs:sequence>
+            <xs:element ref="publication" minOccurs="0" maxOccurs="unbounded"/>
+         </xs:sequence>
+      </xs:complexType>
+   </xs:element>
+   <!-- Publication list definition ends -->
+
+   <!-- Publication element definition begins -->
+   <xs:element name="publication">
+      <xs:annotation>
+         <xs:documentation>Describes a publication.</xs:documentation>
+      </xs:annotation>
+      <xs:complexType>
+         <xs:sequence>
+            <xs:element ref="title" minOccurs="1" maxOccurs="1"/>
+            <xs:element ref="editor-list" minOccurs="0" maxOccurs="1"/>
+            <xs:element ref="author-list" minOccurs="0" maxOccurs="1"/>
+            <xs:element ref="xref-list" minOccurs="0" maxOccurs="unbounded"/>
+         </xs:sequence>
+         <xs:attribute name="type" use="required">
+            <xs:simpleType>
+               <xs:restriction base="xs:string">
+                  <xs:enumeration value="article"/>
+                  <xs:enumeration value="book chapter"/>
+                  <xs:enumeration value="patent"/>
+                  <xs:enumeration value="thesis BSc"/>
+                  <xs:enumeration value="thesis MD"/>
+                  <xs:enumeration value="thesis MDSc"/>
+                  <xs:enumeration value="thesis MSc"/>
+                  <xs:enumeration value="thesis PD"/>
+                  <xs:enumeration value="thesis PhD"/>
+                  <xs:enumeration value="thesis VMD"/>
+               </xs:restriction>
+            </xs:simpleType>
+         </xs:attribute>
+         <xs:attribute name="date" use="optional">
+            <xs:simpleType>
+               <xs:union memberTypes="xs:date xs:gYearMonth xs:gYear patent-date"/>
+            </xs:simpleType>
+         </xs:attribute>
+         <xs:attribute name="journal-name" type="xs:string" use="optional"/>
+         <xs:attribute name="volume" type="xs:string" use="optional"/>
+         <xs:attribute name="first-page" type="xs:string" use="optional"/>
+         <xs:attribute name="last-page" type="xs:string" use="optional"/>
+         <xs:attribute name="publisher" type="xs:string" use="optional"/>
+         <xs:attribute name="city" type="xs:string" use="optional"/>
+         <xs:attribute ref="database" use="optional"/>
+         <xs:attribute name="patent" type="xs:string" use="optional"/>
+         <xs:attribute name="institution" type="xs:string" use="optional"/>
+         <xs:attribute name="country" type="xs:string" use="optional"/>
+         <xs:attribute name="location" type="xs:string" use="optional"/>
+         <xs:attribute name="internal-id" type="xs:string" use="required"/>
+      </xs:complexType>
+   </xs:element>
+   <!-- Publication definition ends -->
+
+   <!-- Patent date definition begins -->
+   <xs:simpleType name="patent-date">
+      <xs:restriction base="xs:string">
+         <xs:pattern value="[0-3][0-9]-[A-S][a-z][a-z]-[1-2][0-9][0-9][0-9]"/>
+      </xs:restriction>
+   </xs:simpleType>
+   <!-- Patent date definition ends -->
+
+   <xs:element name="title" type="xs:string"/>
+
+   <!-- Editor list definition begins -->
+   <xs:element name="editor-list">
+      <xs:annotation>
+         <xs:documentation>Describes the editors of a publication.</xs:documentation>
+      </xs:annotation>
+      <xs:complexType>
+         <xs:choice maxOccurs="unbounded">
+            <xs:element ref="consortium"/>
+            <xs:element ref="person"/>
+         </xs:choice>
+      </xs:complexType>
+   </xs:element>
+   <!-- Editor list definition ends -->
+
+   <!-- Author list definition begins -->
+   <xs:element name="author-list">
+      <xs:annotation>
+         <xs:documentation>Describes the authors of a publication.</xs:documentation>
+      </xs:annotation>
+      <xs:complexType>
+         <xs:choice maxOccurs="unbounded">
+            <xs:element ref="consortium"/>
+            <xs:element ref="person"/>
+         </xs:choice>
+      </xs:complexType>
+   </xs:element>
+   <!-- Author list definition ends -->
+
+   <!-- Consortium definition begins -->
+   <xs:element name="consortium">
+      <xs:annotation>
+         <xs:documentation>Describes a consortium.</xs:documentation>
+      </xs:annotation>
+      <xs:complexType>
+         <xs:attribute name="name" type="xs:string" use="required"/>
+      </xs:complexType>
+   </xs:element>
+   <!-- Consortium definition ends -->
+
+   <!-- Person definition begins -->
+   <xs:element name="person">
+      <xs:annotation>
+         <xs:documentation>Describes a person.</xs:documentation>
+      </xs:annotation>
+      <xs:complexType>
+         <xs:attribute name="name" type="xs:string" use="required"/>
+      </xs:complexType>
+   </xs:element>
+   <!-- Person definition ends -->
+
+   <!-- Copyright element definition begins -->
+   <xs:element name="copyright" type="xs:string"/>
+   <!-- Copyright element definition ends -->
+
+   <!-- Definition of attributes used more than once begins  -->
+   <xs:attribute name="accession" type="xs:normalizedString"/>
+   <xs:attribute name="database" type="xs:string"/>
+   <!-- Definition of attributes used more than once ends  -->
+
+</xs:schema>
