@@ -950,9 +950,10 @@ class XSDModelBuilder:
 
         pattern = '|'.join(stype.patterns.regexps) if stype.patterns else None
         if pattern:
-            if parent not in ('DecimalField', 'FloatField', 'IntegerField'):
+            is_int = parent in ('IntegerField', 'PositiveIntegerField', 'BigIntegerField', 'SmallIntegerField')
+            if not is_int and parent not in ('DecimalField', 'FloatField'):
                 validators.append('RegexValidator(r"%s")' % pattern)
-            if parent != 'IntegerField':
+            if not is_int:
                 # Try to infer max_length from regexp
                 match = re.match(r'\\d\{(\d+,)?(\d+)\}$', pattern)
                 max_length = None
