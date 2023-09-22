@@ -862,7 +862,7 @@ class XSDModelBuilder:
                 for enumeration in enumerations]
 
     def get_field_data_from_simpletype(self, stype):
-        if len(xfind(stype.elem, "xs:union")):
+        if isinstance(stype, xmlschema.validators.XsdUnion):
             logger.warning("xs:simpleType[name=%s]/xs:union is not supported"
                            " yet",
                            stype.prefixed_name)
@@ -1008,7 +1008,10 @@ class XSDModelBuilder:
                 elif isinstance(element.type, xmlschema.validators.XsdSimpleType):
                     doc, parent, options = \
                         self.get_field_data_from_simpletype(element.type)
-                    orig_typename = element.type.primitive_type
+                    try:
+                        orig_typename = element.type.primitive_type
+                    except AttributeError:  # XsdUnion...
+                        orig_typename = 'xs:string'
                     return orig_typename, {
                         'name': 'models.%s' % parent,
                         'options': options,
