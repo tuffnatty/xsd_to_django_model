@@ -1215,7 +1215,7 @@ class XSDModelBuilder:
         else:
             ctype = self.get_element_complex_type(element)
             own_seq = self.get_own_seq_or_choice(ctype)
-            el2 = own_seq[0]
+            el2 = own_seq[0] if own_seq else None
             if el2 and el2.max_occurs == MAX_OCCURS_UNBOUNDED:
                 el2 = el2.ref or el2
                 el2_name = '%s_%s' % (name, el2.local_name)
@@ -1285,7 +1285,9 @@ class XSDModelBuilder:
         if ctype2 is not None and \
                 ctype2.has_complex_content() and \
                 len(ctype2.content) == 1 and \
-                ctype2.content[0].max_occurs == MAX_OCCURS_UNBOUNDED:
+                ctype2.content[0].max_occurs == MAX_OCCURS_UNBOUNDED and \
+                not (isinstance(ctype2.content[0], xmlschema.validators.XsdGroup) and
+                     ctype2.content[0].model == 'choice'):
             t3_name = self.simplify_ns(self.global_name(ctype2.content[0].type))
             model = get_model_for_type(t3_name or "%s.%s" % (typename, name))
             # If referencing one of our explicit target types, then it's an eligible many-to-many
@@ -1480,7 +1482,7 @@ class XSDModelBuilder:
 
         if match(name, model, 'array_fields'):
             if ctype2 is not None:
-                final_el_attr = next(chain(ctype2.attributes,
+                final_el_attr = next(chain(ctype2.attributes.values(),
                                            ctype2.content))
                 ctype3 = self.get_element_complex_type(final_el_attr)
                 if ctype3 and len(ctype3.content) == 1:
@@ -1763,9 +1765,15 @@ class XSDModelBuilder:
                 "include_parent_fields, but parent not found in %s", typename
             )
         if parent_type and parent_type in BASETYPE_FIELD_MAP:
-            # Probably simpleContent
-            this_model.add_field(django_field=BASETYPE_FIELD_MAP[parent_type],
-                                 name=ctype.parent.local_name,
+            # Probably simpleContent.
+            # Add same-named field, with all substitutions.
+            coalesced_name = ctype.parent.local_name
+            for option in ('level1_substitutions', 'coalesce_fields',
+                           'level3_substitutions'):
+                coalesced_name = \
+                    coalesce(coalesced_name, model, option) or coalesced_name
+            this_model.add_field(django_field='models.%s' % BASETYPE_FIELD_MAP[parent_type],
+                                 name=coalesced_name,
                                  dotted_name=ctype.parent.local_name,
                                  doc=doc,
                                  options=[])
