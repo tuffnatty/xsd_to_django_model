@@ -110,19 +110,6 @@ MODEL_OPTIONS = {
         ],
     },
 
-    'CellLineXref': {
-    },
-
-    'CommentXref': {
-    },
-
-    'DerivedFrom': {
-        'level3_substitutions': {
-            # For some reason level1_substitutions are not enough here:
-            'cv-term': 'cvTerm',
-        },
-    },
-
     'DoublingTime': {
         'array_fields': [
             'doublingTimeSources_referenceList_reference',
@@ -156,9 +143,6 @@ MODEL_OPTIONS = {
             'editorList_person',
             'xrefList_xref',
         ],
-    },
-
-    'PublicationXref': {
     },
 
     'SequenceVariationSource': {
