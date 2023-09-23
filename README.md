@@ -93,6 +93,12 @@ It may define the following module-level variables:
         'schemeVersion': ['max_length=7'],
     }
     ```
+  * `field_type_options` - a `dict` mapping a final Django model field type to a list of that type's overriden options, e.g.:
+    ```python
+    'field_type_options': {
+        'models.DecimalField': ['max_digits=20'],
+    }
+    ```  
   * `flatten_fields` - a `list` of fields where the contained `xs:complexType` should not be treated as a separate Django model, but is to be merged in the current model, with member field names prefixed with this field's name and a `_`:
     ```python
     'flatten_fields': ['section1', 'section2'],

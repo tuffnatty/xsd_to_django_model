@@ -390,16 +390,18 @@ def match(name, model, kind):
 
 def parse_user_options(options):
     return (dict(o.split('=', 1) if RE_KWARG.match(o) else ('_', o)
-                 for o in options)
+                 for o in (options or ()))
             if not isinstance(options, dict)
             else options)
 
 
-def override_field_options(field_name, options, model_options):
-    add_field_options = dict(GLOBAL_MODEL_OPTIONS.get('field_options', {}),
-                             **model_options.get('field_options', {}))
-    this_field_add_options = \
-        parse_user_options(add_field_options.get(field_name, {}))
+def override_field_options(field_name, options, model_options, field_type):
+    this_field_add_options = {
+        **parse_user_options(GLOBAL_MODEL_OPTIONS.get('field_type_options', {}).get(field_type, {})),
+        **parse_user_options(GLOBAL_MODEL_OPTIONS.get('field_options', {}).get(field_name, {})),
+        **parse_user_options(model_options.get('field_type_options', {}).get(field_type, {})),
+        **parse_user_options(model_options.get('field_options', {}).get(field_name, {})),
+    }
     options = {k: v for k, v in options.items()
                if k not in this_field_add_options}
     options.update((k, v) for k, v in this_field_add_options.items()
@@ -1409,7 +1411,7 @@ class XSDModelBuilder:
                                                           element)
             self.make_model(rel, ctype2)
             options = dict(_=get_model_for_type(rel))
-            options = override_field_options(name, options, model)
+            options = override_field_options(name, options, model, 'models.ManyToManyField')
             return dict(dotted_name=dotted_name,
                         name=name,
                         drop_after=drop_after,
@@ -1582,7 +1584,7 @@ class XSDModelBuilder:
               match(name, model, 'plain_index_fields') or
               match(name, model, 'strict_index_fields')):
             options['db_index'] = 'INDEX_IN_META'
-        options = override_field_options(name, options, model)
+        options = override_field_options(name, options, model, field['name'])
 
         if reference_extension:
             self.write_seq_or_choice(self.get_own_seq_or_choice(ctype2), typename,
