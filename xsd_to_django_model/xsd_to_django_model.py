@@ -397,6 +397,7 @@ def parse_user_options(options):
 
 def override_field_options(field_name, options, model_options, field_type):
     this_field_add_options = {
+        **parse_user_options(GLOBAL_MODEL_OPTIONS.get('field_type_options', {}).get(field_type, {})),
         **parse_user_options(GLOBAL_MODEL_OPTIONS.get('field_options', {}).get(field_name, {})),
         **parse_user_options(model_options.get('field_type_options', {}).get(field_type, {})),
         **parse_user_options(model_options.get('field_options', {}).get(field_name, {})),
