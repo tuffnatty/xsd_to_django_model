@@ -2,7 +2,7 @@
 <!-- *****************************************************************************
         XML Schema Definition (XSD) for the Cellosaurus XML
 
-        Date: 2023-June-29; Release: 6.10
+        Date: 2023-October-05; Release: 7.00
 
         Copyright (c) CALIPHO group @ SIB - Swiss Institute of Bioinformatics
         Distributed under the Creative Commons Attribution 4.0 International (CC BY 4.0) licence
@@ -123,6 +123,8 @@
              <xs:element ref="derived-from-site-list" minOccurs="0" maxOccurs="1"/>
              <xs:element ref="cell-type" minOccurs="0" maxOccurs="1"/>
              <xs:element ref="genome-ancestry" minOccurs="0" maxOccurs="1"/>
+             <xs:element ref="transformant-list" minOccurs="0" maxOccurs="1"/>
+             <xs:element ref="resistance-list" minOccurs="0" maxOccurs="1"/>
              <xs:element ref="misspelling-list" minOccurs="0" maxOccurs="1"/>
              <xs:element ref="registration-list" minOccurs="0" maxOccurs="1"/>
              <xs:element ref="sequence-variation-list" minOccurs="0" maxOccurs="1"/>
@@ -218,7 +220,7 @@
    <!-- Name element definition begins -->
    <xs:element name="name">
       <xs:annotation>
-         <xs:documentation>Describes the identifier (cell line recommanded name) and synonyms for a cell line.</xs:documentation>
+         <xs:documentation>Describes the identifier (cell line recommended name) and synonyms for a cell line.</xs:documentation>
       </xs:annotation>
       <xs:complexType>
          <xs:simpleContent>
@@ -283,10 +285,8 @@
                   <xs:enumeration value="Part of"/>
                   <xs:enumeration value="Population"/>
                   <xs:enumeration value="Problematic cell line"/>
-                  <xs:enumeration value="Selected for resistance to"/>
                   <xs:enumeration value="Senescence"/>
                   <xs:enumeration value="Transfected with"/>
-                  <xs:enumeration value="Transformant"/>
                   <xs:enumeration value="Virology"/>
                </xs:restriction>
             </xs:simpleType>
@@ -329,6 +329,7 @@
                   <xs:enumeration value="Cell line collections (Providers)"/>
                   <xs:enumeration value="Cell line databases/resources"/>
                   <xs:enumeration value="Chemistry resources"/>
+                  <xs:enumeration value="CRISP screens repositories"/>
                   <xs:enumeration value="Encyclopedic resources"/>
                   <xs:enumeration value="Experimental variables resources"/>
                   <xs:enumeration value="Gene expression databases"/>
@@ -875,6 +876,62 @@
       </xs:complexType>
    </xs:element>
    <!-- Genome ancestry source element definition ends -->
+
+   <!-- Transformant list element definition begins -->
+   <xs:element name="transformant-list">
+      <xs:annotation>
+         <xs:documentation>Describes the collection of transformants of a cell line.</xs:documentation>
+      </xs:annotation>
+      <xs:complexType>
+         <xs:sequence>
+            <xs:element ref="transformant" minOccurs="1" maxOccurs="unbounded"/>
+         </xs:sequence>
+      </xs:complexType>
+   </xs:element>
+
+   <!-- Transformant element definition begins -->
+   <xs:element name="transformant">
+      <xs:annotation>
+         <xs:documentation>Describes a transformant.</xs:documentation>
+      </xs:annotation>
+      <xs:complexType  mixed="true">
+         <xs:sequence>
+            <xs:element ref="cv-term" minOccurs="0" maxOccurs="1"/>
+            <xs:element ref="transformant-note" minOccurs="0" maxOccurs="1"/>
+         </xs:sequence>
+      </xs:complexType>
+   </xs:element>
+
+   <xs:element name="transformant-note" type="xs:string"/>
+
+   <!-- Resistance list element definition begins -->
+   <xs:element name="resistance-list">
+      <xs:annotation>
+         <xs:documentation>Describes the list of resistances of a cell line.</xs:documentation>
+      </xs:annotation>
+      <xs:complexType>
+         <xs:sequence>
+            <xs:element ref="resistance" minOccurs="1" maxOccurs="unbounded"/>
+         </xs:sequence>
+      </xs:complexType>
+   </xs:element>
+
+   <!-- Resistance element definition begins -->
+   <xs:element name="resistance">
+      <xs:annotation>
+         <xs:documentation>Describes a resistance of the cell line.</xs:documentation>
+      </xs:annotation>
+      <xs:complexType  mixed="true">
+         <xs:sequence>
+            <xs:choice minOccurs="0" maxOccurs="1">
+               <xs:element ref="cv-term" minOccurs="0" maxOccurs="1"/>
+               <xs:element ref="xref" minOccurs="0" maxOccurs="1"/>
+            </xs:choice>
+         </xs:sequence>
+      </xs:complexType>
+   </xs:element>
+
+
 
    <!-- Misspelling list element definition begins -->
    <xs:element name="misspelling-list">
