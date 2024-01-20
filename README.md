@@ -10,7 +10,19 @@ Generate Django models from an XSD schema description (and a bunch of hints)
 
 ## Getting started
 
+Install the package from [PyPI](https://pypi.org/project/xsd-to-django-model/):
+
+```bash
+pip install xsd-to-django-model
 ```
+
+Then to use:
+
+```bash
+> xsd_to_django_model --help
+xsd_to_django_model
+Generate Django models from an XSD schema description (and a bunch of hints).
+
 Usage:
     xsd_to_django_model.py [-m <models_filename>] [-f <fields_filename>] [-j <mapping_filename>] <xsd_filename> <xsd_type>...
     xsd_to_django_model.py -h | --help
@@ -18,10 +30,10 @@ Usage:
 Options:
     -h --help              Show this screen.
     -m <models_filename>   Output models filename [default: models.py].
-    -f <fields_filename>   Output fields filename to build custom Django field classes.
+    -f <fields_filename>   Output fields filename to generate custom fields.
     -j <mapping_filename>  Output JSON mapping filename [default: mapping.json].
     <xsd_filename>         Input XSD schema filename.
-    <xsd_type>             XSD type (or, if starting with `/`, the name of the toplevel element of the type) for which a Django model should be generated.
+    <xsd_type>             XSD type (or an XPath query for XSD type) for which a Django model should be generated.
 
 If you have xsd_to_django_model_settings.py in your PYTHONPATH or in the current directory, it will be imported.
 ```
