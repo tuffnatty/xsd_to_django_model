@@ -28,5 +28,8 @@ setup(
         'Topic :: Software Development :: Libraries :: Python Modules',
         'Topic :: Text Processing :: Markup :: XML',
     ],
-    scripts=['xsd_to_django_model/xsd_to_django_model.py']
+    scripts=['xsd_to_django_model/xsd_to_django_model.py'],
+    entry_points={
+        'console_scripts': ['xsd_to_django_model=xsd_to_django_model:main']
+    },
 )

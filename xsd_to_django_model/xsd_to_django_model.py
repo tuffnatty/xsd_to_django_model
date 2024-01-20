@@ -2236,7 +2236,7 @@ class XSDModelBuilder:
         json.dump(mapping, map_file, ensure_ascii=False, indent=4)
 
 
-if __name__ == '__main__':
+def main():
     try:
         args = docopt(__doc__)
 
@@ -2256,3 +2256,7 @@ if __name__ == '__main__':
         traceback.print_exc()
         pdb.post_mortem(tb)
         sys.exit(1)
+
+
+if __name__ == '__main__':
+    main()
