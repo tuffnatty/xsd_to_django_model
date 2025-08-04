@@ -192,8 +192,8 @@ def xfind(root, path, **kwargs):
 @memoize
 def get_model_for_type(name):
     for expr, sub in TYPE_MODEL_MAP.items():
-        if re.match(expr + '$', name):
-            return re.sub(expr + '$', sub, name).replace('+', '')
+        if re.match(expr + '$', name, flags=re.X):
+            return re.sub(expr + '$', sub, name, flags=re.X).replace('+', '')
     return None
 
 
@@ -220,7 +220,7 @@ def get_a_type_for_model(name, schema):
 @memoize
 def get_merge_for_type(name):
     for expr, sub in TYPE_MODEL_MAP.items():
-        if re.match(expr + '$', name):
+        if re.match(expr + '$', name, flags=re.X):
             return sub.startswith('+')
     return False
 
@@ -231,7 +231,7 @@ def get_opt(model_name, typename=None):
     if not typename:
         return opt
     for opt2 in (o for pattern, o in opt.get('if_type', {}).items()
-                 if re.match(pattern + '$', typename)):
+                 if re.match(pattern + '$', typename, flags=re.X)):
         opt = deepcopy(opt)
         for k, v in opt2.items():
             try:
@@ -373,17 +373,17 @@ def coalesce(name, model, option):
             (expr, sub)
             for expr, sub in chain(GLOBAL_MODEL_OPTIONS.get(option, {}).items(),
                                    model.get(option, {}).items())
-            if re.match(expr + '$', name)
+            if re.match(expr + '$', name, flags=re.X)
         )
     except StopIteration:
         return None
-    return re.sub(expr + '$', sub, name)
+    return re.sub(expr + '$', sub, name, flags=re.X)
 
 
 def match(name, model, kind):
     for expr in chain(model.get(kind, ()),
                       GLOBAL_MODEL_OPTIONS.get(kind, ())):
-        if re.match(expr + '$', name):
+        if re.match(expr + '$', name, flags=re.X):
             return True
     return False
 
