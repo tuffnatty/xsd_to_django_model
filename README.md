@@ -133,6 +133,7 @@ It may define the following module-level variables:
   * `json_fields` - a `list` of XSD fields which do not get their own Django model fields but are all mapped to a single `attrs = django.db.models.JSONField()`.
   * `many_to_many_field_overrides` - a `dict` mapping field names to XSD type names when this field is to be treated as a `ManyToManyField` reference to that type`s corresponding model.
   * `many_to_many_fields` - a `list` of field names that get mapped to Django `ManyToManyField`s.
+  * `mapping_extra` - a `dict` of additional keys and values to put in the output JSON mapping for the model.
   * `meta` - a `list` of Django model `Meta` options' string templates added to the generated model's `Meta`:
     ```python
     'meta': [

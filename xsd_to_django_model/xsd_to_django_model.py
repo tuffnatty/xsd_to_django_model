@@ -481,6 +481,7 @@ class Model:
         self.number_field = None
         self.abstract = False
         self.have_validators = False
+        self.mapping_extra = None
 
     def build_attrs_options(self, kwargs):
         if kwargs.get('name') == 'attrs':
@@ -1708,6 +1709,9 @@ class XSDModelBuilder:
         deps = []
         attrs = {}
 
+        if model.get('mapping_extra'):
+            this_model.mapping_extra = model['mapping_extra']
+
         if not model.get('custom', False):
             if ctype is None:
                 try:
@@ -2232,6 +2236,8 @@ class XSDModelBuilder:
                 value = getattr(m, key)
                 if not (value is None or (key == 'parent' and not value)):
                     model_mapping[key] = value
+            if m.mapping_extra:
+                mapping.update(m.mapping_extra)
             mapping[m.model_name] = model_mapping
         json.dump(mapping, map_file, ensure_ascii=False, indent=4)
 
