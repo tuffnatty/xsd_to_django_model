@@ -404,8 +404,7 @@ def override_field_options(field_name, options, model_options, field_type):
     }
     options = {k: v for k, v in options.items()
                if k not in this_field_add_options}
-    options.update((k, v) for k, v in this_field_add_options.items()
-                   if v != 'None')
+    options.update((k, v) for k, v in this_field_add_options.items())
     return options
 
 
@@ -574,7 +573,8 @@ class Model:
             kwargs['options'] = options.copy()
             kwargs['wrap_options'] = 'null=True' if 'wrap' in kwargs else ''
             if final_django_field == 'models.CharField' and \
-                    int(options.get('max_length', 1000)) > 500:
+                    (options.get('max_length') == 'None' or
+                     int(options.get('max_length', 1000)) > 500):
                 final_django_field = 'models.TextField'
             if (options.get('null') == "True" and
                 ('wrap' in kwargs or

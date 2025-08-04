@@ -105,6 +105,7 @@ It may define the following module-level variables:
         'schemeVersion': ['max_length=7'],
     }
     ```
+    Use `None` to inhibit the option in output, e.g.: `['blank=None', 'null=None']`.
   * `field_type_options` - a `dict` mapping a final Django model field type to a list of that type's overriden options, e.g.:
     ```python
     'field_type_options': {
