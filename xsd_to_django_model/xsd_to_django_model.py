@@ -41,7 +41,10 @@ import textwrap
 from docopt import docopt
 import ndifflib
 import xmlschema
-
+try:
+    from xmlschema.utils.qnames import get_prefixed_qname
+except ImportError:
+    from xmlschema.helpers import get_prefixed_qname
 
 try:
     from xsd_to_django_model_settings import TYPE_MODEL_MAP
@@ -1076,8 +1079,7 @@ class XSDModelBuilder:
         return t
 
     def global_name(self, type_):
-        return xmlschema.helpers.get_prefixed_qname(type_.name,
-                                                    self.schema.namespaces)
+        return get_prefixed_qname(type_.name, self.schema.namespaces)
 
     def make_field_class(self, typename, doc, parent, options, choices):
         name = RE_FIELD_CLASS_FILTER.sub('_', typename) + 'Field'
