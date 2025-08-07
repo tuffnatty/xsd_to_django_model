@@ -386,6 +386,11 @@ def coalesce(name, model, option):
 def match(name, model, kind):
     for expr in chain(model.get(kind, ()),
                       GLOBAL_MODEL_OPTIONS.get(kind, ())):
+        if not isinstance(expr, str):
+            # Allow lists/tuples for index_together
+            if kind in ('plain_index_fields',):
+                return False
+            # Otherwise, fail
         if re.match(expr + '$', name, flags=re.X):
             return True
     return False
@@ -680,7 +685,7 @@ class Model:
              for f in model_options.get('strict_index_fields', [])],
             ['GinIndex(fields=["%s"])' % f
              for f in model_options.get('gin_index_fields', [])],
-            ['models.Index(fields=["%s"])' % f
+            ['models.Index(fields=%r)' % ([f] if isinstance(f, str) else list(f),)
              for f in list(set(model_options.get('plain_index_fields', [])) -
                            set(model_options.get('unique_fields', [])))
              if f != model_options.get('primary_key')],
