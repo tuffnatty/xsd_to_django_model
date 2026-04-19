@@ -202,9 +202,9 @@ def get_model_for_type(name):
 
 def schema_get_type(schema, typename):
     ns, name = get_ns(typename), strip_ns(typename)
-    return (schema.imports[schema.namespaces[ns]]
-            if schema.namespaces[ns] in schema.imports
-            else schema).types.get(name)
+    namespace = schema.namespaces[ns]
+    return next((imp for imp in schema.imports.values() if imp is not None and imp.namespaces[''] == namespace),
+                schema).types.get(name)
 
 
 def get_a_type_for_model(name, schema):
