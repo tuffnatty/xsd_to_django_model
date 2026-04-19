@@ -1575,7 +1575,8 @@ class XSDModelBuilder:
 
         if match(name, model, 'array_fields'):
             field = dict(field, wrap='ArrayField')
-            self.have_array = True
+            if not model.get('skip_code'):
+                self.have_array = True
 
         if element is not None:
             max_occurs = element.max_occurs
