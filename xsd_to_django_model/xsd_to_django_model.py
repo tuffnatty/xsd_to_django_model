@@ -2262,7 +2262,7 @@ class XSDModelBuilder:
                 if not (value is None or (key == 'parent' and not value)):
                     model_mapping[key] = value
             if m.mapping_extra:
-                mapping.update(m.mapping_extra)
+                model_mapping.update(m.mapping_extra)
             mapping[m.model_name] = model_mapping
         json.dump(mapping, map_file, ensure_ascii=False, indent=4)
 
