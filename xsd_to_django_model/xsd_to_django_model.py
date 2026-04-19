@@ -692,7 +692,7 @@ class Model:
              for f in model_options.get('strict_index_fields', [])],
             ['GinIndex(fields=["%s"])' % f
              for f in model_options.get('gin_index_fields', [])],
-            ['models.Index(fields=%r)' % ([f] if isinstance(f, str) else list(f),)
+            ['models.Index(fields=[%s])' % (", ".join('"%s"' % x for x in ([f] if isinstance(f, str) else f)))
              for f in list(set(model_options.get('plain_index_fields', [])) -
                            set(model_options.get('unique_fields', [])))
              if f != model_options.get('primary_key')],
