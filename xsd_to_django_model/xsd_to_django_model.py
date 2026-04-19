@@ -581,13 +581,20 @@ class Model:
             options = self.normalize_field_options(kwargs)
             kwargs['options'] = options.copy()
             kwargs['wrap_options'] = 'null=True' if 'wrap' in kwargs else ''
+
             if final_django_field == 'models.CharField' and \
                     (options.get('max_length') == 'None' or
                      int(options.get('max_length', 1000)) > 500):
                 final_django_field = 'models.TextField'
+
+            if options.get('blank') == "None":
+                del options['blank']
+
             if (options.get('null') == "True" and
                 ('wrap' in kwargs or
                  final_django_field == 'models.ManyToManyField')):
+                del options['null']
+            elif options.get('null') == "None":
                 del options['null']
             elif final_django_field == 'models.TextField' \
                     and 'max_length' in options:
@@ -1921,12 +1928,28 @@ class XSDModelBuilder:
                     model2.build_field_code(field2, force=True)
 
         def merge_field(name, dotted_name, containing_models, models):
+            def patch_multiple(name, dotted_name, models, option, value):
+                for m in models:
+                    f = m.get(dotted_name=dotted_name, name=name)
+                    if 'options' not in f:
+                        f['options'] = {}
+                    if (f['options'].get(option, value) if value == 'None' else f['options'].get(option)) != value:
+                        if value == 'None':
+                            del f['options'][option]
+                        else:
+                            f['options'][option] = value
+                        m.build_field_code(f, force=True)
+
             omnipresent = (len(containing_models) == len(models))
 
             containing_opts = [m.get(dotted_name=dotted_name,
                                      name=name).get('options', {})
                                for m in containing_models]
-            if not omnipresent or any(o.get('null') == 'True'
+            if any(o.get('null') == 'None'
+                   for o in containing_opts):
+                # null=None should override any nulls derived from merge
+                patch_multiple(name, dotted_name, containing_models, 'null', 'None')
+            elif not omnipresent or any(o.get('null') == 'True'
                                       for o in containing_opts):
                 if any(o.get('primary_key') == 'True'
                        for o in containing_opts):
@@ -1934,13 +1957,7 @@ class XSDModelBuilder:
                                    " null=True in %s",
                                    (name, dotted_name), merged_typename)
                 else:
-                    for m in containing_models:
-                        f = m.get(dotted_name=dotted_name, name=name)
-                        if 'options' not in f:
-                            f['options'] = {}
-                        if f['options'].get('null') != 'True':
-                            f['options']['null'] = 'True'
-                            m.build_field_code(f, force=True)
+                    patch_multiple(name, dotted_name, containing_models, 'null', 'True')
 
             first_model_field = None
             for m in containing_models:
